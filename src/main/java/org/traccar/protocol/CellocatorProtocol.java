@@ -22,24 +22,24 @@ import org.traccar.model.Command;
 
 public class CellocatorProtocol extends BaseProtocol {
 
-    public CellocatorProtocol() {
-        setSupportedDataCommands(
-                Command.TYPE_OUTPUT_CONTROL);
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CellocatorFrameDecoder());
-                pipeline.addLast(new CellocatorProtocolEncoder(CellocatorProtocol.this));
-                pipeline.addLast(new CellocatorProtocolDecoder(CellocatorProtocol.this));
-            }
-        });
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CellocatorProtocolEncoder(CellocatorProtocol.this));
-                pipeline.addLast(new CellocatorProtocolDecoder(CellocatorProtocol.this));
-            }
-        });
-    }
+	public CellocatorProtocol() {
+		setSupportedDataCommands(
+				Command.TYPE_OUTPUT_CONTROL);
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CellocatorFrameDecoder());
+				pipeline.addLast(new CellocatorProtocolEncoder(CellocatorProtocol.this));
+				pipeline.addLast(new CellocatorProtocolDecoder(CellocatorProtocol.this));
+			}
+		});
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CellocatorProtocolEncoder(CellocatorProtocol.this));
+				pipeline.addLast(new CellocatorProtocolDecoder(CellocatorProtocol.this));
+			}
+		});
+	}
 
 }

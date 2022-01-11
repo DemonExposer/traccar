@@ -21,7 +21,7 @@ import java.text.ParsePosition;
 
 /**
  * Available parameters:
- *
+ * <p>
  * %p - postcode
  * %c - country
  * %s - state
@@ -31,52 +31,51 @@ import java.text.ParsePosition;
  * %r - street (road)
  * %h - house
  * %f - formatted address
- *
  */
 public class AddressFormat extends Format {
 
-    private final String format;
+	private final String format;
 
-    public AddressFormat() {
-        this("%h %r, %t, %s, %c");
-    }
+	public AddressFormat() {
+		this("%h %r, %t, %s, %c");
+	}
 
-    public AddressFormat(String format) {
-        this.format = format;
-    }
+	public AddressFormat(String format) {
+		this.format = format;
+	}
 
-    private static String replace(String s, String key, String value) {
-        if (value != null) {
-            s = s.replace(key, value);
-        } else {
-            s = s.replaceAll("[, ]*" + key, "");
-        }
-        return s;
-    }
+	private static String replace(String s, String key, String value) {
+		if (value != null) {
+			s = s.replace(key, value);
+		} else {
+			s = s.replaceAll("[, ]*" + key, "");
+		}
+		return s;
+	}
 
-    @Override
-    public StringBuffer format(Object o, StringBuffer stringBuffer, FieldPosition fieldPosition) {
-        Address address = (Address) o;
-        String result = format;
+	@Override
+	public StringBuffer format(Object o, StringBuffer stringBuffer, FieldPosition fieldPosition) {
+		Address address = (Address) o;
+		String result = format;
 
-        result = replace(result, "%p", address.getPostcode());
-        result = replace(result, "%c", address.getCountry());
-        result = replace(result, "%s", address.getState());
-        result = replace(result, "%d", address.getDistrict());
-        result = replace(result, "%t", address.getSettlement());
-        result = replace(result, "%u", address.getSuburb());
-        result = replace(result, "%r", address.getStreet());
-        result = replace(result, "%h", address.getHouse());
-        result = replace(result, "%f", address.getFormattedAddress());
+		result = replace(result, "%p", address.getPostcode());
+		result = replace(result, "%c", address.getCountry());
+		result = replace(result, "%s", address.getState());
+		result = replace(result, "%d", address.getDistrict());
+		result = replace(result, "%t", address.getSettlement());
+		result = replace(result, "%u", address.getSuburb());
+		result = replace(result, "%r", address.getStreet());
+		result = replace(result, "%h", address.getHouse());
+		result = replace(result, "%f", address.getFormattedAddress());
 
-        result = result.replaceAll("^[, ]*", "");
+		result = result.replaceAll("^[, ]*", "");
 
-        return stringBuffer.append(result);
-    }
+		return stringBuffer.append(result);
+	}
 
-    @Override
-    public Address parseObject(String s, ParsePosition parsePosition) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Address parseObject(String s, ParsePosition parsePosition) {
+		throw new UnsupportedOperationException();
+	}
 
 }

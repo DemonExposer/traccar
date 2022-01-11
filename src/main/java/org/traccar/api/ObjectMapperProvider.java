@@ -24,9 +24,9 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
 
-    @Override
-    public ObjectMapper getContext(Class<?> type) {
-        return Context.getObjectMapper();
-    }
+	@Override
+	public ObjectMapper getContext(Class<?> type) {
+		return Context.getObjectMapper();
+	}
 
 }

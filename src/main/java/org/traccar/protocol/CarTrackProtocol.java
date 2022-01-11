@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class CarTrackProtocol extends BaseProtocol {
 
-    public CarTrackProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "##"));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new CarTrackProtocolDecoder(CarTrackProtocol.this));
-            }
-        });
-    }
+	public CarTrackProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "##"));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new CarTrackProtocolDecoder(CarTrackProtocol.this));
+			}
+		});
+	}
 
 }

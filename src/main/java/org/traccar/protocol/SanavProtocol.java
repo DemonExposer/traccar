@@ -23,23 +23,23 @@ import org.traccar.TrackerServer;
 
 public class SanavProtocol extends BaseProtocol {
 
-    public SanavProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new SanavProtocolDecoder(SanavProtocol.this));
-            }
-        });
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new SanavProtocolDecoder(SanavProtocol.this));
-            }
-        });
-    }
+	public SanavProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new SanavProtocolDecoder(SanavProtocol.this));
+			}
+		});
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new SanavProtocolDecoder(SanavProtocol.this));
+			}
+		});
+	}
 
 }

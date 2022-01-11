@@ -23,20 +23,20 @@ import org.traccar.helper.BitUtil;
 
 public class TekFrameDecoder extends BaseFrameDecoder {
 
-    @Override
-    protected Object decode(
-            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+	@Override
+	protected Object decode(
+			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-        if (buf.readableBytes() < 17) {
-            return null;
-        }
+		if (buf.readableBytes() < 17) {
+			return null;
+		}
 
-        int length = 17 + buf.getUnsignedByte(16) + (BitUtil.from(buf.getUnsignedByte(15), 6) << 6);
-        if (buf.readableBytes() >= length) {
-            return buf.readRetainedSlice(length);
-        }
+		int length = 17 + buf.getUnsignedByte(16) + (BitUtil.from(buf.getUnsignedByte(15), 6) << 6);
+		if (buf.readableBytes() >= length) {
+			return buf.readRetainedSlice(length);
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 }

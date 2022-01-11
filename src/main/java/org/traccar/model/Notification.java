@@ -24,49 +24,46 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Notification extends ScheduledModel {
 
-    private boolean always;
+	private boolean always;
+	private String type;
+	private String notificators;
 
-    public boolean getAlways() {
-        return always;
-    }
+	public boolean getAlways() {
+		return always;
+	}
 
-    public void setAlways(boolean always) {
-        this.always = always;
-    }
+	public void setAlways(boolean always) {
+		this.always = always;
+	}
 
-    private String type;
+	public String getType() {
+		return type;
+	}
 
-    public String getType() {
-        return type;
-    }
+	public void setType(String type) {
+		this.type = type;
+	}
 
-    public void setType(String type) {
-        this.type = type;
-    }
+	public String getNotificators() {
+		return notificators;
+	}
 
-
-    private String notificators;
-
-    public String getNotificators() {
-        return notificators;
-    }
-
-    public void setNotificators(String transports) {
-        this.notificators = transports;
-    }
+	public void setNotificators(String transports) {
+		this.notificators = transports;
+	}
 
 
-    @JsonIgnore
-    @QueryIgnore
-    public Set<String> getNotificatorsTypes() {
-        final Set<String> result = new HashSet<>();
-        if (notificators != null) {
-            final String[] transportsList = notificators.split(",");
-            for (String transport : transportsList) {
-                result.add(transport.trim());
-            }
-        }
-        return result;
-    }
+	@JsonIgnore
+	@QueryIgnore
+	public Set<String> getNotificatorsTypes() {
+		final Set<String> result = new HashSet<>();
+		if (notificators != null) {
+			final String[] transportsList = notificators.split(",");
+			for (String transport : transportsList) {
+				result.add(transport.trim());
+			}
+		}
+		return result;
+	}
 
 }

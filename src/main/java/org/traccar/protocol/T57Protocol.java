@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class T57Protocol extends BaseProtocol {
 
-    public T57Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new T57FrameDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new T57ProtocolDecoder(T57Protocol.this));
-            }
-        });
-    }
+	public T57Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new T57FrameDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new T57ProtocolDecoder(T57Protocol.this));
+			}
+		});
+	}
 
 }

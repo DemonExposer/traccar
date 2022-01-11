@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class Tk102Protocol extends BaseProtocol {
 
-    public Tk102Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 1 + 1 + 10, 1, 1, 0));
-                pipeline.addLast(new Tk102ProtocolDecoder(Tk102Protocol.this));
-            }
-        });
-    }
+	public Tk102Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 1 + 1 + 10, 1, 1, 0));
+				pipeline.addLast(new Tk102ProtocolDecoder(Tk102Protocol.this));
+			}
+		});
+	}
 
 }

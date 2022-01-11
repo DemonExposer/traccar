@@ -18,88 +18,82 @@ package org.traccar.reports.model;
 
 public class TripsConfig {
 
-    public TripsConfig() {
-    }
+	private double minimalTripDistance;
+	private long minimalTripDuration;
+	private long minimalParkingDuration;
+	private long minimalNoDataDuration;
+	private boolean useIgnition;
+	private boolean processInvalidPositions;
+	private double speedThreshold;
 
-    public TripsConfig(double minimalTripDistance, long minimalTripDuration, long minimalParkingDuration,
-            long minimalNoDataDuration, boolean useIgnition, boolean processInvalidPositions, double speedThreshold) {
-        this.minimalTripDistance = minimalTripDistance;
-        this.minimalTripDuration = minimalTripDuration;
-        this.minimalParkingDuration = minimalParkingDuration;
-        this.minimalNoDataDuration = minimalNoDataDuration;
-        this.useIgnition = useIgnition;
-        this.processInvalidPositions = processInvalidPositions;
-        this.speedThreshold = speedThreshold;
-    }
+	public TripsConfig() {
+	}
 
-    private double minimalTripDistance;
+	public TripsConfig(double minimalTripDistance, long minimalTripDuration, long minimalParkingDuration,
+					   long minimalNoDataDuration, boolean useIgnition, boolean processInvalidPositions, double speedThreshold) {
+		this.minimalTripDistance = minimalTripDistance;
+		this.minimalTripDuration = minimalTripDuration;
+		this.minimalParkingDuration = minimalParkingDuration;
+		this.minimalNoDataDuration = minimalNoDataDuration;
+		this.useIgnition = useIgnition;
+		this.processInvalidPositions = processInvalidPositions;
+		this.speedThreshold = speedThreshold;
+	}
 
-    public double getMinimalTripDistance() {
-        return minimalTripDistance;
-    }
+	public double getMinimalTripDistance() {
+		return minimalTripDistance;
+	}
 
-    public void setMinimalTripDistance(double minimalTripDistance) {
-        this.minimalTripDistance = minimalTripDistance;
-    }
+	public void setMinimalTripDistance(double minimalTripDistance) {
+		this.minimalTripDistance = minimalTripDistance;
+	}
 
-    private long minimalTripDuration;
+	public long getMinimalTripDuration() {
+		return minimalTripDuration;
+	}
 
-    public long getMinimalTripDuration() {
-        return minimalTripDuration;
-    }
+	public void setMinimalTripDuration(long minimalTripDuration) {
+		this.minimalTripDuration = minimalTripDuration;
+	}
 
-    public void setMinimalTripDuration(long minimalTripDuration) {
-        this.minimalTripDuration = minimalTripDuration;
-    }
+	public long getMinimalParkingDuration() {
+		return minimalParkingDuration;
+	}
 
-    private long minimalParkingDuration;
+	public void setMinimalParkingDuration(long minimalParkingDuration) {
+		this.minimalParkingDuration = minimalParkingDuration;
+	}
 
-    public long getMinimalParkingDuration() {
-        return minimalParkingDuration;
-    }
+	public long getMinimalNoDataDuration() {
+		return minimalNoDataDuration;
+	}
 
-    public void setMinimalParkingDuration(long minimalParkingDuration) {
-        this.minimalParkingDuration = minimalParkingDuration;
-    }
+	public void setMinimalNoDataDuration(long minimalNoDataDuration) {
+		this.minimalNoDataDuration = minimalNoDataDuration;
+	}
 
-    private long minimalNoDataDuration;
+	public boolean getUseIgnition() {
+		return useIgnition;
+	}
 
-    public long getMinimalNoDataDuration() {
-        return minimalNoDataDuration;
-    }
+	public void setUseIgnition(boolean useIgnition) {
+		this.useIgnition = useIgnition;
+	}
 
-    public void setMinimalNoDataDuration(long minimalNoDataDuration) {
-        this.minimalNoDataDuration = minimalNoDataDuration;
-    }
+	public boolean getProcessInvalidPositions() {
+		return processInvalidPositions;
+	}
 
-    private boolean useIgnition;
+	public void setProcessInvalidPositions(boolean processInvalidPositions) {
+		this.processInvalidPositions = processInvalidPositions;
+	}
 
-    public boolean getUseIgnition() {
-        return useIgnition;
-    }
+	public double getSpeedThreshold() {
+		return speedThreshold;
+	}
 
-    public void setUseIgnition(boolean useIgnition) {
-        this.useIgnition = useIgnition;
-    }
-
-    private boolean processInvalidPositions;
-
-    public boolean getProcessInvalidPositions() {
-        return processInvalidPositions;
-    }
-
-    public void setProcessInvalidPositions(boolean processInvalidPositions) {
-        this.processInvalidPositions = processInvalidPositions;
-    }
-
-    private double speedThreshold;
-
-    public double getSpeedThreshold() {
-        return speedThreshold;
-    }
-
-    public void setSpeedThreshold(double speedThreshold) {
-        this.speedThreshold = speedThreshold;
-    }
+	public void setSpeedThreshold(double speedThreshold) {
+		this.speedThreshold = speedThreshold;
+	}
 
 }

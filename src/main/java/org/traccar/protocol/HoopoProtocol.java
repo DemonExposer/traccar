@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class HoopoProtocol extends BaseProtocol {
 
-    public HoopoProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new JsonFrameDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new HoopoProtocolDecoder(HoopoProtocol.this));
-            }
-        });
-    }
+	public HoopoProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new JsonFrameDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new HoopoProtocolDecoder(HoopoProtocol.this));
+			}
+		});
+	}
 
 }

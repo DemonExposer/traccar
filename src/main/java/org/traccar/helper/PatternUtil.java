@@ -25,57 +25,57 @@ import java.util.regex.PatternSyntaxException;
 
 public final class PatternUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PatternUtil.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PatternUtil.class);
 
-    private PatternUtil() {
-    }
+	private PatternUtil() {
+	}
 
-    public static class MatchResult {
-        private String patternMatch;
-        private String patternTail;
-        private String stringMatch;
-        private String stringTail;
+	public static MatchResult checkPattern(String pattern, String input) {
 
-        public String getPatternMatch() {
-            return patternMatch;
-        }
+		if (!ManagementFactory.getRuntimeMXBean().getInputArguments().toString().contains("-agentlib:jdwp")) {
+			throw new RuntimeException("PatternUtil usage detected");
+		}
 
-        public String getPatternTail() {
-            return patternTail;
-        }
+		MatchResult result = new MatchResult();
 
-        public String getStringMatch() {
-            return stringMatch;
-        }
+		for (int i = 0; i < pattern.length(); i++) {
+			try {
+				Matcher matcher = Pattern.compile("(" + pattern.substring(0, i) + ").*").matcher(input);
+				if (matcher.matches()) {
+					result.patternMatch = pattern.substring(0, i);
+					result.patternTail = pattern.substring(i);
+					result.stringMatch = matcher.group(1);
+					result.stringTail = input.substring(matcher.group(1).length());
+				}
+			} catch (PatternSyntaxException error) {
+				LOGGER.warn("Pattern matching error", error);
+			}
+		}
 
-        public String getStringTail() {
-            return stringTail;
-        }
-    }
+		return result;
+	}
 
-    public static MatchResult checkPattern(String pattern, String input) {
+	public static class MatchResult {
+		private String patternMatch;
+		private String patternTail;
+		private String stringMatch;
+		private String stringTail;
 
-        if (!ManagementFactory.getRuntimeMXBean().getInputArguments().toString().contains("-agentlib:jdwp")) {
-            throw new RuntimeException("PatternUtil usage detected");
-        }
+		public String getPatternMatch() {
+			return patternMatch;
+		}
 
-        MatchResult result = new MatchResult();
+		public String getPatternTail() {
+			return patternTail;
+		}
 
-        for (int i = 0; i < pattern.length(); i++) {
-            try {
-                Matcher matcher = Pattern.compile("(" + pattern.substring(0, i) + ").*").matcher(input);
-                if (matcher.matches()) {
-                    result.patternMatch = pattern.substring(0, i);
-                    result.patternTail = pattern.substring(i);
-                    result.stringMatch = matcher.group(1);
-                    result.stringTail = input.substring(matcher.group(1).length());
-                }
-            } catch (PatternSyntaxException error) {
-                LOGGER.warn("Pattern matching error", error);
-            }
-        }
+		public String getStringMatch() {
+			return stringMatch;
+		}
 
-        return result;
-    }
+		public String getStringTail() {
+			return stringTail;
+		}
+	}
 
 }

@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class OpenGtsProtocol extends BaseProtocol {
 
-    public OpenGtsProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new HttpResponseEncoder());
-                pipeline.addLast(new HttpRequestDecoder());
-                pipeline.addLast(new HttpObjectAggregator(16384));
-                pipeline.addLast(new OpenGtsProtocolDecoder(OpenGtsProtocol.this));
-            }
-        });
-    }
+	public OpenGtsProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new HttpResponseEncoder());
+				pipeline.addLast(new HttpRequestDecoder());
+				pipeline.addLast(new HttpObjectAggregator(16384));
+				pipeline.addLast(new OpenGtsProtocolDecoder(OpenGtsProtocol.this));
+			}
+		});
+	}
 
 }

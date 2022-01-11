@@ -17,14 +17,14 @@ package org.traccar.geocoder;
 
 public interface Geocoder {
 
-    interface ReverseGeocoderCallback {
+	String getAddress(double latitude, double longitude, ReverseGeocoderCallback callback);
 
-        void onSuccess(String address);
+	interface ReverseGeocoderCallback {
 
-        void onFailure(Throwable e);
+		void onSuccess(String address);
 
-    }
+		void onFailure(Throwable e);
 
-    String getAddress(double latitude, double longitude, ReverseGeocoderCallback callback);
+	}
 
 }

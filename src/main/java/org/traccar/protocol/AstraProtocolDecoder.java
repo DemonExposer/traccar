@@ -36,94 +36,92 @@ import java.util.List;
 
 public class AstraProtocolDecoder extends BaseProtocolDecoder {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AstraProtocolDecoder.class);
+	public static final int MSG_HEARTBEAT = 0x1A;
+	public static final int MSG_DATA = 0x10;
+	private static final Logger LOGGER = LoggerFactory.getLogger(AstraProtocolDecoder.class);
+	public AstraProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    public AstraProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-    public static final int MSG_HEARTBEAT = 0x1A;
-    public static final int MSG_DATA = 0x10;
+		ByteBuf buf = (ByteBuf) msg;
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+		if (channel != null) {
+			channel.writeAndFlush(new NetworkMessage(Unpooled.wrappedBuffer(new byte[]{0x06}), remoteAddress));
+		}
 
-        ByteBuf buf = (ByteBuf) msg;
+		buf.readUnsignedByte(); // protocol
+		buf.readUnsignedShort(); // length
 
-        if (channel != null) {
-            channel.writeAndFlush(new NetworkMessage(Unpooled.wrappedBuffer(new byte[] {0x06}), remoteAddress));
-        }
+		String imei = String.format("%08d", buf.readUnsignedInt()) + String.format("%07d", buf.readUnsignedMedium());
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+		if (deviceSession == null) {
+			return null;
+		}
 
-        buf.readUnsignedByte(); // protocol
-        buf.readUnsignedShort(); // length
+		List<Position> positions = new LinkedList<>();
 
-        String imei = String.format("%08d", buf.readUnsignedInt()) + String.format("%07d", buf.readUnsignedMedium());
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-        if (deviceSession == null) {
-            return null;
-        }
+		while (buf.readableBytes() > 2) {
 
-        List<Position> positions = new LinkedList<>();
+			Position position = new Position(getProtocolName());
+			position.setDeviceId(deviceSession.getDeviceId());
 
-        while (buf.readableBytes() > 2) {
+			buf.readUnsignedByte(); // index
 
-            Position position = new Position(getProtocolName());
-            position.setDeviceId(deviceSession.getDeviceId());
+			position.setValid(true);
+			position.setLatitude(buf.readInt() * 0.000001);
+			position.setLongitude(buf.readInt() * 0.000001);
 
-            buf.readUnsignedByte(); // index
+			DateBuilder dateBuilder = new DateBuilder()
+					.setDate(1980, 1, 6).addMillis(buf.readUnsignedInt() * 1000L);
+			position.setTime(dateBuilder.getDate());
 
-            position.setValid(true);
-            position.setLatitude(buf.readInt() * 0.000001);
-            position.setLongitude(buf.readInt() * 0.000001);
+			position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte() * 2));
+			position.setCourse(buf.readUnsignedByte() * 2);
 
-            DateBuilder dateBuilder = new DateBuilder()
-                    .setDate(1980, 1, 6).addMillis(buf.readUnsignedInt() * 1000L);
-            position.setTime(dateBuilder.getDate());
+			int reason = buf.readUnsignedMedium();
+			position.set(Position.KEY_EVENT, reason);
 
-            position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte() * 2));
-            position.setCourse(buf.readUnsignedByte() * 2);
+			int status = buf.readUnsignedShort();
+			position.set(Position.KEY_STATUS, status);
 
-            int reason = buf.readUnsignedMedium();
-            position.set(Position.KEY_EVENT, reason);
+			position.set(Position.PREFIX_IO + 1, buf.readUnsignedByte());
+			position.set(Position.PREFIX_ADC + 1, buf.readUnsignedByte());
+			position.set(Position.KEY_BATTERY, buf.readUnsignedByte());
+			position.set(Position.KEY_POWER, buf.readUnsignedByte());
 
-            int status = buf.readUnsignedShort();
-            position.set(Position.KEY_STATUS, status);
+			buf.readUnsignedByte(); // max journey speed
+			buf.skipBytes(6); // accelerometer
+			position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedShort());
+			buf.readUnsignedShort(); // journey idle time
 
-            position.set(Position.PREFIX_IO + 1, buf.readUnsignedByte());
-            position.set(Position.PREFIX_ADC + 1, buf.readUnsignedByte());
-            position.set(Position.KEY_BATTERY, buf.readUnsignedByte());
-            position.set(Position.KEY_POWER, buf.readUnsignedByte());
+			position.setAltitude(buf.readUnsignedByte() * 20);
 
-            buf.readUnsignedByte(); // max journey speed
-            buf.skipBytes(6); // accelerometer
-            position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedShort());
-            buf.readUnsignedShort(); // journey idle time
+			int quality = buf.readUnsignedByte();
+			position.set(Position.KEY_SATELLITES, quality & 0xf);
+			position.set(Position.KEY_RSSI, quality >> 4);
 
-            position.setAltitude(buf.readUnsignedByte() * 20);
+			buf.readUnsignedByte(); // geofence events
 
-            int quality = buf.readUnsignedByte();
-            position.set(Position.KEY_SATELLITES, quality & 0xf);
-            position.set(Position.KEY_RSSI, quality >> 4);
+			if (BitUtil.check(status, 8)) {
+				position.set(Position.KEY_DRIVER_UNIQUE_ID, buf.readSlice(7).toString(StandardCharsets.US_ASCII));
+				position.set(Position.KEY_ODOMETER, buf.readUnsignedMedium() * 1000);
+				position.set(Position.KEY_HOURS, UnitsConverter.msFromHours(buf.readUnsignedShort()));
+			}
 
-            buf.readUnsignedByte(); // geofence events
+			if (BitUtil.check(status, 6)) {
+				LOGGER.warn("Extension data is not supported");
+				return position;
+			}
 
-            if (BitUtil.check(status, 8)) {
-                position.set(Position.KEY_DRIVER_UNIQUE_ID, buf.readSlice(7).toString(StandardCharsets.US_ASCII));
-                position.set(Position.KEY_ODOMETER, buf.readUnsignedMedium() * 1000);
-                position.set(Position.KEY_HOURS, UnitsConverter.msFromHours(buf.readUnsignedShort()));
-            }
+			positions.add(position);
 
-            if (BitUtil.check(status, 6)) {
-                LOGGER.warn("Extension data is not supported");
-                return position;
-            }
+		}
 
-            positions.add(position);
-
-        }
-
-        return positions;
-    }
+		return positions;
+	}
 
 }

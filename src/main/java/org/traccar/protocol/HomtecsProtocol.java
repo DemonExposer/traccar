@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class HomtecsProtocol extends BaseProtocol {
 
-    public HomtecsProtocol() {
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new HomtecsProtocolDecoder(HomtecsProtocol.this));
-            }
-        });
-    }
+	public HomtecsProtocol() {
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new HomtecsProtocolDecoder(HomtecsProtocol.this));
+			}
+		});
+	}
 
 }

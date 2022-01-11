@@ -37,73 +37,73 @@ import java.util.jar.JarFile;
 
 public class ServerManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServerManager.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ServerManager.class);
 
-    private final List<TrackerServer> serverList = new LinkedList<>();
-    private final Map<String, BaseProtocol> protocolList = new ConcurrentHashMap<>();
+	private final List<TrackerServer> serverList = new LinkedList<>();
+	private final Map<String, BaseProtocol> protocolList = new ConcurrentHashMap<>();
 
-    private void loadPackage(String packageName) throws IOException, URISyntaxException, ReflectiveOperationException {
+	public ServerManager() throws IOException, URISyntaxException, ReflectiveOperationException {
+		loadPackage("org.traccar.protocol");
+	}
 
-        List<String> names = new LinkedList<>();
-        String packagePath = packageName.replace('.', '/');
-        URL packageUrl = getClass().getClassLoader().getResource(packagePath);
+	private void loadPackage(String packageName) throws IOException, URISyntaxException, ReflectiveOperationException {
 
-        if (packageUrl.getProtocol().equals("jar")) {
-            String jarFileName = URLDecoder.decode(packageUrl.getFile(), StandardCharsets.UTF_8.name());
-            try (JarFile jf = new JarFile(jarFileName.substring(5, jarFileName.indexOf("!")))) {
-                Enumeration<JarEntry> jarEntries = jf.entries();
-                while (jarEntries.hasMoreElements()) {
-                    String entryName = jarEntries.nextElement().getName();
-                    if (entryName.startsWith(packagePath) && entryName.length() > packagePath.length() + 5) {
-                        names.add(entryName.substring(packagePath.length() + 1, entryName.lastIndexOf('.')));
-                    }
-                }
-            }
-        } else {
-            File folder = new File(new URI(packageUrl.toString()));
-            File[] files = folder.listFiles();
-            if (files != null) {
-                for (File actual: files) {
-                    String entryName = actual.getName();
-                    names.add(entryName.substring(0, entryName.lastIndexOf('.')));
-                }
-            }
-        }
+		List<String> names = new LinkedList<>();
+		String packagePath = packageName.replace('.', '/');
+		URL packageUrl = getClass().getClassLoader().getResource(packagePath);
 
-        for (String name : names) {
-            Class<?> protocolClass = Class.forName(packageName + '.' + name);
-            if (BaseProtocol.class.isAssignableFrom(protocolClass) && Context.getConfig().hasKey(
-                    Keys.PROTOCOL_PORT.withPrefix(BaseProtocol.nameFromClass(protocolClass)))) {
-                BaseProtocol protocol = (BaseProtocol) protocolClass.getDeclaredConstructor().newInstance();
-                serverList.addAll(protocol.getServerList());
-                protocolList.put(protocol.getName(), protocol);
-            }
-        }
-    }
+		if (packageUrl.getProtocol().equals("jar")) {
+			String jarFileName = URLDecoder.decode(packageUrl.getFile(), StandardCharsets.UTF_8.name());
+			try (JarFile jf = new JarFile(jarFileName.substring(5, jarFileName.indexOf("!")))) {
+				Enumeration<JarEntry> jarEntries = jf.entries();
+				while (jarEntries.hasMoreElements()) {
+					String entryName = jarEntries.nextElement().getName();
+					if (entryName.startsWith(packagePath) && entryName.length() > packagePath.length() + 5) {
+						names.add(entryName.substring(packagePath.length() + 1, entryName.lastIndexOf('.')));
+					}
+				}
+			}
+		} else {
+			File folder = new File(new URI(packageUrl.toString()));
+			File[] files = folder.listFiles();
+			if (files != null) {
+				for (File actual : files) {
+					String entryName = actual.getName();
+					names.add(entryName.substring(0, entryName.lastIndexOf('.')));
+				}
+			}
+		}
 
-    public ServerManager() throws IOException, URISyntaxException, ReflectiveOperationException {
-        loadPackage("org.traccar.protocol");
-    }
+		for (String name : names) {
+			Class<?> protocolClass = Class.forName(packageName + '.' + name);
+			if (BaseProtocol.class.isAssignableFrom(protocolClass) && Context.getConfig().hasKey(
+					Keys.PROTOCOL_PORT.withPrefix(BaseProtocol.nameFromClass(protocolClass)))) {
+				BaseProtocol protocol = (BaseProtocol) protocolClass.getDeclaredConstructor().newInstance();
+				serverList.addAll(protocol.getServerList());
+				protocolList.put(protocol.getName(), protocol);
+			}
+		}
+	}
 
-    public BaseProtocol getProtocol(String name) {
-        return protocolList.get(name);
-    }
+	public BaseProtocol getProtocol(String name) {
+		return protocolList.get(name);
+	}
 
-    public void start() throws Exception {
-        for (TrackerServer server: serverList) {
-            try {
-                server.start();
-            } catch (BindException e) {
-                LOGGER.warn("Port {} is disabled due to conflict", server.getPort());
-            }
-        }
-    }
+	public void start() throws Exception {
+		for (TrackerServer server : serverList) {
+			try {
+				server.start();
+			} catch (BindException e) {
+				LOGGER.warn("Port {} is disabled due to conflict", server.getPort());
+			}
+		}
+	}
 
-    public void stop() {
-        for (TrackerServer server: serverList) {
-            server.stop();
-        }
-        GlobalTimer.release();
-    }
+	public void stop() {
+		for (TrackerServer server : serverList) {
+			server.stop();
+		}
+		GlobalTimer.release();
+	}
 
 }

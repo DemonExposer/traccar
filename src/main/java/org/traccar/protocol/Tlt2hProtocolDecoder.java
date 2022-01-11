@@ -33,197 +33,195 @@ import java.util.regex.Pattern;
 
 public class Tlt2hProtocolDecoder extends BaseProtocolDecoder {
 
-    public Tlt2hProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	private static final Pattern PATTERN_HEADER = new PatternBuilder()
+			.number("#(d+)")                     // imei
+			.expression("#[^#]*")                // user
+			.number("#d*")                       // password
+			.groupBegin()
+			.number("#([01])")                   // door
+			.number("#(d+)")                     // fuel voltage
+			.number("#(d+)")                     // power
+			.number("#(d+)")                     // battery
+			.number("#(d+)")                     // temperature
+			.groupEnd("?")
+			.expression("#([^#]+)")              // status
+			.number("#d+")                       // number of records
+			.compile();
+	private static final Pattern PATTERN_POSITION = new PatternBuilder()
+			.text("#")
+			.number("(?:(dd)|x*)")               // cell or voltage
+			.text("$GPRMC,")
+			.number("(dd)(dd)(dd).d+,")          // time (hhmmss.sss)
+			.expression("([AVL]),")              // validity
+			.number("(d+)(dd.d+),")              // latitude
+			.expression("([NS]),")
+			.number("(d+)(dd.d+),")              // longitude
+			.number("([EW]),")
+			.number("(d+.?d*)?,")                // speed
+			.number("(d+.?d*)?,")                // course
+			.number("(dd)(dd)(dd)")              // date (ddmmyy)
+			.any()
+			.compile();
+	private static final Pattern PATTERN_WIFI = new PatternBuilder()
+			.text("#")
+			.number("(?:(dd)|x+)")               // cell or voltage
+			.text("$WIFI,")
+			.number("(dd)(dd)(dd).d+,")          // time (hhmmss.sss)
+			.expression("[AVL],")                // validity
+			.expression("(.*)")                  // access points
+			.number("(dd)(dd)(dd)")              // date (ddmmyy)
+			.text("*")
+			.number("xx")                        // checksum
+			.compile();
 
-    private static final Pattern PATTERN_HEADER = new PatternBuilder()
-            .number("#(d+)")                     // imei
-            .expression("#[^#]*")                // user
-            .number("#d*")                       // password
-            .groupBegin()
-            .number("#([01])")                   // door
-            .number("#(d+)")                     // fuel voltage
-            .number("#(d+)")                     // power
-            .number("#(d+)")                     // battery
-            .number("#(d+)")                     // temperature
-            .groupEnd("?")
-            .expression("#([^#]+)")              // status
-            .number("#d+")                       // number of records
-            .compile();
+	public Tlt2hProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    private static final Pattern PATTERN_POSITION = new PatternBuilder()
-            .text("#")
-            .number("(?:(dd)|x*)")               // cell or voltage
-            .text("$GPRMC,")
-            .number("(dd)(dd)(dd).d+,")          // time (hhmmss.sss)
-            .expression("([AVL]),")              // validity
-            .number("(d+)(dd.d+),")              // latitude
-            .expression("([NS]),")
-            .number("(d+)(dd.d+),")              // longitude
-            .number("([EW]),")
-            .number("(d+.?d*)?,")                // speed
-            .number("(d+.?d*)?,")                // course
-            .number("(dd)(dd)(dd)")              // date (ddmmyy)
-            .any()
-            .compile();
+	private void decodeStatus(Position position, String status) {
+		switch (status) {
+			case "AUTOSTART":
+			case "AUTO":
+				position.set(Position.KEY_IGNITION, true);
+				break;
+			case "AUTOSTOP":
+			case "AUTOLOW":
+				position.set(Position.KEY_IGNITION, false);
+				break;
+			case "TOWED":
+				position.set(Position.KEY_ALARM, Position.ALARM_TOW);
+				break;
+			case "SOS":
+				position.set(Position.KEY_ALARM, Position.ALARM_SOS);
+				break;
+			case "DEF":
+				position.set(Position.KEY_ALARM, Position.ALARM_POWER_CUT);
+				break;
+			case "BLP":
+				position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+				break;
+			case "CLP":
+				position.set(Position.KEY_ALARM, Position.ALARM_LOW_POWER);
+				break;
+			case "OS":
+				position.set(Position.KEY_ALARM, Position.ALARM_GEOFENCE_EXIT);
+				break;
+			case "RS":
+				position.set(Position.KEY_ALARM, Position.ALARM_GEOFENCE_ENTER);
+				break;
+			case "OVERSPEED":
+				position.set(Position.KEY_ALARM, Position.ALARM_OVERSPEED);
+				break;
+			default:
+				break;
+		}
+	}
 
-    private static final Pattern PATTERN_WIFI = new PatternBuilder()
-            .text("#")
-            .number("(?:(dd)|x+)")               // cell or voltage
-            .text("$WIFI,")
-            .number("(dd)(dd)(dd).d+,")          // time (hhmmss.sss)
-            .expression("[AVL],")                // validity
-            .expression("(.*)")                  // access points
-            .number("(dd)(dd)(dd)")              // date (ddmmyy)
-            .text("*")
-            .number("xx")                        // checksum
-            .compile();
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-    private void decodeStatus(Position position, String status) {
-        switch (status) {
-            case "AUTOSTART":
-            case "AUTO":
-                position.set(Position.KEY_IGNITION, true);
-                break;
-            case "AUTOSTOP":
-            case "AUTOLOW":
-                position.set(Position.KEY_IGNITION, false);
-                break;
-            case "TOWED":
-                position.set(Position.KEY_ALARM, Position.ALARM_TOW);
-                break;
-            case "SOS":
-                position.set(Position.KEY_ALARM, Position.ALARM_SOS);
-                break;
-            case "DEF":
-                position.set(Position.KEY_ALARM, Position.ALARM_POWER_CUT);
-                break;
-            case "BLP":
-                position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
-                break;
-            case "CLP":
-                position.set(Position.KEY_ALARM, Position.ALARM_LOW_POWER);
-                break;
-            case "OS":
-                position.set(Position.KEY_ALARM, Position.ALARM_GEOFENCE_EXIT);
-                break;
-            case "RS":
-                position.set(Position.KEY_ALARM, Position.ALARM_GEOFENCE_ENTER);
-                break;
-            case "OVERSPEED":
-                position.set(Position.KEY_ALARM, Position.ALARM_OVERSPEED);
-                break;
-            default:
-                break;
-        }
-    }
+		String sentence = (String) msg;
+		sentence = sentence.trim();
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+		String header = sentence.substring(0, sentence.indexOf('\r'));
+		Parser parser = new Parser(PATTERN_HEADER, header);
+		if (!parser.matches()) {
+			return null;
+		}
 
-        String sentence = (String) msg;
-        sentence = sentence.trim();
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+		if (deviceSession == null) {
+			return null;
+		}
 
-        String header = sentence.substring(0, sentence.indexOf('\r'));
-        Parser parser = new Parser(PATTERN_HEADER, header);
-        if (!parser.matches()) {
-            return null;
-        }
+		Boolean door = null;
+		Double adc = null;
+		Double power = null;
+		Double battery = null;
+		Double temperature = null;
+		if (parser.hasNext(5)) {
+			door = parser.nextInt() == 1;
+			adc = parser.nextInt() * 0.1;
+			power = parser.nextInt() * 0.1;
+			battery = parser.nextInt() * 0.1;
+			temperature = parser.nextInt() * 0.1;
+		}
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-        if (deviceSession == null) {
-            return null;
-        }
+		String status = parser.next();
 
-        Boolean door = null;
-        Double adc = null;
-        Double power = null;
-        Double battery = null;
-        Double temperature = null;
-        if (parser.hasNext(5)) {
-            door = parser.nextInt() == 1;
-            adc = parser.nextInt() * 0.1;
-            power = parser.nextInt() * 0.1;
-            battery = parser.nextInt() * 0.1;
-            temperature = parser.nextInt() * 0.1;
-        }
+		String[] messages = sentence.substring(sentence.indexOf('\n') + 1).split("\r\n");
+		List<Position> positions = new LinkedList<>();
 
-        String status = parser.next();
+		for (String message : messages) {
+			Position position = new Position(getProtocolName());
+			position.setDeviceId(deviceSession.getDeviceId());
 
-        String[] messages = sentence.substring(sentence.indexOf('\n') + 1).split("\r\n");
-        List<Position> positions = new LinkedList<>();
+			if (message.contains("$GPRMC")) {
 
-        for (String message : messages) {
-            Position position = new Position(getProtocolName());
-            position.setDeviceId(deviceSession.getDeviceId());
+				parser = new Parser(PATTERN_POSITION, message);
+				if (parser.matches()) {
 
-            if (message.contains("$GPRMC")) {
+					if (parser.hasNext()) {
+						position.set(Position.KEY_BATTERY, parser.nextInt() * 0.1);
+					}
 
-                parser = new Parser(PATTERN_POSITION, message);
-                if (parser.matches()) {
+					DateBuilder dateBuilder = new DateBuilder()
+							.setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
-                    if (parser.hasNext()) {
-                        position.set(Position.KEY_BATTERY, parser.nextInt() * 0.1);
-                    }
+					position.setValid(parser.next().equals("A"));
+					position.setLatitude(parser.nextCoordinate());
+					position.setLongitude(parser.nextCoordinate());
+					position.setSpeed(parser.nextDouble(0));
+					position.setCourse(parser.nextDouble(0));
 
-                    DateBuilder dateBuilder = new DateBuilder()
-                            .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+					dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+					position.setTime(dateBuilder.getDate());
 
-                    position.setValid(parser.next().equals("A"));
-                    position.setLatitude(parser.nextCoordinate());
-                    position.setLongitude(parser.nextCoordinate());
-                    position.setSpeed(parser.nextDouble(0));
-                    position.setCourse(parser.nextDouble(0));
+				} else {
+					continue;
+				}
 
-                    dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
-                    position.setTime(dateBuilder.getDate());
+			} else if (message.contains("$WIFI")) {
 
-                } else {
-                    continue;
-                }
+				parser = new Parser(PATTERN_WIFI, message);
+				if (parser.matches()) {
 
-            } else if (message.contains("$WIFI")) {
+					position.set(Position.KEY_BATTERY, parser.nextInt() * 0.1);
 
-                parser = new Parser(PATTERN_WIFI, message);
-                if (parser.matches()) {
+					DateBuilder dateBuilder = new DateBuilder()
+							.setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
-                    position.set(Position.KEY_BATTERY, parser.nextInt() * 0.1);
+					String[] values = parser.next().split(",");
+					Network network = new Network();
+					for (int i = 0; i < values.length / 2; i++) {
+						String mac = values[i * 2 + 1].replaceAll("(..)", "$1:").substring(0, 17);
+						network.addWifiAccessPoint(WifiAccessPoint.from(mac, Integer.parseInt(values[i * 2])));
+					}
+					position.setNetwork(network);
 
-                    DateBuilder dateBuilder = new DateBuilder()
-                            .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+					dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
-                    String[] values = parser.next().split(",");
-                    Network network = new Network();
-                    for (int i = 0; i < values.length / 2; i++) {
-                        String mac = values[i * 2 + 1].replaceAll("(..)", "$1:").substring(0, 17);
-                        network.addWifiAccessPoint(WifiAccessPoint.from(mac, Integer.parseInt(values[i * 2])));
-                    }
-                    position.setNetwork(network);
+					getLastLocation(position, dateBuilder.getDate());
+				}
 
-                    dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+			} else {
 
-                    getLastLocation(position, dateBuilder.getDate());
-                }
+				getLastLocation(position, null);
 
-            } else {
+			}
 
-                getLastLocation(position, null);
+			position.set(Position.KEY_DOOR, door);
+			position.set(Position.PREFIX_ADC + 1, adc);
+			position.set(Position.KEY_POWER, power);
+			position.set(Position.KEY_BATTERY, battery);
+			position.set(Position.PREFIX_TEMP + 1, temperature);
+			decodeStatus(position, status);
 
-            }
+			positions.add(position);
+		}
 
-            position.set(Position.KEY_DOOR, door);
-            position.set(Position.PREFIX_ADC + 1, adc);
-            position.set(Position.KEY_POWER, power);
-            position.set(Position.KEY_BATTERY, battery);
-            position.set(Position.PREFIX_TEMP + 1, temperature);
-            decodeStatus(position, status);
-
-            positions.add(position);
-        }
-
-        return positions.isEmpty() ? null : positions;
-    }
+		return positions.isEmpty() ? null : positions;
+	}
 
 }

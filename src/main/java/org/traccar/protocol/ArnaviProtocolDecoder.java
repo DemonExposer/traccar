@@ -24,26 +24,26 @@ import java.net.SocketAddress;
 
 public class ArnaviProtocolDecoder extends BaseProtocolDecoder {
 
-    private final ArnaviTextProtocolDecoder textProtocolDecoder;
-    private final ArnaviBinaryProtocolDecoder binaryProtocolDecoder;
+	private final ArnaviTextProtocolDecoder textProtocolDecoder;
+	private final ArnaviBinaryProtocolDecoder binaryProtocolDecoder;
 
-    public ArnaviProtocolDecoder(Protocol protocol) {
-        super(protocol);
-        textProtocolDecoder = new ArnaviTextProtocolDecoder(protocol);
-        binaryProtocolDecoder = new ArnaviBinaryProtocolDecoder(protocol);
-    }
+	public ArnaviProtocolDecoder(Protocol protocol) {
+		super(protocol);
+		textProtocolDecoder = new ArnaviTextProtocolDecoder(protocol);
+		binaryProtocolDecoder = new ArnaviBinaryProtocolDecoder(protocol);
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        ByteBuf buf = (ByteBuf) msg;
+		ByteBuf buf = (ByteBuf) msg;
 
-        if (buf.getByte(buf.readerIndex()) == '$') {
-            return textProtocolDecoder.decode(channel, remoteAddress, msg);
-        } else {
-            return binaryProtocolDecoder.decode(channel, remoteAddress, msg);
-        }
-    }
+		if (buf.getByte(buf.readerIndex()) == '$') {
+			return textProtocolDecoder.decode(channel, remoteAddress, msg);
+		} else {
+			return binaryProtocolDecoder.decode(channel, remoteAddress, msg);
+		}
+	}
 
 }

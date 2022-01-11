@@ -18,34 +18,32 @@ package org.traccar.model;
 
 public class DeviceAccumulators {
 
-    private long deviceId;
+	private long deviceId;
+	private Double totalDistance;
+	private Long hours;
 
-    public long getDeviceId() {
-        return deviceId;
-    }
+	public long getDeviceId() {
+		return deviceId;
+	}
 
-    public void setDeviceId(long deviceId) {
-        this.deviceId = deviceId;
-    }
+	public void setDeviceId(long deviceId) {
+		this.deviceId = deviceId;
+	}
 
-    private Double totalDistance;
+	public Double getTotalDistance() {
+		return totalDistance;
+	}
 
-    public Double getTotalDistance() {
-        return totalDistance;
-    }
+	public void setTotalDistance(Double totalDistance) {
+		this.totalDistance = totalDistance;
+	}
 
-    public void setTotalDistance(Double totalDistance) {
-        this.totalDistance = totalDistance;
-    }
+	public Long getHours() {
+		return hours;
+	}
 
-    private Long hours;
-
-    public Long getHours() {
-        return hours;
-    }
-
-    public void setHours(Long hours) {
-        this.hours = hours;
-    }
+	public void setHours(Long hours) {
+		this.hours = hours;
+	}
 
 }

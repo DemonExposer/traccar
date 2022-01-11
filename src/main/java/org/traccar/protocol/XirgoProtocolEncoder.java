@@ -21,19 +21,19 @@ import org.traccar.Protocol;
 
 public class XirgoProtocolEncoder extends StringProtocolEncoder {
 
-    public XirgoProtocolEncoder(Protocol protocol) {
-        super(protocol);
-    }
+	public XirgoProtocolEncoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    @Override
-    protected Object encodeCommand(Command command) {
+	@Override
+	protected Object encodeCommand(Command command) {
 
-        switch (command.getType()) {
-            case Command.TYPE_OUTPUT_CONTROL:
-                return String.format("+XT:7005,%d,1", command.getInteger(Command.KEY_DATA) + 1);
-            default:
-                return null;
-        }
-    }
+		switch (command.getType()) {
+			case Command.TYPE_OUTPUT_CONTROL:
+				return String.format("+XT:7005,%d,1", command.getInteger(Command.KEY_DATA) + 1);
+			default:
+				return null;
+		}
+	}
 
 }

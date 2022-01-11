@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class NetProtocol extends BaseProtocol {
 
-    public NetProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '!'));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new NetProtocolDecoder(NetProtocol.this));
-            }
-        });
-    }
+	public NetProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '!'));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new NetProtocolDecoder(NetProtocol.this));
+			}
+		});
+	}
 
 }

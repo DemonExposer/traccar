@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class ContinentalProtocol extends BaseProtocol {
 
-    public ContinentalProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 2, 2, -4, 0));
-                pipeline.addLast(new ContinentalProtocolDecoder(ContinentalProtocol.this));
-            }
-        });
-    }
+	public ContinentalProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 2, 2, -4, 0));
+				pipeline.addLast(new ContinentalProtocolDecoder(ContinentalProtocol.this));
+			}
+		});
+	}
 
 }

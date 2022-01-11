@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class YwtProtocol extends BaseProtocol {
 
-    public YwtProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new YwtProtocolDecoder(YwtProtocol.this));
-            }
-        });
-    }
+	public YwtProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new YwtProtocolDecoder(YwtProtocol.this));
+			}
+		});
+	}
 
 }

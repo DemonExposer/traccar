@@ -29,19 +29,19 @@ import java.util.List;
 @ChannelHandler.Sharable
 public class TaipPrefixEncoder extends MessageToMessageEncoder<ByteBuf> {
 
-    private final Protocol protocol;
+	private final Protocol protocol;
 
-    public TaipPrefixEncoder(Protocol protocol) {
-        this.protocol = protocol;
-    }
+	public TaipPrefixEncoder(Protocol protocol) {
+		this.protocol = protocol;
+	}
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
-        if (Context.getConfig().getBoolean(Keys.PROTOCOL_PREFIX.withPrefix(protocol.getName()))) {
-            out.add(Unpooled.wrappedBuffer(Unpooled.wrappedBuffer(new byte[] {0x20, 0x20, 0x06, 0x00}), msg.retain()));
-        } else {
-            out.add(msg.retain());
-        }
-    }
+	@Override
+	protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
+		if (Context.getConfig().getBoolean(Keys.PROTOCOL_PREFIX.withPrefix(protocol.getName()))) {
+			out.add(Unpooled.wrappedBuffer(Unpooled.wrappedBuffer(new byte[]{0x20, 0x20, 0x06, 0x00}), msg.retain()));
+		} else {
+			out.add(msg.retain());
+		}
+	}
 
 }

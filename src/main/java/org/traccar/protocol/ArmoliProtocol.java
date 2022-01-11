@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class ArmoliProtocol extends BaseProtocol {
 
-    public ArmoliProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new ArmoliProtocolDecoder(ArmoliProtocol.this));
-            }
-        });
-    }
+	public ArmoliProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new ArmoliProtocolDecoder(ArmoliProtocol.this));
+			}
+		});
+	}
 
 }

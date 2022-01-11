@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class WristbandProtocol extends BaseProtocol {
 
-    public WristbandProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 2, 3, 0));
-                pipeline.addLast(new WristbandProtocolDecoder(WristbandProtocol.this));
-            }
-        });
-    }
+	public WristbandProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 2, 3, 0));
+				pipeline.addLast(new WristbandProtocolDecoder(WristbandProtocol.this));
+			}
+		});
+	}
 
 }

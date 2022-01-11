@@ -18,14 +18,14 @@ package org.traccar.model;
 
 public class BaseModel {
 
-    private long id;
+	private long id;
 
-    public final long getId() {
-        return id;
-    }
+	public final long getId() {
+		return id;
+	}
 
-    public final void setId(long id) {
-        this.id = id;
-    }
+	public final void setId(long id) {
+		this.id = id;
+	}
 
 }

@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class OsmAndProtocol extends BaseProtocol {
 
-    public OsmAndProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new HttpResponseEncoder());
-                pipeline.addLast(new HttpRequestDecoder());
-                pipeline.addLast(new HttpObjectAggregator(16384));
-                pipeline.addLast(new OsmAndProtocolDecoder(OsmAndProtocol.this));
-            }
-        });
-    }
+	public OsmAndProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new HttpResponseEncoder());
+				pipeline.addLast(new HttpRequestDecoder());
+				pipeline.addLast(new HttpObjectAggregator(16384));
+				pipeline.addLast(new OsmAndProtocolDecoder(OsmAndProtocol.this));
+			}
+		});
+	}
 
 }

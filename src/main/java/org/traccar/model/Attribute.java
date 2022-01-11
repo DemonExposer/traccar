@@ -18,44 +18,41 @@ package org.traccar.model;
 
 public class Attribute extends BaseModel {
 
-    private String description;
+	private String description;
+	private String attribute;
+	private String expression;
+	private String type;
 
-    public String getDescription() {
-        return description;
-    }
+	public String getDescription() {
+		return description;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    private String attribute;
+	public String getAttribute() {
+		return attribute;
+	}
 
-    public String getAttribute() {
-        return attribute;
-    }
+	public void setAttribute(String attribute) {
+		this.attribute = attribute;
+	}
 
-    public void setAttribute(String attribute) {
-        this.attribute = attribute;
-    }
+	public String getExpression() {
+		return expression;
+	}
 
-    private String expression;
+	public void setExpression(String expression) {
+		this.expression = expression;
+	}
 
-    public String getExpression() {
-        return expression;
-    }
+	public String getType() {
+		return type;
+	}
 
-    public void setExpression(String expression) {
-        this.expression = expression;
-    }
-
-    private String type;
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
+	public void setType(String type) {
+		this.type = type;
+	}
 
 }

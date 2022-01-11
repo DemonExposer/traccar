@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class OrionProtocol extends BaseProtocol {
 
-    public OrionProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new OrionFrameDecoder());
-                pipeline.addLast(new OrionProtocolDecoder(OrionProtocol.this));
-            }
-        });
-    }
+	public OrionProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new OrionFrameDecoder());
+				pipeline.addLast(new OrionProtocolDecoder(OrionProtocol.this));
+			}
+		});
+	}
 
 }

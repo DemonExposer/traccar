@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class SmartSoleProtocol extends BaseProtocol {
 
-    public SmartSoleProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '$'));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new SmartSoleProtocolDecoder(SmartSoleProtocol.this));
-            }
-        });
-    }
+	public SmartSoleProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '$'));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new SmartSoleProtocolDecoder(SmartSoleProtocol.this));
+			}
+		});
+	}
 
 }

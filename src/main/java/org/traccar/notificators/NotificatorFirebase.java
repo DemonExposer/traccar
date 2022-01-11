@@ -32,72 +32,72 @@ import javax.ws.rs.client.InvocationCallback;
 
 public class NotificatorFirebase extends Notificator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotificatorFirebase.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NotificatorFirebase.class);
 
-    private final String url;
-    private final String key;
+	private final String url;
+	private final String key;
 
-    public static class Notification {
-        @JsonProperty("title")
-        private String title;
-        @JsonProperty("body")
-        private String body;
-        @JsonProperty("sound")
-        private String sound;
-    }
+	public NotificatorFirebase() {
+		this(
+				"https://fcm.googleapis.com/fcm/send",
+				Context.getConfig().getString(Keys.NOTIFICATOR_FIREBASE_KEY));
+	}
 
-    public static class Message {
-        @JsonProperty("registration_ids")
-        private String[] tokens;
-        @JsonProperty("notification")
-        private Notification notification;
-    }
+	protected NotificatorFirebase(String url, String key) {
+		this.url = url;
+		this.key = key;
+	}
 
-    public NotificatorFirebase() {
-        this(
-                "https://fcm.googleapis.com/fcm/send",
-                Context.getConfig().getString(Keys.NOTIFICATOR_FIREBASE_KEY));
-    }
+	@Override
+	public void sendSync(long userId, Event event, Position position) {
+		final User user = Context.getPermissionsManager().getUser(userId);
+		if (user.getAttributes().containsKey("notificationTokens")) {
 
-    protected NotificatorFirebase(String url, String key) {
-        this.url = url;
-        this.key = key;
-    }
+			NotificationMessage shortMessage = NotificationFormatter.formatMessage(userId, event, position, "short");
 
-    @Override
-    public void sendSync(long userId, Event event, Position position) {
-        final User user = Context.getPermissionsManager().getUser(userId);
-        if (user.getAttributes().containsKey("notificationTokens")) {
+			Notification notification = new Notification();
+			notification.title = shortMessage.getSubject();
+			notification.body = shortMessage.getBody();
+			notification.sound = "default";
 
-            NotificationMessage shortMessage = NotificationFormatter.formatMessage(userId, event, position, "short");
+			Message message = new Message();
+			message.tokens = user.getString("notificationTokens").split("[, ]");
+			message.notification = notification;
 
-            Notification notification = new Notification();
-            notification.title = shortMessage.getSubject();
-            notification.body = shortMessage.getBody();
-            notification.sound = "default";
+			Context.getClient().target(url).request()
+					.header("Authorization", "key=" + key)
+					.async().post(Entity.json(message), new InvocationCallback<Object>() {
+						@Override
+						public void completed(Object o) {
+						}
 
-            Message message = new Message();
-            message.tokens = user.getString("notificationTokens").split("[, ]");
-            message.notification = notification;
+						@Override
+						public void failed(Throwable throwable) {
+							LOGGER.warn("Firebase notification error", throwable);
+						}
+					});
+		}
+	}
 
-            Context.getClient().target(url).request()
-                    .header("Authorization", "key=" + key)
-                    .async().post(Entity.json(message), new InvocationCallback<Object>() {
-                @Override
-                public void completed(Object o) {
-                }
+	@Override
+	public void sendAsync(long userId, Event event, Position position) {
+		sendSync(userId, event, position);
+	}
 
-                @Override
-                public void failed(Throwable throwable) {
-                    LOGGER.warn("Firebase notification error", throwable);
-                }
-            });
-        }
-    }
+	public static class Notification {
+		@JsonProperty("title")
+		private String title;
+		@JsonProperty("body")
+		private String body;
+		@JsonProperty("sound")
+		private String sound;
+	}
 
-    @Override
-    public void sendAsync(long userId, Event event, Position position) {
-        sendSync(userId, event, position);
-    }
+	public static class Message {
+		@JsonProperty("registration_ids")
+		private String[] tokens;
+		@JsonProperty("notification")
+		private Notification notification;
+	}
 
 }

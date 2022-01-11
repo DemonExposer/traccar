@@ -39,234 +39,234 @@ import java.util.logging.Logger;
 
 public final class Log {
 
-    private Log() {
-    }
+	private static final String STACK_PACKAGE = "org.traccar";
+	private static final int STACK_LIMIT = 3;
 
-    private static final String STACK_PACKAGE = "org.traccar";
-    private static final int STACK_LIMIT = 3;
+	private Log() {
+	}
 
-    private static class RollingFileHandler extends Handler {
+	public static void setupDefaultLogger() {
+		String path = null;
+		URL url = ClassLoader.getSystemClassLoader().getResource(".");
+		if (url != null) {
+			File jarPath = new File(url.getPath());
+			File logsPath = new File(jarPath, "logs");
+			if (!logsPath.exists() || !logsPath.isDirectory()) {
+				logsPath = jarPath;
+			}
+			path = new File(logsPath, "tracker-server.log").getPath();
+		}
+		setupLogger(path == null, path, Level.WARNING.getName(), false, true);
+	}
 
-        private final String name;
-        private String suffix;
-        private Writer writer;
-        private final boolean rotate;
+	public static void setupLogger(Config config) {
+		setupLogger(
+				config.getBoolean(Keys.LOGGER_CONSOLE),
+				config.getString(Keys.LOGGER_FILE),
+				config.getString(Keys.LOGGER_LEVEL),
+				config.getBoolean(Keys.LOGGER_FULL_STACK_TRACES),
+				config.getBoolean(Keys.LOGGER_ROTATE));
+	}
 
-        RollingFileHandler(String name, boolean rotate) {
-            this.name = name;
-            this.rotate = rotate;
-        }
+	private static void setupLogger(
+			boolean console, String file, String levelString, boolean fullStackTraces, boolean rotate) {
 
-        @Override
-        public synchronized void publish(LogRecord record) {
-            if (isLoggable(record)) {
-                try {
-                    String suffix = "";
-                    if (rotate) {
-                        suffix = new SimpleDateFormat("yyyyMMdd").format(new Date(record.getMillis()));
-                        if (writer != null && !suffix.equals(this.suffix)) {
-                            writer.close();
-                            writer = null;
-                            if (!new File(name).renameTo(new File(name + "." + this.suffix))) {
-                                throw new RuntimeException("Log file renaming failed");
-                            }
-                        }
-                    }
-                    if (writer == null) {
-                        this.suffix = suffix;
-                        writer = new BufferedWriter(
-                                new OutputStreamWriter(new FileOutputStream(name, true), StandardCharsets.UTF_8));
-                    }
-                    writer.write(getFormatter().format(record));
-                    writer.flush();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+		Logger rootLogger = Logger.getLogger("");
+		for (Handler handler : rootLogger.getHandlers()) {
+			rootLogger.removeHandler(handler);
+		}
 
-        @Override
-        public synchronized void flush() {
-            if (writer != null) {
-                try {
-                    writer.flush();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+		Handler handler;
+		if (console) {
+			handler = new ConsoleHandler();
+		} else {
+			handler = new RollingFileHandler(file, rotate);
+		}
 
-        @Override
-        public synchronized void close() throws SecurityException {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+		handler.setFormatter(new LogFormatter(fullStackTraces));
 
-    }
+		Level level = Level.parse(levelString.toUpperCase());
+		rootLogger.setLevel(level);
+		handler.setLevel(level);
+		handler.setFilter(record -> record != null && !record.getLoggerName().startsWith("sun"));
 
-    public static class LogFormatter extends Formatter {
+		rootLogger.addHandler(handler);
+	}
 
-        private final boolean fullStackTraces;
+	public static String exceptionStack(Throwable exception) {
+		Throwable cause = exception.getCause();
+		while (cause != null && exception != cause) {
+			exception = cause;
+			cause = cause.getCause();
+		}
 
-        LogFormatter(boolean fullStackTraces) {
-            this.fullStackTraces = fullStackTraces;
-        }
+		StringBuilder s = new StringBuilder();
+		String exceptionMsg = exception.getMessage();
+		if (exceptionMsg != null) {
+			s.append(exceptionMsg);
+			s.append(" - ");
+		}
+		s.append(exception.getClass().getSimpleName());
+		StackTraceElement[] stack = exception.getStackTrace();
 
-        private static String formatLevel(Level level) {
-            switch (level.getName()) {
-                case "FINEST":
-                    return "TRACE";
-                case "FINER":
-                case "FINE":
-                case "CONFIG":
-                    return "DEBUG";
-                case "INFO":
-                    return "INFO";
-                case "WARNING":
-                    return "WARN";
-                case "SEVERE":
-                default:
-                    return "ERROR";
-            }
-        }
+		if (stack.length > 0) {
+			int count = STACK_LIMIT;
+			boolean first = true;
+			boolean skip = false;
+			String file = "";
+			s.append(" (");
+			for (StackTraceElement element : stack) {
+				if (count > 0 && element.getClassName().startsWith(STACK_PACKAGE)) {
+					if (!first) {
+						s.append(" < ");
+					} else {
+						first = false;
+					}
 
-        @Override
-        public String format(LogRecord record) {
-            StringBuilder message = new StringBuilder();
+					if (skip) {
+						s.append("... < ");
+						skip = false;
+					}
 
-            if (record.getMessage() != null) {
-                message.append(record.getMessage());
-            }
+					if (file.equals(element.getFileName())) {
+						s.append("*");
+					} else {
+						file = element.getFileName();
+						s.append(file, 0, file.length() - 5); // remove ".java"
+						count -= 1;
+					}
+					s.append(":").append(element.getLineNumber());
+				} else {
+					skip = true;
+				}
+			}
+			if (skip) {
+				if (!first) {
+					s.append(" < ");
+				}
+				s.append("...");
+			}
+			s.append(")");
+		}
+		return s.toString();
+	}
 
-            if (record.getThrown() != null) {
-                if (message.length() > 0) {
-                    message.append(" - ");
-                }
-                if (fullStackTraces) {
-                    StringWriter stringWriter = new StringWriter();
-                    PrintWriter printWriter = new PrintWriter(stringWriter);
-                    record.getThrown().printStackTrace(printWriter);
-                    message.append(System.lineSeparator()).append(stringWriter.toString());
-                } else {
-                    message.append(exceptionStack(record.getThrown()));
-                }
-            }
+	private static class RollingFileHandler extends Handler {
 
-            return String.format("%1$tF %1$tT %2$5s: %3$s%n",
-                    new Date(record.getMillis()), formatLevel(record.getLevel()), message.toString());
-        }
+		private final String name;
+		private final boolean rotate;
+		private String suffix;
+		private Writer writer;
 
-    }
+		RollingFileHandler(String name, boolean rotate) {
+			this.name = name;
+			this.rotate = rotate;
+		}
 
-    public static void setupDefaultLogger() {
-        String path = null;
-        URL url =  ClassLoader.getSystemClassLoader().getResource(".");
-        if (url != null) {
-            File jarPath = new File(url.getPath());
-            File logsPath = new File(jarPath, "logs");
-            if (!logsPath.exists() || !logsPath.isDirectory()) {
-                logsPath = jarPath;
-            }
-            path = new File(logsPath, "tracker-server.log").getPath();
-        }
-        setupLogger(path == null, path, Level.WARNING.getName(), false, true);
-    }
+		@Override
+		public synchronized void publish(LogRecord record) {
+			if (isLoggable(record)) {
+				try {
+					String suffix = "";
+					if (rotate) {
+						suffix = new SimpleDateFormat("yyyyMMdd").format(new Date(record.getMillis()));
+						if (writer != null && !suffix.equals(this.suffix)) {
+							writer.close();
+							writer = null;
+							if (!new File(name).renameTo(new File(name + "." + this.suffix))) {
+								throw new RuntimeException("Log file renaming failed");
+							}
+						}
+					}
+					if (writer == null) {
+						this.suffix = suffix;
+						writer = new BufferedWriter(
+								new OutputStreamWriter(new FileOutputStream(name, true), StandardCharsets.UTF_8));
+					}
+					writer.write(getFormatter().format(record));
+					writer.flush();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
 
-    public static void setupLogger(Config config) {
-        setupLogger(
-                config.getBoolean(Keys.LOGGER_CONSOLE),
-                config.getString(Keys.LOGGER_FILE),
-                config.getString(Keys.LOGGER_LEVEL),
-                config.getBoolean(Keys.LOGGER_FULL_STACK_TRACES),
-                config.getBoolean(Keys.LOGGER_ROTATE));
-    }
+		@Override
+		public synchronized void flush() {
+			if (writer != null) {
+				try {
+					writer.flush();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
 
-    private static void setupLogger(
-            boolean console, String file, String levelString, boolean fullStackTraces, boolean rotate) {
+		@Override
+		public synchronized void close() throws SecurityException {
+			if (writer != null) {
+				try {
+					writer.close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
 
-        Logger rootLogger = Logger.getLogger("");
-        for (Handler handler : rootLogger.getHandlers()) {
-            rootLogger.removeHandler(handler);
-        }
+	}
 
-        Handler handler;
-        if (console) {
-            handler = new ConsoleHandler();
-        } else {
-            handler = new RollingFileHandler(file, rotate);
-        }
+	public static class LogFormatter extends Formatter {
 
-        handler.setFormatter(new LogFormatter(fullStackTraces));
+		private final boolean fullStackTraces;
 
-        Level level = Level.parse(levelString.toUpperCase());
-        rootLogger.setLevel(level);
-        handler.setLevel(level);
-        handler.setFilter(record -> record != null && !record.getLoggerName().startsWith("sun"));
+		LogFormatter(boolean fullStackTraces) {
+			this.fullStackTraces = fullStackTraces;
+		}
 
-        rootLogger.addHandler(handler);
-    }
+		private static String formatLevel(Level level) {
+			switch (level.getName()) {
+				case "FINEST":
+					return "TRACE";
+				case "FINER":
+				case "FINE":
+				case "CONFIG":
+					return "DEBUG";
+				case "INFO":
+					return "INFO";
+				case "WARNING":
+					return "WARN";
+				case "SEVERE":
+				default:
+					return "ERROR";
+			}
+		}
 
-    public static String exceptionStack(Throwable exception) {
-        Throwable cause = exception.getCause();
-        while (cause != null && exception != cause) {
-            exception = cause;
-            cause = cause.getCause();
-        }
+		@Override
+		public String format(LogRecord record) {
+			StringBuilder message = new StringBuilder();
 
-        StringBuilder s = new StringBuilder();
-        String exceptionMsg = exception.getMessage();
-        if (exceptionMsg != null) {
-            s.append(exceptionMsg);
-            s.append(" - ");
-        }
-        s.append(exception.getClass().getSimpleName());
-        StackTraceElement[] stack = exception.getStackTrace();
+			if (record.getMessage() != null) {
+				message.append(record.getMessage());
+			}
 
-        if (stack.length > 0) {
-            int count = STACK_LIMIT;
-            boolean first = true;
-            boolean skip = false;
-            String file = "";
-            s.append(" (");
-            for (StackTraceElement element : stack) {
-                if (count > 0 && element.getClassName().startsWith(STACK_PACKAGE)) {
-                    if (!first) {
-                        s.append(" < ");
-                    } else {
-                        first = false;
-                    }
+			if (record.getThrown() != null) {
+				if (message.length() > 0) {
+					message.append(" - ");
+				}
+				if (fullStackTraces) {
+					StringWriter stringWriter = new StringWriter();
+					PrintWriter printWriter = new PrintWriter(stringWriter);
+					record.getThrown().printStackTrace(printWriter);
+					message.append(System.lineSeparator()).append(stringWriter.toString());
+				} else {
+					message.append(exceptionStack(record.getThrown()));
+				}
+			}
 
-                    if (skip) {
-                        s.append("... < ");
-                        skip = false;
-                    }
+			return String.format("%1$tF %1$tT %2$5s: %3$s%n",
+					new Date(record.getMillis()), formatLevel(record.getLevel()), message.toString());
+		}
 
-                    if (file.equals(element.getFileName())) {
-                        s.append("*");
-                    } else {
-                        file = element.getFileName();
-                        s.append(file, 0, file.length() - 5); // remove ".java"
-                        count -= 1;
-                    }
-                    s.append(":").append(element.getLineNumber());
-                } else {
-                    skip = true;
-                }
-            }
-            if (skip) {
-                if (!first) {
-                    s.append(" < ");
-                }
-                s.append("...");
-            }
-            s.append(")");
-        }
-        return s.toString();
-    }
+	}
 
 }

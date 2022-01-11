@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class Vt200Protocol extends BaseProtocol {
 
-    public Vt200Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new Vt200FrameDecoder());
-                pipeline.addLast(new Vt200ProtocolDecoder(Vt200Protocol.this));
-            }
-        });
-    }
+	public Vt200Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new Vt200FrameDecoder());
+				pipeline.addLast(new Vt200ProtocolDecoder(Vt200Protocol.this));
+			}
+		});
+	}
 
 }

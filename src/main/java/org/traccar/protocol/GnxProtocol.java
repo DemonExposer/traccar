@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class GnxProtocol extends BaseProtocol {
 
-    public GnxProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\n\r"));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new GnxProtocolDecoder(GnxProtocol.this));
-            }
-        });
-    }
+	public GnxProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\n\r"));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new GnxProtocolDecoder(GnxProtocol.this));
+			}
+		});
+	}
 
 }

@@ -25,20 +25,20 @@ import org.traccar.model.Command;
 
 public class PretraceProtocol extends BaseProtocol {
 
-    public PretraceProtocol() {
-        setSupportedDataCommands(
-                Command.TYPE_CUSTOM,
-                Command.TYPE_POSITION_PERIODIC);
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, ')'));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new PretraceProtocolEncoder(PretraceProtocol.this));
-                pipeline.addLast(new PretraceProtocolDecoder(PretraceProtocol.this));
-            }
-        });
-    }
+	public PretraceProtocol() {
+		setSupportedDataCommands(
+				Command.TYPE_CUSTOM,
+				Command.TYPE_POSITION_PERIODIC);
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, ')'));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new PretraceProtocolEncoder(PretraceProtocol.this));
+				pipeline.addLast(new PretraceProtocolDecoder(PretraceProtocol.this));
+			}
+		});
+	}
 
 }

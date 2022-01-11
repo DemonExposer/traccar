@@ -28,16 +28,16 @@ import org.traccar.model.BaseModel;
 
 public class SimpleObjectResource<T extends BaseModel> extends BaseObjectResource<T> {
 
-    public SimpleObjectResource(Class<T> baseClass) {
-        super(baseClass);
-    }
+	public SimpleObjectResource(Class<T> baseClass) {
+		super(baseClass);
+	}
 
-    @GET
-    public Collection<T> get(
-            @QueryParam("all") boolean all, @QueryParam("userId") long userId) throws SQLException {
+	@GET
+	public Collection<T> get(
+			@QueryParam("all") boolean all, @QueryParam("userId") long userId) throws SQLException {
 
-        BaseObjectManager<T> manager = Context.getManager(getBaseClass());
-        return manager.getItems(getSimpleManagerItems(manager, all, userId));
-    }
+		BaseObjectManager<T> manager = Context.getManager(getBaseClass());
+		return manager.getItems(getSimpleManagerItems(manager, all, userId));
+	}
 
 }

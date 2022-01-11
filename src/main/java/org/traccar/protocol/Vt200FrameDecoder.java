@@ -24,29 +24,29 @@ import io.netty.channel.ChannelHandlerContext;
 
 public class Vt200FrameDecoder extends BaseFrameDecoder {
 
-    @Override
-    protected Object decode(
-            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+	@Override
+	protected Object decode(
+			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-        int endIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ')') + 1;
-        if (endIndex > 0) {
+		int endIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ')') + 1;
+		if (endIndex > 0) {
 
-            ByteBuf frame = Unpooled.buffer();
+			ByteBuf frame = Unpooled.buffer();
 
-            while (buf.readerIndex() < endIndex) {
-                int b = buf.readByte();
-                if (b == '=') {
-                    frame.writeByte(buf.readByte() ^ '=');
-                } else {
-                    frame.writeByte(b);
-                }
-            }
+			while (buf.readerIndex() < endIndex) {
+				int b = buf.readByte();
+				if (b == '=') {
+					frame.writeByte(buf.readByte() ^ '=');
+				} else {
+					frame.writeByte(b);
+				}
+			}
 
-            return frame;
+			return frame;
 
-        }
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 }

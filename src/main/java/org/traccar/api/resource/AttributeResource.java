@@ -40,58 +40,58 @@ import org.traccar.handler.ComputedAttributesHandler;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AttributeResource extends ExtendedObjectResource<Attribute> {
 
-    public AttributeResource() {
-        super(Attribute.class);
-    }
+	public AttributeResource() {
+		super(Attribute.class);
+	}
 
-    @POST
-    @Path("test")
-    public Response test(@QueryParam("deviceId") long deviceId, Attribute entity) {
-        Context.getPermissionsManager().checkAdmin(getUserId());
-        Context.getPermissionsManager().checkDevice(getUserId(), deviceId);
-        Position last = Context.getIdentityManager().getLastPosition(deviceId);
-        if (last != null) {
-            Object result = new ComputedAttributesHandler(
-                    Context.getConfig(),
-                    Context.getIdentityManager(),
-                    Context.getAttributesManager()).computeAttribute(entity, last);
-            if (result != null) {
-                switch (entity.getType()) {
-                    case "number":
-                        Number numberValue = (Number) result;
-                        return Response.ok(numberValue).build();
-                    case "boolean":
-                        Boolean booleanValue = (Boolean) result;
-                        return Response.ok(booleanValue).build();
-                    default:
-                        return Response.ok(result.toString()).build();
-                }
-            } else {
-                return Response.noContent().build();
-            }
-        } else {
-            throw new IllegalArgumentException("Device has no last position");
-        }
-    }
+	@POST
+	@Path("test")
+	public Response test(@QueryParam("deviceId") long deviceId, Attribute entity) {
+		Context.getPermissionsManager().checkAdmin(getUserId());
+		Context.getPermissionsManager().checkDevice(getUserId(), deviceId);
+		Position last = Context.getIdentityManager().getLastPosition(deviceId);
+		if (last != null) {
+			Object result = new ComputedAttributesHandler(
+					Context.getConfig(),
+					Context.getIdentityManager(),
+					Context.getAttributesManager()).computeAttribute(entity, last);
+			if (result != null) {
+				switch (entity.getType()) {
+					case "number":
+						Number numberValue = (Number) result;
+						return Response.ok(numberValue).build();
+					case "boolean":
+						Boolean booleanValue = (Boolean) result;
+						return Response.ok(booleanValue).build();
+					default:
+						return Response.ok(result.toString()).build();
+				}
+			} else {
+				return Response.noContent().build();
+			}
+		} else {
+			throw new IllegalArgumentException("Device has no last position");
+		}
+	}
 
-    @POST
-    public Response add(Attribute entity) throws SQLException {
-        Context.getPermissionsManager().checkAdmin(getUserId());
-        return super.add(entity);
-    }
+	@POST
+	public Response add(Attribute entity) throws SQLException {
+		Context.getPermissionsManager().checkAdmin(getUserId());
+		return super.add(entity);
+	}
 
-    @Path("{id}")
-    @PUT
-    public Response update(Attribute entity) throws SQLException {
-        Context.getPermissionsManager().checkAdmin(getUserId());
-        return super.update(entity);
-    }
+	@Path("{id}")
+	@PUT
+	public Response update(Attribute entity) throws SQLException {
+		Context.getPermissionsManager().checkAdmin(getUserId());
+		return super.update(entity);
+	}
 
-    @Path("{id}")
-    @DELETE
-    public Response remove(@PathParam("id") long id) throws SQLException {
-        Context.getPermissionsManager().checkAdmin(getUserId());
-        return super.remove(id);
-    }
+	@Path("{id}")
+	@DELETE
+	public Response remove(@PathParam("id") long id) throws SQLException {
+		Context.getPermissionsManager().checkAdmin(getUserId());
+		return super.remove(id);
+	}
 
 }

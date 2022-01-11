@@ -32,98 +32,98 @@ import java.util.Set;
 
 public abstract class BaseProtocol implements Protocol {
 
-    private final String name;
-    private final Set<String> supportedDataCommands = new HashSet<>();
-    private final Set<String> supportedTextCommands = new HashSet<>();
-    private final List<TrackerServer> serverList = new LinkedList<>();
+	private final String name;
+	private final Set<String> supportedDataCommands = new HashSet<>();
+	private final Set<String> supportedTextCommands = new HashSet<>();
+	private final List<TrackerServer> serverList = new LinkedList<>();
 
-    private StringProtocolEncoder textCommandEncoder = null;
+	private StringProtocolEncoder textCommandEncoder = null;
 
-    public static String nameFromClass(Class<?> clazz) {
-        String className = clazz.getSimpleName();
-        return className.substring(0, className.length() - 8).toLowerCase();
-    }
+	public BaseProtocol() {
+		name = nameFromClass(getClass());
+	}
 
-    public BaseProtocol() {
-        name = nameFromClass(getClass());
-    }
+	public static String nameFromClass(Class<?> clazz) {
+		String className = clazz.getSimpleName();
+		return className.substring(0, className.length() - 8).toLowerCase();
+	}
 
-    @Override
-    public String getName() {
-        return name;
-    }
+	@Override
+	public String getName() {
+		return name;
+	}
 
-    protected void addServer(TrackerServer server) {
-        serverList.add(server);
-    }
+	protected void addServer(TrackerServer server) {
+		serverList.add(server);
+	}
 
-    @Override
-    public Collection<TrackerServer> getServerList() {
-        return serverList;
-    }
+	@Override
+	public Collection<TrackerServer> getServerList() {
+		return serverList;
+	}
 
-    public void setSupportedDataCommands(String... commands) {
-        supportedDataCommands.addAll(Arrays.asList(commands));
-    }
+	@Override
+	public Collection<String> getSupportedDataCommands() {
+		Set<String> commands = new HashSet<>(supportedDataCommands);
+		commands.add(Command.TYPE_CUSTOM);
+		return commands;
+	}
 
-    public void setSupportedTextCommands(String... commands) {
-        supportedTextCommands.addAll(Arrays.asList(commands));
-    }
+	public void setSupportedDataCommands(String... commands) {
+		supportedDataCommands.addAll(Arrays.asList(commands));
+	}
 
-    @Override
-    public Collection<String> getSupportedDataCommands() {
-        Set<String> commands = new HashSet<>(supportedDataCommands);
-        commands.add(Command.TYPE_CUSTOM);
-        return commands;
-    }
+	@Override
+	public Collection<String> getSupportedTextCommands() {
+		Set<String> commands = new HashSet<>(supportedTextCommands);
+		commands.add(Command.TYPE_CUSTOM);
+		return commands;
+	}
 
-    @Override
-    public Collection<String> getSupportedTextCommands() {
-        Set<String> commands = new HashSet<>(supportedTextCommands);
-        commands.add(Command.TYPE_CUSTOM);
-        return commands;
-    }
+	public void setSupportedTextCommands(String... commands) {
+		supportedTextCommands.addAll(Arrays.asList(commands));
+	}
 
-    @Override
-    public void sendDataCommand(Channel channel, SocketAddress remoteAddress, Command command) {
-        if (supportedDataCommands.contains(command.getType())) {
-            channel.writeAndFlush(new NetworkMessage(command, remoteAddress));
-        } else if (command.getType().equals(Command.TYPE_CUSTOM)) {
-            String data = command.getString(Command.KEY_DATA);
-            if (BasePipelineFactory.getHandler(channel.pipeline(), StringEncoder.class) != null) {
-                channel.writeAndFlush(new NetworkMessage(data, remoteAddress));
-            } else {
-                ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(data));
-                channel.writeAndFlush(new NetworkMessage(buf, remoteAddress));
-            }
-        } else {
-            throw new RuntimeException("Command " + command.getType() + " is not supported in protocol " + getName());
-        }
-    }
+	@Override
+	public void sendDataCommand(Channel channel, SocketAddress remoteAddress, Command command) {
+		if (supportedDataCommands.contains(command.getType())) {
+			channel.writeAndFlush(new NetworkMessage(command, remoteAddress));
+		} else if (command.getType().equals(Command.TYPE_CUSTOM)) {
+			String data = command.getString(Command.KEY_DATA);
+			if (BasePipelineFactory.getHandler(channel.pipeline(), StringEncoder.class) != null) {
+				channel.writeAndFlush(new NetworkMessage(data, remoteAddress));
+			} else {
+				ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(data));
+				channel.writeAndFlush(new NetworkMessage(buf, remoteAddress));
+			}
+		} else {
+			throw new RuntimeException("Command " + command.getType() + " is not supported in protocol " + getName());
+		}
+	}
 
-    public void setTextCommandEncoder(StringProtocolEncoder textCommandEncoder) {
-        this.textCommandEncoder = textCommandEncoder;
-    }
+	public void setTextCommandEncoder(StringProtocolEncoder textCommandEncoder) {
+		this.textCommandEncoder = textCommandEncoder;
+	}
 
-    @Override
-    public void sendTextCommand(String destAddress, Command command) throws Exception {
-        if (Context.getSmsManager() != null) {
-            if (command.getType().equals(Command.TYPE_CUSTOM)) {
-                Context.getSmsManager().sendMessageSync(destAddress, command.getString(Command.KEY_DATA), true);
-            } else if (supportedTextCommands.contains(command.getType()) && textCommandEncoder != null) {
-                String encodedCommand = (String) textCommandEncoder.encodeCommand(command);
-                if (encodedCommand != null) {
-                    Context.getSmsManager().sendMessageSync(destAddress, encodedCommand, true);
-                } else {
-                    throw new RuntimeException("Failed to encode command");
-                }
-            } else {
-                throw new RuntimeException(
-                        "Command " + command.getType() + " is not supported in protocol " + getName());
-            }
-        } else {
-            throw new RuntimeException("SMS is not enabled");
-        }
-    }
+	@Override
+	public void sendTextCommand(String destAddress, Command command) throws Exception {
+		if (Context.getSmsManager() != null) {
+			if (command.getType().equals(Command.TYPE_CUSTOM)) {
+				Context.getSmsManager().sendMessageSync(destAddress, command.getString(Command.KEY_DATA), true);
+			} else if (supportedTextCommands.contains(command.getType()) && textCommandEncoder != null) {
+				String encodedCommand = (String) textCommandEncoder.encodeCommand(command);
+				if (encodedCommand != null) {
+					Context.getSmsManager().sendMessageSync(destAddress, encodedCommand, true);
+				} else {
+					throw new RuntimeException("Failed to encode command");
+				}
+			} else {
+				throw new RuntimeException(
+						"Command " + command.getType() + " is not supported in protocol " + getName());
+			}
+		} else {
+			throw new RuntimeException("SMS is not enabled");
+		}
+	}
 
 }

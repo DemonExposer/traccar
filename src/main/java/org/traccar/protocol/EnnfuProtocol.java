@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class EnnfuProtocol extends BaseProtocol {
 
-    public EnnfuProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '$'));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new EnnfuProtocolDecoder(EnnfuProtocol.this));
-            }
-        });
-    }
+	public EnnfuProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '$'));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new EnnfuProtocolDecoder(EnnfuProtocol.this));
+			}
+		});
+	}
 
 }

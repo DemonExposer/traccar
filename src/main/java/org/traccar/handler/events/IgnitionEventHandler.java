@@ -28,38 +28,38 @@ import org.traccar.model.Position;
 @ChannelHandler.Sharable
 public class IgnitionEventHandler extends BaseEventHandler {
 
-    private final IdentityManager identityManager;
+	private final IdentityManager identityManager;
 
-    public IgnitionEventHandler(IdentityManager identityManager) {
-        this.identityManager = identityManager;
-    }
+	public IgnitionEventHandler(IdentityManager identityManager) {
+		this.identityManager = identityManager;
+	}
 
-    @Override
-    protected Map<Event, Position> analyzePosition(Position position) {
-        Device device = identityManager.getById(position.getDeviceId());
-        if (device == null || !identityManager.isLatestPosition(position)) {
-            return null;
-        }
+	@Override
+	protected Map<Event, Position> analyzePosition(Position position) {
+		Device device = identityManager.getById(position.getDeviceId());
+		if (device == null || !identityManager.isLatestPosition(position)) {
+			return null;
+		}
 
-        Map<Event, Position> result = null;
+		Map<Event, Position> result = null;
 
-        if (position.getAttributes().containsKey(Position.KEY_IGNITION)) {
-            boolean ignition = position.getBoolean(Position.KEY_IGNITION);
+		if (position.getAttributes().containsKey(Position.KEY_IGNITION)) {
+			boolean ignition = position.getBoolean(Position.KEY_IGNITION);
 
-            Position lastPosition = identityManager.getLastPosition(position.getDeviceId());
-            if (lastPosition != null && lastPosition.getAttributes().containsKey(Position.KEY_IGNITION)) {
-                boolean oldIgnition = lastPosition.getBoolean(Position.KEY_IGNITION);
+			Position lastPosition = identityManager.getLastPosition(position.getDeviceId());
+			if (lastPosition != null && lastPosition.getAttributes().containsKey(Position.KEY_IGNITION)) {
+				boolean oldIgnition = lastPosition.getBoolean(Position.KEY_IGNITION);
 
-                if (ignition && !oldIgnition) {
-                    result = Collections.singletonMap(
-                            new Event(Event.TYPE_IGNITION_ON, position), position);
-                } else if (!ignition && oldIgnition) {
-                    result = Collections.singletonMap(
-                            new Event(Event.TYPE_IGNITION_OFF, position), position);
-                }
-            }
-        }
-        return result;
-    }
+				if (ignition && !oldIgnition) {
+					result = Collections.singletonMap(
+							new Event(Event.TYPE_IGNITION_ON, position), position);
+				} else if (!ignition && oldIgnition) {
+					result = Collections.singletonMap(
+							new Event(Event.TYPE_IGNITION_OFF, position), position);
+				}
+			}
+		}
+		return result;
+	}
 
 }

@@ -21,22 +21,22 @@ import org.traccar.TrackerServer;
 
 public class OpenChannelHandler extends ChannelDuplexHandler {
 
-    private final TrackerServer server;
+	private final TrackerServer server;
 
-    public OpenChannelHandler(TrackerServer server) {
-        this.server = server;
-    }
+	public OpenChannelHandler(TrackerServer server) {
+		this.server = server;
+	}
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-        server.getChannelGroup().add(ctx.channel());
-    }
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		super.channelActive(ctx);
+		server.getChannelGroup().add(ctx.channel());
+	}
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
-        server.getChannelGroup().remove(ctx.channel());
-    }
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		super.channelInactive(ctx);
+		server.getChannelGroup().remove(ctx.channel());
+	}
 
 }

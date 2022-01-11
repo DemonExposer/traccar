@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class ArknavProtocol extends BaseProtocol {
 
-    public ArknavProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\r'));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new ArknavProtocolDecoder(ArknavProtocol.this));
-            }
-        });
-    }
+	public ArknavProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\r'));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new ArknavProtocolDecoder(ArknavProtocol.this));
+			}
+		});
+	}
 
 }

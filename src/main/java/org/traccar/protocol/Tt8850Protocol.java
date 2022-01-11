@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class Tt8850Protocol extends BaseProtocol {
 
-    public Tt8850Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "$"));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new Tt8850ProtocolDecoder(Tt8850Protocol.this));
-            }
-        });
-    }
+	public Tt8850Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "$"));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new Tt8850ProtocolDecoder(Tt8850Protocol.this));
+			}
+		});
+	}
 
 }

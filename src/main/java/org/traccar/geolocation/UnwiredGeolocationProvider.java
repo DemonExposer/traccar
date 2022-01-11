@@ -31,81 +31,92 @@ import java.util.Collection;
 
 public class UnwiredGeolocationProvider implements GeolocationProvider {
 
-    private String url;
-    private String key;
+	private String url;
+	private String key;
 
-    private ObjectMapper objectMapper;
+	private ObjectMapper objectMapper;
 
-    private abstract static class NetworkMixIn {
-        @JsonProperty("mcc")
-        abstract Integer getHomeMobileCountryCode();
-        @JsonProperty("mnc")
-        abstract Integer getHomeMobileNetworkCode();
-        @JsonProperty("radio")
-        abstract String getRadioType();
-        @JsonIgnore
-        abstract String getCarrier();
-        @JsonIgnore
-        abstract Boolean getConsiderIp();
-        @JsonProperty("cells")
-        abstract Collection<CellTower> getCellTowers();
-        @JsonProperty("wifi")
-        abstract Collection<WifiAccessPoint> getWifiAccessPoints();
-    }
+	public UnwiredGeolocationProvider(String url, String key) {
+		this.url = url;
+		this.key = key;
 
-    private abstract static class CellTowerMixIn {
-        @JsonProperty("radio")
-        abstract String getRadioType();
-        @JsonProperty("mcc")
-        abstract Integer getMobileCountryCode();
-        @JsonProperty("mnc")
-        abstract Integer getMobileNetworkCode();
-        @JsonProperty("lac")
-        abstract Integer getLocationAreaCode();
-        @JsonProperty("cid")
-        abstract Long getCellId();
-    }
+		objectMapper = new ObjectMapper();
+		objectMapper.addMixIn(Network.class, NetworkMixIn.class);
+		objectMapper.addMixIn(CellTower.class, CellTowerMixIn.class);
+		objectMapper.addMixIn(WifiAccessPoint.class, WifiAccessPointMixIn.class);
+	}
 
-    private abstract static class WifiAccessPointMixIn {
-        @JsonProperty("bssid")
-        abstract String getMacAddress();
-        @JsonProperty("signal")
-        abstract Integer getSignalStrength();
-    }
+	@Override
+	public void getLocation(Network network, final LocationProviderCallback callback) {
+		ObjectNode json = objectMapper.valueToTree(network);
+		json.put("token", key);
 
-    public UnwiredGeolocationProvider(String url, String key) {
-        this.url = url;
-        this.key = key;
+		Context.getClient().target(url).request().async().post(Entity.json(json), new InvocationCallback<JsonObject>() {
+			@Override
+			public void completed(JsonObject json) {
+				if (json.getString("status").equals("error")) {
+					callback.onFailure(new GeolocationException(json.getString("message")));
+				} else {
+					callback.onSuccess(
+							json.getJsonNumber("lat").doubleValue(),
+							json.getJsonNumber("lon").doubleValue(),
+							json.getJsonNumber("accuracy").doubleValue());
+				}
+			}
 
-        objectMapper = new ObjectMapper();
-        objectMapper.addMixIn(Network.class, NetworkMixIn.class);
-        objectMapper.addMixIn(CellTower.class, CellTowerMixIn.class);
-        objectMapper.addMixIn(WifiAccessPoint.class, WifiAccessPointMixIn.class);
-    }
+			@Override
+			public void failed(Throwable throwable) {
+				callback.onFailure(throwable);
+			}
+		});
+	}
 
-    @Override
-    public void getLocation(Network network, final LocationProviderCallback callback) {
-        ObjectNode json = objectMapper.valueToTree(network);
-        json.put("token", key);
+	private abstract static class NetworkMixIn {
+		@JsonProperty("mcc")
+		abstract Integer getHomeMobileCountryCode();
 
-        Context.getClient().target(url).request().async().post(Entity.json(json), new InvocationCallback<JsonObject>() {
-            @Override
-            public void completed(JsonObject json) {
-                if (json.getString("status").equals("error")) {
-                    callback.onFailure(new GeolocationException(json.getString("message")));
-                } else {
-                    callback.onSuccess(
-                            json.getJsonNumber("lat").doubleValue(),
-                            json.getJsonNumber("lon").doubleValue(),
-                            json.getJsonNumber("accuracy").doubleValue());
-                }
-            }
+		@JsonProperty("mnc")
+		abstract Integer getHomeMobileNetworkCode();
 
-            @Override
-            public void failed(Throwable throwable) {
-                callback.onFailure(throwable);
-            }
-        });
-    }
+		@JsonProperty("radio")
+		abstract String getRadioType();
+
+		@JsonIgnore
+		abstract String getCarrier();
+
+		@JsonIgnore
+		abstract Boolean getConsiderIp();
+
+		@JsonProperty("cells")
+		abstract Collection<CellTower> getCellTowers();
+
+		@JsonProperty("wifi")
+		abstract Collection<WifiAccessPoint> getWifiAccessPoints();
+	}
+
+	private abstract static class CellTowerMixIn {
+		@JsonProperty("radio")
+		abstract String getRadioType();
+
+		@JsonProperty("mcc")
+		abstract Integer getMobileCountryCode();
+
+		@JsonProperty("mnc")
+		abstract Integer getMobileNetworkCode();
+
+		@JsonProperty("lac")
+		abstract Integer getLocationAreaCode();
+
+		@JsonProperty("cid")
+		abstract Long getCellId();
+	}
+
+	private abstract static class WifiAccessPointMixIn {
+		@JsonProperty("bssid")
+		abstract String getMacAddress();
+
+		@JsonProperty("signal")
+		abstract Integer getSignalStrength();
+	}
 
 }

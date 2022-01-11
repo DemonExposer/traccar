@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class Xt2400Protocol extends BaseProtocol {
 
-    public Xt2400Protocol() {
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new Xt2400ProtocolDecoder(Xt2400Protocol.this));
-            }
-        });
-    }
+	public Xt2400Protocol() {
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new Xt2400ProtocolDecoder(Xt2400Protocol.this));
+			}
+		});
+	}
 
 }

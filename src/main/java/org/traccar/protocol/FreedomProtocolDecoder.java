@@ -28,50 +28,50 @@ import java.util.regex.Pattern;
 
 public class FreedomProtocolDecoder extends BaseProtocolDecoder {
 
-    public FreedomProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	private static final Pattern PATTERN = new PatternBuilder()
+			.text("IMEI,")
+			.number("(d+),")                     // imei
+			.number("(dddd)/(dd)/(dd), ")        // date (yyyy/dd/mm)
+			.number("(dd):(dd):(dd), ")          // time (hh:mm:ss)
+			.expression("([NS]), ")
+			.number("Lat:(dd)(d+.d+), ")         // latitude
+			.expression("([EW]), ")
+			.number("Lon:(ddd)(d+.d+), ")        // longitude
+			.text("Spd:").number("(d+.d+)")      // speed
+			.any()
+			.compile();
 
-    private static final Pattern PATTERN = new PatternBuilder()
-            .text("IMEI,")
-            .number("(d+),")                     // imei
-            .number("(dddd)/(dd)/(dd), ")        // date (yyyy/dd/mm)
-            .number("(dd):(dd):(dd), ")          // time (hh:mm:ss)
-            .expression("([NS]), ")
-            .number("Lat:(dd)(d+.d+), ")         // latitude
-            .expression("([EW]), ")
-            .number("Lon:(ddd)(d+.d+), ")        // longitude
-            .text("Spd:").number("(d+.d+)")      // speed
-            .any()
-            .compile();
+	public FreedomProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        Parser parser = new Parser(PATTERN, (String) msg);
-        if (!parser.matches()) {
-            return null;
-        }
+		Parser parser = new Parser(PATTERN, (String) msg);
+		if (!parser.matches()) {
+			return null;
+		}
 
-        Position position = new Position(getProtocolName());
+		Position position = new Position(getProtocolName());
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-        if (deviceSession == null) {
-            return null;
-        }
-        position.setDeviceId(deviceSession.getDeviceId());
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+		if (deviceSession == null) {
+			return null;
+		}
+		position.setDeviceId(deviceSession.getDeviceId());
 
-        position.setValid(true);
+		position.setValid(true);
 
-        position.setTime(parser.nextDateTime());
+		position.setTime(parser.nextDateTime());
 
-        position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
-        position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
+		position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
+		position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
 
-        position.setSpeed(parser.nextDouble(0));
+		position.setSpeed(parser.nextDouble(0));
 
-        return position;
-    }
+		return position;
+	}
 
 }

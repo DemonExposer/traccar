@@ -34,86 +34,86 @@ import java.util.List;
 
 public class DolphinProtocolDecoder extends BaseProtocolDecoder {
 
-    public DolphinProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public DolphinProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        ByteBuf buf = (ByteBuf) msg;
+		ByteBuf buf = (ByteBuf) msg;
 
-        buf.readUnsignedShort(); // header
-        int index = (int) buf.readUnsignedIntLE();
-        buf.readUnsignedShort(); // version
-        buf.readUnsignedShort(); // flags
-        int type = buf.readUnsignedShortLE();
+		buf.readUnsignedShort(); // header
+		int index = (int) buf.readUnsignedIntLE();
+		buf.readUnsignedShort(); // version
+		buf.readUnsignedShort(); // flags
+		int type = buf.readUnsignedShortLE();
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(buf.readLongLE()));
-        if (deviceSession == null) {
-            return null;
-        }
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(buf.readLongLE()));
+		if (deviceSession == null) {
+			return null;
+		}
 
-        int length = (int) buf.readUnsignedIntLE();
-        buf.readUnsignedInt(); // reserved
+		int length = (int) buf.readUnsignedIntLE();
+		buf.readUnsignedInt(); // reserved
 
-        if (type == DolphinMessages.MessageType.DataPack_Request.getNumber()) {
+		if (type == DolphinMessages.MessageType.DataPack_Request.getNumber()) {
 
-            DolphinMessages.DataPackRequest message = DolphinMessages.DataPackRequest.parseFrom(
-                    ByteBufUtil.getBytes(buf, buf.readerIndex(), length, false));
+			DolphinMessages.DataPackRequest message = DolphinMessages.DataPackRequest.parseFrom(
+					ByteBufUtil.getBytes(buf, buf.readerIndex(), length, false));
 
-            if (channel != null) {
-                byte[] responseData = DolphinMessages.DataPackResponse.newBuilder()
-                        .setResponse(DolphinMessages.DataPackResponseCode.DataPack_OK)
-                        .build()
-                        .toByteArray();
+			if (channel != null) {
+				byte[] responseData = DolphinMessages.DataPackResponse.newBuilder()
+						.setResponse(DolphinMessages.DataPackResponseCode.DataPack_OK)
+						.build()
+						.toByteArray();
 
-                ByteBuf response = Unpooled.buffer();
-                response.writeShort(0xABAB); // header
-                response.writeIntLE(index);
-                response.writeShort(0); // flags
-                response.writeShortLE(DolphinMessages.MessageType.DataPack_Response.getNumber());
-                response.writeIntLE(responseData.length);
-                response.writeIntLE(0); // reserved
-                response.writeBytes(responseData);
+				ByteBuf response = Unpooled.buffer();
+				response.writeShort(0xABAB); // header
+				response.writeIntLE(index);
+				response.writeShort(0); // flags
+				response.writeShortLE(DolphinMessages.MessageType.DataPack_Response.getNumber());
+				response.writeIntLE(responseData.length);
+				response.writeIntLE(0); // reserved
+				response.writeBytes(responseData);
 
-                channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-            }
+				channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+			}
 
-            List<Position> positions = new LinkedList<>();
+			List<Position> positions = new LinkedList<>();
 
-            for (int i = 0; i < message.getPointsCount(); i++) {
+			for (int i = 0; i < message.getPointsCount(); i++) {
 
-                Position position = new Position(getProtocolName());
-                position.setDeviceId(deviceSession.getDeviceId());
+				Position position = new Position(getProtocolName());
+				position.setDeviceId(deviceSession.getDeviceId());
 
-                DolphinMessages.DataPoint point = message.getPoints(i);
+				DolphinMessages.DataPoint point = message.getPoints(i);
 
-                position.setValid(true);
-                position.setTime(new Date(point.getTimestamp() * 1000L));
-                position.setLatitude(point.getLatitude());
-                position.setLongitude(point.getLongitude());
-                position.setAltitude(point.getAltitude());
-                position.setSpeed(UnitsConverter.knotsFromKph(point.getSpeed()));
-                position.setCourse(point.getBearing());
+				position.setValid(true);
+				position.setTime(new Date(point.getTimestamp() * 1000L));
+				position.setLatitude(point.getLatitude());
+				position.setLongitude(point.getLongitude());
+				position.setAltitude(point.getAltitude());
+				position.setSpeed(UnitsConverter.knotsFromKph(point.getSpeed()));
+				position.setCourse(point.getBearing());
 
-                position.set(Position.KEY_SATELLITES, point.getSatellites());
-                position.set(Position.KEY_HDOP, point.getHDOP());
+				position.set(Position.KEY_SATELLITES, point.getSatellites());
+				position.set(Position.KEY_HDOP, point.getHDOP());
 
-                for (int j = 0; j < point.getIOListIDCount(); j++) {
-                    position.set(Position.PREFIX_IO + point.getIOListIDValue(j), point.getIOListValue(j));
-                }
+				for (int j = 0; j < point.getIOListIDCount(); j++) {
+					position.set(Position.PREFIX_IO + point.getIOListIDValue(j), point.getIOListValue(j));
+				}
 
-                positions.add(position);
+				positions.add(position);
 
-            }
+			}
 
-            return positions;
+			return positions;
 
-        }
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 }

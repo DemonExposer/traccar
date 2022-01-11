@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class StbProtocol extends BaseProtocol {
 
-    public StbProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new JsonFrameDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StbProtocolDecoder(StbProtocol.this));
-            }
-        });
-    }
+	public StbProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new JsonFrameDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StbProtocolDecoder(StbProtocol.this));
+			}
+		});
+	}
 
 }

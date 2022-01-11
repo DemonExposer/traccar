@@ -21,16 +21,17 @@ import org.traccar.PipelineBuilder;
 import org.traccar.TrackerServer;
 
 import java.nio.ByteOrder;
+
 public class DmtProtocol extends BaseProtocol {
 
-    public DmtProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 3, 2, 0, 0, true));
-                pipeline.addLast(new DmtProtocolDecoder(DmtProtocol.this));
-            }
-        });
-    }
+	public DmtProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 3, 2, 0, 0, true));
+				pipeline.addLast(new DmtProtocolDecoder(DmtProtocol.this));
+			}
+		});
+	}
 
 }

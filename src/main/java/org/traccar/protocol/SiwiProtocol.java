@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class SiwiProtocol extends BaseProtocol {
 
-    public SiwiProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new SiwiProtocolDecoder(SiwiProtocol.this));
-            }
-        });
-    }
+	public SiwiProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new SiwiProtocolDecoder(SiwiProtocol.this));
+			}
+		});
+	}
 
 }

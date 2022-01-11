@@ -34,44 +34,42 @@ import java.util.Date;
 
 public class Calendar extends ExtendedModel {
 
-    private String name;
+	private String name;
+	private byte[] data;
+	private net.fortuna.ical4j.model.Calendar calendar;
 
-    public String getName() {
-        return name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    private byte[] data;
+	public byte[] getData() {
+		return data.clone();
+	}
 
-    public byte[] getData() {
-        return data.clone();
-    }
+	public void setData(byte[] data) throws IOException, ParserException {
+		CalendarBuilder builder = new CalendarBuilder();
+		calendar = builder.build(new ByteArrayInputStream(data));
+		this.data = data.clone();
+	}
 
-    public void setData(byte[] data) throws IOException, ParserException {
-        CalendarBuilder builder = new CalendarBuilder();
-        calendar = builder.build(new ByteArrayInputStream(data));
-        this.data = data.clone();
-    }
+	@QueryIgnore
+	@JsonIgnore
+	public net.fortuna.ical4j.model.Calendar getCalendar() {
+		return calendar;
+	}
 
-    private net.fortuna.ical4j.model.Calendar calendar;
-
-    @QueryIgnore
-    @JsonIgnore
-    public net.fortuna.ical4j.model.Calendar getCalendar() {
-        return calendar;
-    }
-
-    public boolean checkMoment(Date date) {
-        if (calendar != null) {
-            Period period = new Period(new DateTime(date), Duration.ZERO);
-            Filter<CalendarComponent> filter = new Filter<>(new PeriodRule<>(period));
-            Collection<CalendarComponent> events = filter.filter(calendar.getComponents(CalendarComponent.VEVENT));
-            return events != null && !events.isEmpty();
-        }
-        return false;
-    }
+	public boolean checkMoment(Date date) {
+		if (calendar != null) {
+			Period period = new Period(new DateTime(date), Duration.ZERO);
+			Filter<CalendarComponent> filter = new Filter<>(new PeriodRule<>(period));
+			Collection<CalendarComponent> events = filter.filter(calendar.getComponents(CalendarComponent.VEVENT));
+			return events != null && !events.isEmpty();
+		}
+		return false;
+	}
 
 }

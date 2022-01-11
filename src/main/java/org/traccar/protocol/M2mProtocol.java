@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class M2mProtocol extends BaseProtocol {
 
-    public M2mProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new FixedLengthFrameDecoder(23));
-                pipeline.addLast(new M2mProtocolDecoder(M2mProtocol.this));
-            }
-        });
-    }
+	public M2mProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new FixedLengthFrameDecoder(23));
+				pipeline.addLast(new M2mProtocolDecoder(M2mProtocol.this));
+			}
+		});
+	}
 
 }

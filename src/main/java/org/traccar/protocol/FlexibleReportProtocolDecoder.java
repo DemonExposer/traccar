@@ -33,137 +33,137 @@ import java.util.Date;
 
 public class FlexibleReportProtocolDecoder extends BaseProtocolDecoder {
 
-    public FlexibleReportProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public static final int MSG_GENERAL = 0x00;
 
-    public static final int MSG_GENERAL = 0x00;
+	public FlexibleReportProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    private void sendResponse(Channel channel, SocketAddress remoteAddress, int index) {
-        if (channel != null) {
-            ByteBuf response = Unpooled.buffer();
-            response.writeByte(0x7E); // header
-            response.writeShort(2); // length
-            response.writeByte(0xE0);
-            response.writeByte(BitUtil.check(index, 0) ? 0x4F : 0x0F);
-            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-        }
-    }
+	private void sendResponse(Channel channel, SocketAddress remoteAddress, int index) {
+		if (channel != null) {
+			ByteBuf response = Unpooled.buffer();
+			response.writeByte(0x7E); // header
+			response.writeShort(2); // length
+			response.writeByte(0xE0);
+			response.writeByte(BitUtil.check(index, 0) ? 0x4F : 0x0F);
+			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+		}
+	}
 
-    private Date decodeTime(ByteBuf buf) {
-        int timestamp = buf.readInt();
-        return new DateBuilder()
-                .setSecond(timestamp % 60)
-                .setMinute((timestamp / 60) % 60)
-                .setHour((timestamp / (60 * 60)) % 24)
-                .setDay(1 + timestamp / (60 * 60 * 24) % 31)
-                .setMonth(1 + timestamp / (60 * 60 * 24 * 31) % 12)
-                .setYear(2000 + timestamp / (60 * 60 * 24 * 31 * 12))
-                .getDate();
-    }
+	private Date decodeTime(ByteBuf buf) {
+		int timestamp = buf.readInt();
+		return new DateBuilder()
+				.setSecond(timestamp % 60)
+				.setMinute((timestamp / 60) % 60)
+				.setHour((timestamp / (60 * 60)) % 24)
+				.setDay(1 + timestamp / (60 * 60 * 24) % 31)
+				.setMonth(1 + timestamp / (60 * 60 * 24 * 31) % 12)
+				.setYear(2000 + timestamp / (60 * 60 * 24 * 31 * 12))
+				.getDate();
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        ByteBuf buf = (ByteBuf) msg;
+		ByteBuf buf = (ByteBuf) msg;
 
-        buf.readUnsignedByte(); // header
-        int flags = buf.readUnsignedByte();
+		buf.readUnsignedByte(); // header
+		int flags = buf.readUnsignedByte();
 
-        String imei = ByteBufUtil.hexDump(buf.readSlice(8)).substring(1);
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-        if (deviceSession == null) {
-            return null;
-        }
+		String imei = ByteBufUtil.hexDump(buf.readSlice(8)).substring(1);
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+		if (deviceSession == null) {
+			return null;
+		}
 
-        int index = buf.readUnsignedShort();
+		int index = buf.readUnsignedShort();
 
-        if (BitUtil.to(flags, 2) > 0) {
-            sendResponse(channel, remoteAddress, index);
-        }
+		if (BitUtil.to(flags, 2) > 0) {
+			sendResponse(channel, remoteAddress, index);
+		}
 
-        Date time = decodeTime(buf);
-        int event = buf.readUnsignedByte();
+		Date time = decodeTime(buf);
+		int event = buf.readUnsignedByte();
 
-        buf.readUnsignedByte(); // length
+		buf.readUnsignedByte(); // length
 
-        int type = buf.readUnsignedByte();
+		int type = buf.readUnsignedByte();
 
-        if (type == MSG_GENERAL) {
+		if (type == MSG_GENERAL) {
 
-            Position position = new Position(getProtocolName());
-            position.setDeviceId(deviceSession.getDeviceId());
+			Position position = new Position(getProtocolName());
+			position.setDeviceId(deviceSession.getDeviceId());
 
-            position.setDeviceTime(time);
+			position.setDeviceTime(time);
 
-            position.set(Position.KEY_EVENT, event);
+			position.set(Position.KEY_EVENT, event);
 
-            buf.readUnsignedByte(); // length
-            long mask = buf.readUnsignedInt();
+			buf.readUnsignedByte(); // length
+			long mask = buf.readUnsignedInt();
 
-            if (BitUtil.check(mask, 0)) {
-                buf.readUnsignedByte(); // product id
-            }
-            if (BitUtil.check(mask, 1)) {
-                position.setFixTime(decodeTime(buf));
-            }
-            if (BitUtil.check(mask, 2)) {
-                position.setValid(true);
-                position.setLatitude(buf.readUnsignedInt() / 1000000.0 - 90);
-                position.setLongitude(buf.readUnsignedInt() / 1000000.0 - 180);
-            }
-            if (BitUtil.check(mask, 3)) {
-                position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
-                position.setCourse(buf.readUnsignedShort());
-            }
-            if (BitUtil.check(mask, 4)) {
-                position.setAltitude(buf.readShort());
-            }
-            if (BitUtil.check(mask, 5)) {
-                buf.readUnsignedShort(); // gps accuracy
-            }
-            if (BitUtil.check(mask, 6)) {
-                position.set(Position.KEY_POWER, buf.readUnsignedShort() * 0.001);
-            }
-            if (BitUtil.check(mask, 7)) {
-                position.set(Position.KEY_BATTERY, buf.readUnsignedShort() * 0.001);
-            }
-            if (BitUtil.check(mask, 8)) {
-                position.set("auxPower", buf.readUnsignedShort() * 0.001);
-            }
-            if (BitUtil.check(mask, 9)) {
-                position.set("solarPower", buf.readUnsignedShort() * 0.001);
-            }
-            if (BitUtil.check(mask, 10)) {
-                int cellService = buf.readUnsignedByte();
-                position.set(Position.KEY_ROAMING, BitUtil.check(cellService, 7));
-                position.set("service", BitUtil.to(cellService, 7));
-                buf.skipBytes(4); // cell info
-            }
-            if (BitUtil.check(mask, 11)) {
-                buf.readUnsignedByte(); // rssi
-            }
-            if (BitUtil.check(mask, 12)) {
-                int inputs = buf.readUnsignedByte();
-                position.set(Position.KEY_IGNITION, BitUtil.check(inputs, 0));
-                position.set(Position.PREFIX_IO + 1, inputs);
-            }
-            if (BitUtil.check(mask, 13)) {
-                position.set(Position.PREFIX_IO + 2, buf.readUnsignedByte());
-            }
-            if (BitUtil.check(mask, 14)) {
-                position.set(Position.KEY_ODOMETER, buf.readUnsignedInt() * 1000);
-            }
-            if (BitUtil.check(mask, 15)) {
-                position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedShort() * 0.01);
-            }
+			if (BitUtil.check(mask, 0)) {
+				buf.readUnsignedByte(); // product id
+			}
+			if (BitUtil.check(mask, 1)) {
+				position.setFixTime(decodeTime(buf));
+			}
+			if (BitUtil.check(mask, 2)) {
+				position.setValid(true);
+				position.setLatitude(buf.readUnsignedInt() / 1000000.0 - 90);
+				position.setLongitude(buf.readUnsignedInt() / 1000000.0 - 180);
+			}
+			if (BitUtil.check(mask, 3)) {
+				position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
+				position.setCourse(buf.readUnsignedShort());
+			}
+			if (BitUtil.check(mask, 4)) {
+				position.setAltitude(buf.readShort());
+			}
+			if (BitUtil.check(mask, 5)) {
+				buf.readUnsignedShort(); // gps accuracy
+			}
+			if (BitUtil.check(mask, 6)) {
+				position.set(Position.KEY_POWER, buf.readUnsignedShort() * 0.001);
+			}
+			if (BitUtil.check(mask, 7)) {
+				position.set(Position.KEY_BATTERY, buf.readUnsignedShort() * 0.001);
+			}
+			if (BitUtil.check(mask, 8)) {
+				position.set("auxPower", buf.readUnsignedShort() * 0.001);
+			}
+			if (BitUtil.check(mask, 9)) {
+				position.set("solarPower", buf.readUnsignedShort() * 0.001);
+			}
+			if (BitUtil.check(mask, 10)) {
+				int cellService = buf.readUnsignedByte();
+				position.set(Position.KEY_ROAMING, BitUtil.check(cellService, 7));
+				position.set("service", BitUtil.to(cellService, 7));
+				buf.skipBytes(4); // cell info
+			}
+			if (BitUtil.check(mask, 11)) {
+				buf.readUnsignedByte(); // rssi
+			}
+			if (BitUtil.check(mask, 12)) {
+				int inputs = buf.readUnsignedByte();
+				position.set(Position.KEY_IGNITION, BitUtil.check(inputs, 0));
+				position.set(Position.PREFIX_IO + 1, inputs);
+			}
+			if (BitUtil.check(mask, 13)) {
+				position.set(Position.PREFIX_IO + 2, buf.readUnsignedByte());
+			}
+			if (BitUtil.check(mask, 14)) {
+				position.set(Position.KEY_ODOMETER, buf.readUnsignedInt() * 1000);
+			}
+			if (BitUtil.check(mask, 15)) {
+				position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedShort() * 0.01);
+			}
 
-            return position;
+			return position;
 
-        }
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 }

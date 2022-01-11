@@ -22,9 +22,9 @@ import org.traccar.model.Position;
 
 public final class NotificatorWeb extends Notificator {
 
-    @Override
-    public void sendSync(long userId, Event event, Position position) {
-        Context.getConnectionManager().updateEvent(userId, event);
-    }
+	@Override
+	public void sendSync(long userId, Event event, Position position) {
+		Context.getConnectionManager().updateEvent(userId, event);
+	}
 
 }

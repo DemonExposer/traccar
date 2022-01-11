@@ -33,64 +33,64 @@ import org.traccar.model.Position;
 @ChannelHandler.Sharable
 public class GeofenceEventHandler extends BaseEventHandler {
 
-    private final IdentityManager identityManager;
-    private final GeofenceManager geofenceManager;
-    private final CalendarManager calendarManager;
-    private final ConnectionManager connectionManager;
+	private final IdentityManager identityManager;
+	private final GeofenceManager geofenceManager;
+	private final CalendarManager calendarManager;
+	private final ConnectionManager connectionManager;
 
-    public GeofenceEventHandler(
-            IdentityManager identityManager, GeofenceManager geofenceManager, CalendarManager calendarManager,
-            ConnectionManager connectionManager) {
-        this.identityManager = identityManager;
-        this.geofenceManager = geofenceManager;
-        this.calendarManager = calendarManager;
-        this.connectionManager = connectionManager;
-    }
+	public GeofenceEventHandler(
+			IdentityManager identityManager, GeofenceManager geofenceManager, CalendarManager calendarManager,
+			ConnectionManager connectionManager) {
+		this.identityManager = identityManager;
+		this.geofenceManager = geofenceManager;
+		this.calendarManager = calendarManager;
+		this.connectionManager = connectionManager;
+	}
 
-    @Override
-    protected Map<Event, Position> analyzePosition(Position position) {
-        Device device = identityManager.getById(position.getDeviceId());
-        if (device == null) {
-            return null;
-        }
-        if (!identityManager.isLatestPosition(position) || !position.getValid()) {
-            return null;
-        }
+	@Override
+	protected Map<Event, Position> analyzePosition(Position position) {
+		Device device = identityManager.getById(position.getDeviceId());
+		if (device == null) {
+			return null;
+		}
+		if (!identityManager.isLatestPosition(position) || !position.getValid()) {
+			return null;
+		}
 
-        List<Long> currentGeofences = geofenceManager.getCurrentDeviceGeofences(position);
-        List<Long> oldGeofences = new ArrayList<>();
-        if (device.getGeofenceIds() != null) {
-            oldGeofences.addAll(device.getGeofenceIds());
-        }
-        List<Long> newGeofences = new ArrayList<>(currentGeofences);
-        newGeofences.removeAll(oldGeofences);
-        oldGeofences.removeAll(currentGeofences);
+		List<Long> currentGeofences = geofenceManager.getCurrentDeviceGeofences(position);
+		List<Long> oldGeofences = new ArrayList<>();
+		if (device.getGeofenceIds() != null) {
+			oldGeofences.addAll(device.getGeofenceIds());
+		}
+		List<Long> newGeofences = new ArrayList<>(currentGeofences);
+		newGeofences.removeAll(oldGeofences);
+		oldGeofences.removeAll(currentGeofences);
 
-        device.setGeofenceIds(currentGeofences);
-        if (!oldGeofences.isEmpty() || !newGeofences.isEmpty()) {
-            connectionManager.updateDevice(device);
-        }
+		device.setGeofenceIds(currentGeofences);
+		if (!oldGeofences.isEmpty() || !newGeofences.isEmpty()) {
+			connectionManager.updateDevice(device);
+		}
 
-        Map<Event, Position> events = new HashMap<>();
-        for (long geofenceId : oldGeofences) {
-            long calendarId = geofenceManager.getById(geofenceId).getCalendarId();
-            Calendar calendar = calendarId != 0 ? calendarManager.getById(calendarId) : null;
-            if (calendar == null || calendar.checkMoment(position.getFixTime())) {
-                Event event = new Event(Event.TYPE_GEOFENCE_EXIT, position);
-                event.setGeofenceId(geofenceId);
-                events.put(event, position);
-            }
-        }
-        for (long geofenceId : newGeofences) {
-            long calendarId = geofenceManager.getById(geofenceId).getCalendarId();
-            Calendar calendar = calendarId != 0 ? calendarManager.getById(calendarId) : null;
-            if (calendar == null || calendar.checkMoment(position.getFixTime())) {
-                Event event = new Event(Event.TYPE_GEOFENCE_ENTER, position);
-                event.setGeofenceId(geofenceId);
-                events.put(event, position);
-            }
-        }
-        return events;
-    }
+		Map<Event, Position> events = new HashMap<>();
+		for (long geofenceId : oldGeofences) {
+			long calendarId = geofenceManager.getById(geofenceId).getCalendarId();
+			Calendar calendar = calendarId != 0 ? calendarManager.getById(calendarId) : null;
+			if (calendar == null || calendar.checkMoment(position.getFixTime())) {
+				Event event = new Event(Event.TYPE_GEOFENCE_EXIT, position);
+				event.setGeofenceId(geofenceId);
+				events.put(event, position);
+			}
+		}
+		for (long geofenceId : newGeofences) {
+			long calendarId = geofenceManager.getById(geofenceId).getCalendarId();
+			Calendar calendar = calendarId != 0 ? calendarManager.getById(calendarId) : null;
+			if (calendar == null || calendar.checkMoment(position.getFixTime())) {
+				Event event = new Event(Event.TYPE_GEOFENCE_ENTER, position);
+				event.setGeofenceId(geofenceId);
+				events.put(event, position);
+			}
+		}
+		return events;
+	}
 
 }

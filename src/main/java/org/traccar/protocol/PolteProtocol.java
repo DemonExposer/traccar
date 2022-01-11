@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class PolteProtocol extends BaseProtocol {
 
-    public PolteProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new HttpResponseEncoder());
-                pipeline.addLast(new HttpRequestDecoder());
-                pipeline.addLast(new HttpObjectAggregator(65535));
-                pipeline.addLast(new PolteProtocolDecoder(PolteProtocol.this));
-            }
-        });
-    }
+	public PolteProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new HttpResponseEncoder());
+				pipeline.addLast(new HttpRequestDecoder());
+				pipeline.addLast(new HttpObjectAggregator(65535));
+				pipeline.addLast(new PolteProtocolDecoder(PolteProtocol.this));
+			}
+		});
+	}
 
 }

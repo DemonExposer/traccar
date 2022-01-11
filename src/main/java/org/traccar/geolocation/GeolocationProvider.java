@@ -19,14 +19,14 @@ import org.traccar.model.Network;
 
 public interface GeolocationProvider {
 
-    interface LocationProviderCallback {
+	void getLocation(Network network, LocationProviderCallback callback);
 
-        void onSuccess(double latitude, double longitude, double accuracy);
+	interface LocationProviderCallback {
 
-        void onFailure(Throwable e);
+		void onSuccess(double latitude, double longitude, double accuracy);
 
-    }
+		void onFailure(Throwable e);
 
-    void getLocation(Network network, LocationProviderCallback callback);
+	}
 
 }

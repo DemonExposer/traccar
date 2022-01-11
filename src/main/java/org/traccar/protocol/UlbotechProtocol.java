@@ -22,17 +22,17 @@ import org.traccar.model.Command;
 
 public class UlbotechProtocol extends BaseProtocol {
 
-    public UlbotechProtocol() {
-        setSupportedDataCommands(
-                Command.TYPE_CUSTOM);
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new UlbotechFrameDecoder());
-                pipeline.addLast(new UlbotechProtocolEncoder(UlbotechProtocol.this));
-                pipeline.addLast(new UlbotechProtocolDecoder(UlbotechProtocol.this));
-            }
-        });
-    }
+	public UlbotechProtocol() {
+		setSupportedDataCommands(
+				Command.TYPE_CUSTOM);
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new UlbotechFrameDecoder());
+				pipeline.addLast(new UlbotechProtocolEncoder(UlbotechProtocol.this));
+				pipeline.addLast(new UlbotechProtocolDecoder(UlbotechProtocol.this));
+			}
+		});
+	}
 
 }

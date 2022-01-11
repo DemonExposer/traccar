@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class TelicProtocol extends BaseProtocol {
 
-    public TelicProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new TelicFrameDecoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new TelicProtocolDecoder(TelicProtocol.this));
-            }
-        });
-    }
+	public TelicProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new TelicFrameDecoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new TelicProtocolDecoder(TelicProtocol.this));
+			}
+		});
+	}
 
 }

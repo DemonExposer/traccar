@@ -23,130 +23,119 @@ import org.traccar.database.QueryIgnore;
 
 public class Device extends GroupedModel {
 
-    private String name;
+	public static final String STATUS_UNKNOWN = "unknown";
+	public static final String STATUS_ONLINE = "online";
+	public static final String STATUS_OFFLINE = "offline";
+	private String name;
+	private String uniqueId;
+	private String status;
+	private Date lastUpdate;
+	private long positionId;
+	private List<Long> geofenceIds;
+	private String phone;
+	private String model;
+	private String contact;
+	private String category;
+	private boolean disabled;
 
-    public String getName() {
-        return name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    private String uniqueId;
+	public String getUniqueId() {
+		return uniqueId;
+	}
 
-    public String getUniqueId() {
-        return uniqueId;
-    }
+	public void setUniqueId(String uniqueId) {
+		this.uniqueId = uniqueId;
+	}
 
-    public void setUniqueId(String uniqueId) {
-        this.uniqueId = uniqueId;
-    }
+	@QueryIgnore
+	public String getStatus() {
+		return status != null ? status : STATUS_OFFLINE;
+	}
 
-    public static final String STATUS_UNKNOWN = "unknown";
-    public static final String STATUS_ONLINE = "online";
-    public static final String STATUS_OFFLINE = "offline";
+	public void setStatus(String status) {
+		this.status = status;
+	}
 
-    private String status;
+	@QueryExtended
+	public Date getLastUpdate() {
+		if (lastUpdate != null) {
+			return new Date(lastUpdate.getTime());
+		} else {
+			return null;
+		}
+	}
 
-    @QueryIgnore
-    public String getStatus() {
-        return status != null ? status : STATUS_OFFLINE;
-    }
+	public void setLastUpdate(Date lastUpdate) {
+		if (lastUpdate != null) {
+			this.lastUpdate = new Date(lastUpdate.getTime());
+		} else {
+			this.lastUpdate = null;
+		}
+	}
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+	@QueryIgnore
+	public long getPositionId() {
+		return positionId;
+	}
 
-    private Date lastUpdate;
+	public void setPositionId(long positionId) {
+		this.positionId = positionId;
+	}
 
-    @QueryExtended
-    public Date getLastUpdate() {
-        if (lastUpdate != null) {
-            return new Date(lastUpdate.getTime());
-        } else {
-            return null;
-        }
-    }
+	@QueryIgnore
+	public List<Long> getGeofenceIds() {
+		return geofenceIds;
+	}
 
-    public void setLastUpdate(Date lastUpdate) {
-        if (lastUpdate != null) {
-            this.lastUpdate = new Date(lastUpdate.getTime());
-        } else {
-            this.lastUpdate = null;
-        }
-    }
+	public void setGeofenceIds(List<Long> geofenceIds) {
+		this.geofenceIds = geofenceIds;
+	}
 
-    private long positionId;
+	public String getPhone() {
+		return phone;
+	}
 
-    @QueryIgnore
-    public long getPositionId() {
-        return positionId;
-    }
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
 
-    public void setPositionId(long positionId) {
-        this.positionId = positionId;
-    }
+	public String getModel() {
+		return model;
+	}
 
-    private List<Long> geofenceIds;
+	public void setModel(String model) {
+		this.model = model;
+	}
 
-    @QueryIgnore
-    public List<Long> getGeofenceIds() {
-        return geofenceIds;
-    }
+	public String getContact() {
+		return contact;
+	}
 
-    public void setGeofenceIds(List<Long> geofenceIds) {
-        this.geofenceIds = geofenceIds;
-    }
+	public void setContact(String contact) {
+		this.contact = contact;
+	}
 
-    private String phone;
+	public String getCategory() {
+		return category;
+	}
 
-    public String getPhone() {
-        return phone;
-    }
+	public void setCategory(String category) {
+		this.category = category;
+	}
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+	public boolean getDisabled() {
+		return disabled;
+	}
 
-    private String model;
-
-    public String getModel() {
-        return model;
-    }
-
-    public void setModel(String model) {
-        this.model = model;
-    }
-
-    private String contact;
-
-    public String getContact() {
-        return contact;
-    }
-
-    public void setContact(String contact) {
-        this.contact = contact;
-    }
-
-    private String category;
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    private boolean disabled;
-
-    public boolean getDisabled() {
-        return disabled;
-    }
-
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
-    }
+	public void setDisabled(boolean disabled) {
+		this.disabled = disabled;
+	}
 
 }

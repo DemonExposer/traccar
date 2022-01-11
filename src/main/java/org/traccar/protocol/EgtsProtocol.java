@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class EgtsProtocol extends BaseProtocol {
 
-    public EgtsProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new EgtsFrameDecoder());
-                pipeline.addLast(new EgtsProtocolDecoder(EgtsProtocol.this));
-            }
-        });
-    }
+	public EgtsProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new EgtsFrameDecoder());
+				pipeline.addLast(new EgtsProtocolDecoder(EgtsProtocol.this));
+			}
+		});
+	}
 
 }

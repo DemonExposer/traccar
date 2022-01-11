@@ -25,34 +25,34 @@ import java.net.SocketAddress;
 
 public class ActiveDevice {
 
-    private final long deviceId;
-    private final Protocol protocol;
-    private final Channel channel;
-    private final SocketAddress remoteAddress;
-    private final boolean supportsLiveCommands;
+	private final long deviceId;
+	private final Protocol protocol;
+	private final Channel channel;
+	private final SocketAddress remoteAddress;
+	private final boolean supportsLiveCommands;
 
-    public ActiveDevice(long deviceId, Protocol protocol, Channel channel, SocketAddress remoteAddress) {
-        this.deviceId = deviceId;
-        this.protocol = protocol;
-        this.channel = channel;
-        this.remoteAddress = remoteAddress;
-        supportsLiveCommands = BasePipelineFactory.getHandler(channel.pipeline(), HttpRequestDecoder.class) == null;
-    }
+	public ActiveDevice(long deviceId, Protocol protocol, Channel channel, SocketAddress remoteAddress) {
+		this.deviceId = deviceId;
+		this.protocol = protocol;
+		this.channel = channel;
+		this.remoteAddress = remoteAddress;
+		supportsLiveCommands = BasePipelineFactory.getHandler(channel.pipeline(), HttpRequestDecoder.class) == null;
+	}
 
-    public Channel getChannel() {
-        return channel;
-    }
+	public Channel getChannel() {
+		return channel;
+	}
 
-    public long getDeviceId() {
-        return deviceId;
-    }
+	public long getDeviceId() {
+		return deviceId;
+	}
 
-    public boolean supportsLiveCommands() {
-        return supportsLiveCommands;
-    }
+	public boolean supportsLiveCommands() {
+		return supportsLiveCommands;
+	}
 
-    public void sendCommand(Command command) {
-        protocol.sendDataCommand(channel, remoteAddress, command);
-    }
+	public void sendCommand(Command command) {
+		protocol.sendDataCommand(channel, remoteAddress, command);
+	}
 
 }

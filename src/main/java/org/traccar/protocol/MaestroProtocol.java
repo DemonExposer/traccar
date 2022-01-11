@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class MaestroProtocol extends BaseProtocol {
 
-    public MaestroProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new FixedLengthFrameDecoder(160));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new MaestroProtocolDecoder(MaestroProtocol.this));
-            }
-        });
-    }
+	public MaestroProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new FixedLengthFrameDecoder(160));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new MaestroProtocolDecoder(MaestroProtocol.this));
+			}
+		});
+	}
 
 }

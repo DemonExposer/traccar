@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class AppelloProtocol extends BaseProtocol {
 
-    public AppelloProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new AppelloProtocolDecoder(AppelloProtocol.this));
-            }
-        });
-    }
+	public AppelloProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new AppelloProtocolDecoder(AppelloProtocol.this));
+			}
+		});
+	}
 
 }

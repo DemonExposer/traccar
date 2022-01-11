@@ -25,16 +25,16 @@ import org.traccar.TrackerServer;
 
 public class KenjiProtocol extends BaseProtocol {
 
-    public KenjiProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new KenjiProtocolDecoder(KenjiProtocol.this));
-            }
-        });
-    }
+	public KenjiProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new KenjiProtocolDecoder(KenjiProtocol.this));
+			}
+		});
+	}
 
 }

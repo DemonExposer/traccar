@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class TrackboxProtocol extends BaseProtocol {
 
-    public TrackboxProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new TrackboxProtocolDecoder(TrackboxProtocol.this));
-            }
-        });
-    }
+	public TrackboxProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new TrackboxProtocolDecoder(TrackboxProtocol.this));
+			}
+		});
+	}
 
 }

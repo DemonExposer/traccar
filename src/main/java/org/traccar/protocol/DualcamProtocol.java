@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class DualcamProtocol extends BaseProtocol {
 
-    public DualcamProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new DualcamFrameDecoder());
-                pipeline.addLast(new DualcamProtocolDecoder(DualcamProtocol.this));
-            }
-        });
-    }
+	public DualcamProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new DualcamFrameDecoder());
+				pipeline.addLast(new DualcamProtocolDecoder(DualcamProtocol.this));
+			}
+		});
+	}
 
 }

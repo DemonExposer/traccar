@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class MtxProtocol extends BaseProtocol {
 
-    public MtxProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new MtxProtocolDecoder(MtxProtocol.this));
-            }
-        });
-    }
+	public MtxProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new MtxProtocolDecoder(MtxProtocol.this));
+			}
+		});
+	}
 
 }

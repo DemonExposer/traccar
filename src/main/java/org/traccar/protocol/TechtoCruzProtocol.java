@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class TechtoCruzProtocol extends BaseProtocol {
 
-    public TechtoCruzProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new TechtoCruzFrameDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new TechtoCruzProtocolDecoder(TechtoCruzProtocol.this));
-            }
-        });
-    }
+	public TechtoCruzProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new TechtoCruzFrameDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new TechtoCruzProtocolDecoder(TechtoCruzProtocol.this));
+			}
+		});
+	}
 
 }

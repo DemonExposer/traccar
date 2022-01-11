@@ -21,16 +21,17 @@ import org.traccar.PipelineBuilder;
 import org.traccar.TrackerServer;
 
 import java.nio.ByteOrder;
+
 public class AutoTrackProtocol extends BaseProtocol {
 
-    public AutoTrackProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 5, 2, 2, 0, true));
-                pipeline.addLast(new AutoTrackProtocolDecoder(AutoTrackProtocol.this));
-            }
-        });
-    }
+	public AutoTrackProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 5, 2, 2, 0, true));
+				pipeline.addLast(new AutoTrackProtocolDecoder(AutoTrackProtocol.this));
+			}
+		});
+	}
 
 }

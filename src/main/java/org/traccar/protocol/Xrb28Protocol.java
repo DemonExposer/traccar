@@ -27,23 +27,23 @@ import java.nio.charset.StandardCharsets;
 
 public class Xrb28Protocol extends BaseProtocol {
 
-    public Xrb28Protocol() {
-        setSupportedDataCommands(
-                Command.TYPE_CUSTOM,
-                Command.TYPE_POSITION_SINGLE,
-                Command.TYPE_POSITION_PERIODIC,
-                Command.TYPE_ALARM_ARM,
-                Command.TYPE_ALARM_DISARM);
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder(StandardCharsets.ISO_8859_1));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new Xrb28ProtocolEncoder(Xrb28Protocol.this));
-                pipeline.addLast(new Xrb28ProtocolDecoder(Xrb28Protocol.this));
-            }
-        });
-    }
+	public Xrb28Protocol() {
+		setSupportedDataCommands(
+				Command.TYPE_CUSTOM,
+				Command.TYPE_POSITION_SINGLE,
+				Command.TYPE_POSITION_PERIODIC,
+				Command.TYPE_ALARM_ARM,
+				Command.TYPE_ALARM_DISARM);
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder(StandardCharsets.ISO_8859_1));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new Xrb28ProtocolEncoder(Xrb28Protocol.this));
+				pipeline.addLast(new Xrb28ProtocolDecoder(Xrb28Protocol.this));
+			}
+		});
+	}
 
 }

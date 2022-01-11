@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class AquilaProtocol extends BaseProtocol {
 
-    public AquilaProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new AquilaProtocolDecoder(AquilaProtocol.this));
-            }
-        });
-    }
+	public AquilaProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new AquilaProtocolDecoder(AquilaProtocol.this));
+			}
+		});
+	}
 
 }

@@ -29,73 +29,73 @@ import java.util.Date;
 
 public class FlexApiProtocolDecoder extends BaseProtocolDecoder {
 
-    public FlexApiProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public FlexApiProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        String message = (String) msg;
-        JsonObject root = Json.createReader(new StringReader(message.substring(1, message.length() - 2))).readObject();
+		String message = (String) msg;
+		JsonObject root = Json.createReader(new StringReader(message.substring(1, message.length() - 2))).readObject();
 
-        String topic = root.getString("topic");
-        String clientId = topic.substring(3, topic.indexOf('/', 3));
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, clientId);
-        if (deviceSession == null) {
-            return null;
-        }
+		String topic = root.getString("topic");
+		String clientId = topic.substring(3, topic.indexOf('/', 3));
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, clientId);
+		if (deviceSession == null) {
+			return null;
+		}
 
-        Position position = new Position(getProtocolName());
-        position.setDeviceId(deviceSession.getDeviceId());
+		Position position = new Position(getProtocolName());
+		position.setDeviceId(deviceSession.getDeviceId());
 
-        JsonObject payload = root.getJsonObject("payload");
+		JsonObject payload = root.getJsonObject("payload");
 
-        if (topic.contains("gnss")) {
+		if (topic.contains("gnss")) {
 
-            position.setValid(true);
+			position.setValid(true);
 
-            if (payload.containsKey("time")) {
-                position.setTime(new Date(payload.getInt("time") * 1000L));
-                position.setLatitude(payload.getJsonNumber("lat").doubleValue());
-                position.setLongitude(payload.getJsonNumber("log").doubleValue());
-            } else {
-                position.setTime(new Date(payload.getInt("gnss.ts") * 1000L));
-                position.setLatitude(payload.getJsonNumber("gnss.latitude").doubleValue());
-                position.setLongitude(payload.getJsonNumber("gnss.longitude").doubleValue());
-            }
+			if (payload.containsKey("time")) {
+				position.setTime(new Date(payload.getInt("time") * 1000L));
+				position.setLatitude(payload.getJsonNumber("lat").doubleValue());
+				position.setLongitude(payload.getJsonNumber("log").doubleValue());
+			} else {
+				position.setTime(new Date(payload.getInt("gnss.ts") * 1000L));
+				position.setLatitude(payload.getJsonNumber("gnss.latitude").doubleValue());
+				position.setLongitude(payload.getJsonNumber("gnss.longitude").doubleValue());
+			}
 
-            position.setAltitude(payload.getJsonNumber("gnss.altitude").doubleValue());
-            position.setSpeed(payload.getJsonNumber("gnss.speed").doubleValue());
-            position.setCourse(payload.getJsonNumber("gnss.heading").doubleValue());
+			position.setAltitude(payload.getJsonNumber("gnss.altitude").doubleValue());
+			position.setSpeed(payload.getJsonNumber("gnss.speed").doubleValue());
+			position.setCourse(payload.getJsonNumber("gnss.heading").doubleValue());
 
-            position.set(Position.KEY_SATELLITES, payload.getInt("gnss.num_sv"));
+			position.set(Position.KEY_SATELLITES, payload.getInt("gnss.num_sv"));
 
-        } else if (topic.contains("obd")) {
+		} else if (topic.contains("obd")) {
 
-            getLastLocation(position, new Date(payload.getInt("obd.ts") * 1000L));
+			getLastLocation(position, new Date(payload.getInt("obd.ts") * 1000L));
 
-            if (payload.containsKey("obd.speed")) {
-                position.set(Position.KEY_OBD_SPEED, payload.getJsonNumber("obd.speed").doubleValue());
-            }
-            if (payload.containsKey("obd.odo")) {
-                position.set(Position.KEY_OBD_ODOMETER, payload.getInt("obd.odo"));
-            }
-            if (payload.containsKey("obd.rpm")) {
-                position.set(Position.KEY_RPM, payload.getInt("obd.rpm"));
-            }
-            if (payload.containsKey("obd.vin")) {
-                position.set(Position.KEY_VIN, payload.getString("obd.vin"));
-            }
+			if (payload.containsKey("obd.speed")) {
+				position.set(Position.KEY_OBD_SPEED, payload.getJsonNumber("obd.speed").doubleValue());
+			}
+			if (payload.containsKey("obd.odo")) {
+				position.set(Position.KEY_OBD_ODOMETER, payload.getInt("obd.odo"));
+			}
+			if (payload.containsKey("obd.rpm")) {
+				position.set(Position.KEY_RPM, payload.getInt("obd.rpm"));
+			}
+			if (payload.containsKey("obd.vin")) {
+				position.set(Position.KEY_VIN, payload.getString("obd.vin"));
+			}
 
-        } else {
+		} else {
 
-            return null;
+			return null;
 
-        }
+		}
 
-        return position;
-    }
+		return position;
+	}
 
 }

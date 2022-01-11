@@ -20,24 +20,24 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class ScheduleManager {
 
-    private ScheduledExecutorService executor;
+	private ScheduledExecutorService executor;
 
-    public void start() {
+	public void start() {
 
-        executor = Executors.newSingleThreadScheduledExecutor();
+		executor = Executors.newSingleThreadScheduledExecutor();
 
-        new TaskDeviceInactivityCheck().schedule(executor);
-        new TaskWebSocketKeepalive().schedule(executor);
+		new TaskDeviceInactivityCheck().schedule(executor);
+		new TaskWebSocketKeepalive().schedule(executor);
 
-    }
+	}
 
-    public void stop() {
+	public void stop() {
 
-        if (executor != null) {
-            executor.shutdown();
-            executor = null;
-        }
+		if (executor != null) {
+			executor.shutdown();
+			executor = null;
+		}
 
-    }
+	}
 
 }

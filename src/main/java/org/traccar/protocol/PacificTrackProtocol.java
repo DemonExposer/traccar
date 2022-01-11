@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class PacificTrackProtocol extends BaseProtocol {
 
-    public PacificTrackProtocol() {
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new PacificTrackProtocolDecoder(PacificTrackProtocol.this));
-            }
-        });
-    }
+	public PacificTrackProtocol() {
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new PacificTrackProtocolDecoder(PacificTrackProtocol.this));
+			}
+		});
+	}
 
 }

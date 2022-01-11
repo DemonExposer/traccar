@@ -26,34 +26,34 @@ import org.traccar.helper.BufferUtil;
 
 public class TotemFrameDecoder extends BaseFrameDecoder {
 
-    @Override
-    protected Object decode(
-            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+	@Override
+	protected Object decode(
+			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-        if (buf.readableBytes() < 10) {
-            return null;
-        }
+		if (buf.readableBytes() < 10) {
+			return null;
+		}
 
-        int beginIndex = BufferUtil.indexOf("$$", buf);
-        if (beginIndex == -1) {
-            return null;
-        } else if (beginIndex > buf.readerIndex()) {
-            buf.readerIndex(beginIndex);
-        }
+		int beginIndex = BufferUtil.indexOf("$$", buf);
+		if (beginIndex == -1) {
+			return null;
+		} else if (beginIndex > buf.readerIndex()) {
+			buf.readerIndex(beginIndex);
+		}
 
-        int length;
+		int length;
 
-        if (buf.getByte(buf.readerIndex() + 2) == (byte) '0') {
-            length = Integer.parseInt(buf.toString(buf.readerIndex() + 2, 4, StandardCharsets.US_ASCII));
-        } else {
-            length = Integer.parseInt(buf.toString(buf.readerIndex() + 2, 2, StandardCharsets.US_ASCII), 16);
-        }
+		if (buf.getByte(buf.readerIndex() + 2) == (byte) '0') {
+			length = Integer.parseInt(buf.toString(buf.readerIndex() + 2, 4, StandardCharsets.US_ASCII));
+		} else {
+			length = Integer.parseInt(buf.toString(buf.readerIndex() + 2, 2, StandardCharsets.US_ASCII), 16);
+		}
 
-        if (length <= buf.readableBytes()) {
-            return buf.readRetainedSlice(length);
-        }
+		if (length <= buf.readableBytes()) {
+			return buf.readRetainedSlice(length);
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 }

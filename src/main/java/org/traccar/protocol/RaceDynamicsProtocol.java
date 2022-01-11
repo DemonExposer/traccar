@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class RaceDynamicsProtocol extends BaseProtocol {
 
-    public RaceDynamicsProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1500));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new RaceDynamicsProtocolDecoder(RaceDynamicsProtocol.this));
-            }
-        });
-    }
+	public RaceDynamicsProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1500));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new RaceDynamicsProtocolDecoder(RaceDynamicsProtocol.this));
+			}
+		});
+	}
 
 }

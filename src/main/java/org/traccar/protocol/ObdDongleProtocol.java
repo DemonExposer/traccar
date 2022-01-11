@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class ObdDongleProtocol extends BaseProtocol {
 
-    public ObdDongleProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(1099, 20, 2, 3, 0));
-                pipeline.addLast(new ObdDongleProtocolDecoder(ObdDongleProtocol.this));
-            }
-        });
-    }
+	public ObdDongleProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(1099, 20, 2, 3, 0));
+				pipeline.addLast(new ObdDongleProtocolDecoder(ObdDongleProtocol.this));
+			}
+		});
+	}
 
 }
