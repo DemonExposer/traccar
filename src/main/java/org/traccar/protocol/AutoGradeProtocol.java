@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class AutoGradeProtocol extends BaseProtocol {
 
-    public AutoGradeProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, ')'));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new AutoGradeProtocolDecoder(AutoGradeProtocol.this));
-            }
-        });
-    }
+	public AutoGradeProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, ')'));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new AutoGradeProtocolDecoder(AutoGradeProtocol.this));
+			}
+		});
+	}
 
 }

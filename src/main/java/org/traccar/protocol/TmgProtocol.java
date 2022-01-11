@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class TmgProtocol extends BaseProtocol {
 
-    public TmgProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new TmgFrameDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new TmgProtocolDecoder(TmgProtocol.this));
-            }
-        });
-    }
+	public TmgProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new TmgFrameDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new TmgProtocolDecoder(TmgProtocol.this));
+			}
+		});
+	}
 
 }

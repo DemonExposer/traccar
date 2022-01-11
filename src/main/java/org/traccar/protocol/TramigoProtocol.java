@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class TramigoProtocol extends BaseProtocol {
 
-    public TramigoProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new TramigoFrameDecoder());
-                pipeline.addLast(new TramigoProtocolDecoder(TramigoProtocol.this));
-            }
-        });
-    }
+	public TramigoProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new TramigoFrameDecoder());
+				pipeline.addLast(new TramigoProtocolDecoder(TramigoProtocol.this));
+			}
+		});
+	}
 
 }

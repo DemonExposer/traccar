@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class FreedomProtocol extends BaseProtocol {
 
-    public FreedomProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new FreedomProtocolDecoder(FreedomProtocol.this));
-            }
-        });
-    }
+	public FreedomProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new FreedomProtocolDecoder(FreedomProtocol.this));
+			}
+		});
+	}
 
 }

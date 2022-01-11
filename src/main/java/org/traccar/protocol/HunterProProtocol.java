@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class HunterProProtocol extends BaseProtocol {
 
-    public HunterProProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\r"));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new HunterProProtocolDecoder(HunterProProtocol.this));
-            }
-        });
-    }
+	public HunterProProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\r"));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new HunterProProtocolDecoder(HunterProProtocol.this));
+			}
+		});
+	}
 
 }

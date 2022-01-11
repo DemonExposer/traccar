@@ -28,54 +28,54 @@ import java.util.regex.Pattern;
 
 public class ManPowerProtocolDecoder extends BaseProtocolDecoder {
 
-    public ManPowerProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	private static final Pattern PATTERN = new PatternBuilder()
+			.text("simei:")
+			.number("(d+),")                     // imei
+			.expression("[^,]*,[^,]*,")
+			.expression("([^,]*),")              // status
+			.number("d+,d+,d+.?d*,")
+			.number("(dd)(dd)(dd)")              // date (yymmdd)
+			.number("(dd)(dd)(dd),")             // time (hhmmss)
+			.expression("([AV]),")               // validity
+			.number("(dd)(dd.dddd),")            // latitude
+			.expression("([NS]),")
+			.number("(ddd)(dd.dddd),")           // longitude
+			.expression("([EW])?,")
+			.number("(d+.?d*),")                 // speed
+			.any()
+			.compile();
 
-    private static final Pattern PATTERN = new PatternBuilder()
-            .text("simei:")
-            .number("(d+),")                     // imei
-            .expression("[^,]*,[^,]*,")
-            .expression("([^,]*),")              // status
-            .number("d+,d+,d+.?d*,")
-            .number("(dd)(dd)(dd)")              // date (yymmdd)
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
-            .expression("([AV]),")               // validity
-            .number("(dd)(dd.dddd),")            // latitude
-            .expression("([NS]),")
-            .number("(ddd)(dd.dddd),")           // longitude
-            .expression("([EW])?,")
-            .number("(d+.?d*),")                 // speed
-            .any()
-            .compile();
+	public ManPowerProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        Parser parser = new Parser(PATTERN, (String) msg);
-        if (!parser.matches()) {
-            return null;
-        }
+		Parser parser = new Parser(PATTERN, (String) msg);
+		if (!parser.matches()) {
+			return null;
+		}
 
-        Position position = new Position(getProtocolName());
+		Position position = new Position(getProtocolName());
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-        if (deviceSession == null) {
-            return null;
-        }
-        position.setDeviceId(deviceSession.getDeviceId());
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+		if (deviceSession == null) {
+			return null;
+		}
+		position.setDeviceId(deviceSession.getDeviceId());
 
-        position.set(Position.KEY_STATUS, parser.next());
+		position.set(Position.KEY_STATUS, parser.next());
 
-        position.setTime(parser.nextDateTime());
+		position.setTime(parser.nextDateTime());
 
-        position.setValid(parser.next().equals("A"));
-        position.setLatitude(parser.nextCoordinate());
-        position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
+		position.setValid(parser.next().equals("A"));
+		position.setLatitude(parser.nextCoordinate());
+		position.setLongitude(parser.nextCoordinate());
+		position.setSpeed(parser.nextDouble(0));
 
-        return position;
-    }
+		return position;
+	}
 
 }

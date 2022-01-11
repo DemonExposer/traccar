@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class IdplProtocol extends BaseProtocol {
 
-    public IdplProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new IdplProtocolDecoder(IdplProtocol.this));
-            }
-        });
-    }
+	public IdplProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new IdplProtocolDecoder(IdplProtocol.this));
+			}
+		});
+	}
 
 }

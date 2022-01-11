@@ -17,44 +17,41 @@ package org.traccar.model;
 
 public class Order extends ExtendedModel {
 
-    private String uniqueId;
+	private String uniqueId;
+	private String description;
+	private String fromAddress;
+	private String toAddress;
 
-    public String getUniqueId() {
-        return uniqueId;
-    }
+	public String getUniqueId() {
+		return uniqueId;
+	}
 
-    public void setUniqueId(String uniqueId) {
-        this.uniqueId = uniqueId;
-    }
+	public void setUniqueId(String uniqueId) {
+		this.uniqueId = uniqueId;
+	}
 
-    private String description;
+	public String getDescription() {
+		return description;
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	public String getFromAddress() {
+		return fromAddress;
+	}
 
-    private String fromAddress;
+	public void setFromAddress(String fromAddress) {
+		this.fromAddress = fromAddress;
+	}
 
-    public String getFromAddress() {
-        return fromAddress;
-    }
+	public String getToAddress() {
+		return toAddress;
+	}
 
-    public void setFromAddress(String fromAddress) {
-        this.fromAddress = fromAddress;
-    }
-
-    private String toAddress;
-
-    public String getToAddress() {
-        return toAddress;
-    }
-
-    public void setToAddress(String toAddress) {
-        this.toAddress = toAddress;
-    }
+	public void setToAddress(String toAddress) {
+		this.toAddress = toAddress;
+	}
 
 }

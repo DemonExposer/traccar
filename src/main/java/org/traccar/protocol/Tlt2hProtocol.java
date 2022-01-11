@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class Tlt2hProtocol extends BaseProtocol {
 
-    public Tlt2hProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(32 * 1024, "##\r\n"));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new Tlt2hProtocolDecoder(Tlt2hProtocol.this));
-            }
-        });
-    }
+	public Tlt2hProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(32 * 1024, "##\r\n"));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new Tlt2hProtocolDecoder(Tlt2hProtocol.this));
+			}
+		});
+	}
 
 }

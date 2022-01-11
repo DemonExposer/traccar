@@ -24,14 +24,14 @@ import java.nio.ByteOrder;
 
 public class VnetProtocol extends BaseProtocol {
 
-    public VnetProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1500, 4, 2, 12, 0, true));
-                pipeline.addLast(new VnetProtocolDecoder(VnetProtocol.this));
-            }
-        });
-    }
+	public VnetProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1500, 4, 2, 12, 0, true));
+				pipeline.addLast(new VnetProtocolDecoder(VnetProtocol.this));
+			}
+		});
+	}
 
 }

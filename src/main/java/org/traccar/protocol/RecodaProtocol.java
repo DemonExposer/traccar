@@ -21,16 +21,17 @@ import org.traccar.PipelineBuilder;
 import org.traccar.TrackerServer;
 
 import java.nio.ByteOrder;
+
 public class RecodaProtocol extends BaseProtocol {
 
-    public RecodaProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 4, 4, -8, 0, true));
-                pipeline.addLast(new RecodaProtocolDecoder(RecodaProtocol.this));
-            }
-        });
-    }
+	public RecodaProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 4, 4, -8, 0, true));
+				pipeline.addLast(new RecodaProtocolDecoder(RecodaProtocol.this));
+			}
+		});
+	}
 
 }

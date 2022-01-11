@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class StarcomProtocol extends BaseProtocol {
 
-    public StarcomProtocol() {
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StarcomProtocolDecoder(StarcomProtocol.this));
-            }
-        });
-    }
+	public StarcomProtocol() {
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StarcomProtocolDecoder(StarcomProtocol.this));
+			}
+		});
+	}
 
 }

@@ -35,128 +35,128 @@ import java.util.List;
 
 public class B2316ProtocolDecoder extends BaseProtocolDecoder {
 
-    public B2316ProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public B2316ProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    private String decodeAlarm(int value) {
-        switch (value) {
-            case 1:
-                return Position.ALARM_LOW_BATTERY;
-            case 2:
-                return Position.ALARM_SOS;
-            case 3:
-                return Position.ALARM_POWER_OFF;
-            case 4:
-                return Position.ALARM_REMOVING;
-            default:
-                return null;
-        }
-    }
+	private String decodeAlarm(int value) {
+		switch (value) {
+			case 1:
+				return Position.ALARM_LOW_BATTERY;
+			case 2:
+				return Position.ALARM_SOS;
+			case 3:
+				return Position.ALARM_POWER_OFF;
+			case 4:
+				return Position.ALARM_REMOVING;
+			default:
+				return null;
+		}
+	}
 
-    private Integer decodeBattery(int value) {
-        switch (value) {
-            case 0:
-                return 10;
-            case 1:
-                return 30;
-            case 2:
-                return 60;
-            case 3:
-                return 80;
-            case 4:
-                return 100;
-            default:
-                return null;
-        }
-    }
+	private Integer decodeBattery(int value) {
+		switch (value) {
+			case 0:
+				return 10;
+			case 1:
+				return 30;
+			case 2:
+				return 60;
+			case 3:
+				return 80;
+			case 4:
+				return 100;
+			default:
+				return null;
+		}
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        JsonObject root = Json.createReader(new StringReader((String) msg)).readObject();
+		JsonObject root = Json.createReader(new StringReader((String) msg)).readObject();
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, root.getString("imei"));
-        if (deviceSession == null) {
-            return null;
-        }
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, root.getString("imei"));
+		if (deviceSession == null) {
+			return null;
+		}
 
-        List<Position> positions = new LinkedList<>();
-        JsonArray data = root.getJsonArray("data");
-        for (int i = 0; i < data.size(); i++) {
+		List<Position> positions = new LinkedList<>();
+		JsonArray data = root.getJsonArray("data");
+		for (int i = 0; i < data.size(); i++) {
 
-            Position position = new Position(getProtocolName());
-            position.setDeviceId(deviceSession.getDeviceId());
+			Position position = new Position(getProtocolName());
+			position.setDeviceId(deviceSession.getDeviceId());
 
-            Network network = new Network();
+			Network network = new Network();
 
-            JsonObject item = data.getJsonObject(i);
-            Date time = new Date(item.getJsonNumber("tm").longValue() * 1000);
+			JsonObject item = data.getJsonObject(i);
+			Date time = new Date(item.getJsonNumber("tm").longValue() * 1000);
 
-            if (item.containsKey("gp")) {
-                String[] coordinates = item.getString("gp").split(",");
-                position.setLongitude(Double.parseDouble(coordinates[0]));
-                position.setLatitude(Double.parseDouble(coordinates[1]));
-                position.setValid(true);
-                position.setTime(time);
-            } else {
-                getLastLocation(position, time);
-            }
+			if (item.containsKey("gp")) {
+				String[] coordinates = item.getString("gp").split(",");
+				position.setLongitude(Double.parseDouble(coordinates[0]));
+				position.setLatitude(Double.parseDouble(coordinates[1]));
+				position.setValid(true);
+				position.setTime(time);
+			} else {
+				getLastLocation(position, time);
+			}
 
-            if (item.containsKey("ci")) {
-                String[] cell = item.getString("ci").split(",");
-                network.addCellTower(CellTower.from(
-                        Integer.parseInt(cell[0]), Integer.parseInt(cell[1]),
-                        Integer.parseInt(cell[2]), Integer.parseInt(cell[3]),
-                        Integer.parseInt(cell[4])));
-            }
+			if (item.containsKey("ci")) {
+				String[] cell = item.getString("ci").split(",");
+				network.addCellTower(CellTower.from(
+						Integer.parseInt(cell[0]), Integer.parseInt(cell[1]),
+						Integer.parseInt(cell[2]), Integer.parseInt(cell[3]),
+						Integer.parseInt(cell[4])));
+			}
 
-            if (item.containsKey("wi")) {
-                String[] points = item.getString("wi").split(";");
-                for (String point : points) {
-                    String[] values = point.split(",");
-                    network.addWifiAccessPoint(WifiAccessPoint.from(
-                            values[0].replaceAll("(..)", "$1:"), Integer.parseInt(values[1])));
-                }
-            }
+			if (item.containsKey("wi")) {
+				String[] points = item.getString("wi").split(";");
+				for (String point : points) {
+					String[] values = point.split(",");
+					network.addWifiAccessPoint(WifiAccessPoint.from(
+							values[0].replaceAll("(..)", "$1:"), Integer.parseInt(values[1])));
+				}
+			}
 
-            if (item.containsKey("wn")) {
-                position.set(Position.KEY_ALARM, decodeAlarm(item.getInt("wn")));
-            }
-            if (item.containsKey("ic")) {
-                position.set(Position.KEY_ICCID, item.getString("ic"));
-            }
-            if (item.containsKey("ve")) {
-                position.set(Position.KEY_VERSION_FW, item.getString("ve"));
-            }
-            if (item.containsKey("te")) {
-                String[] temperatures = item.getString("te").split(",");
-                for (int j = 0; j < temperatures.length; j++) {
-                    position.set(Position.PREFIX_TEMP + (j + 1), Integer.parseInt(temperatures[j]) * 0.1);
-                }
-            }
-            if (item.containsKey("st")) {
-                position.set(Position.KEY_STEPS, item.getInt("st"));
-            }
-            if (item.containsKey("ba")) {
-                position.set(Position.KEY_BATTERY_LEVEL, decodeBattery(item.getInt("ba")));
-            }
-            if (item.containsKey("sn")) {
-                position.set(Position.KEY_RSSI, item.getInt("sn"));
-            }
-            if (item.containsKey("hr")) {
-                position.set(Position.KEY_HEART_RATE, item.getInt("hr"));
-            }
+			if (item.containsKey("wn")) {
+				position.set(Position.KEY_ALARM, decodeAlarm(item.getInt("wn")));
+			}
+			if (item.containsKey("ic")) {
+				position.set(Position.KEY_ICCID, item.getString("ic"));
+			}
+			if (item.containsKey("ve")) {
+				position.set(Position.KEY_VERSION_FW, item.getString("ve"));
+			}
+			if (item.containsKey("te")) {
+				String[] temperatures = item.getString("te").split(",");
+				for (int j = 0; j < temperatures.length; j++) {
+					position.set(Position.PREFIX_TEMP + (j + 1), Integer.parseInt(temperatures[j]) * 0.1);
+				}
+			}
+			if (item.containsKey("st")) {
+				position.set(Position.KEY_STEPS, item.getInt("st"));
+			}
+			if (item.containsKey("ba")) {
+				position.set(Position.KEY_BATTERY_LEVEL, decodeBattery(item.getInt("ba")));
+			}
+			if (item.containsKey("sn")) {
+				position.set(Position.KEY_RSSI, item.getInt("sn"));
+			}
+			if (item.containsKey("hr")) {
+				position.set(Position.KEY_HEART_RATE, item.getInt("hr"));
+			}
 
-            if (network.getCellTowers() != null || network.getWifiAccessPoints() != null) {
-                position.setNetwork(network);
-            }
+			if (network.getCellTowers() != null || network.getWifiAccessPoints() != null) {
+				position.setNetwork(network);
+			}
 
-            positions.add(position);
-        }
+			positions.add(position);
+		}
 
-        return positions.isEmpty() ? null : positions;
-    }
+		return positions.isEmpty() ? null : positions;
+	}
 
 }

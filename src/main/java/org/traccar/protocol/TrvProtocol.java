@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class TrvProtocol extends BaseProtocol {
 
-    public TrvProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new TrvProtocolDecoder(TrvProtocol.this));
-            }
-        });
-    }
+	public TrvProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new TrvProtocolDecoder(TrvProtocol.this));
+			}
+		});
+	}
 
 }

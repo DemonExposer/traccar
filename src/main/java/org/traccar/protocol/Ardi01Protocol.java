@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class Ardi01Protocol extends BaseProtocol {
 
-    public Ardi01Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new Ardi01ProtocolDecoder(Ardi01Protocol.this));
-            }
-        });
-    }
+	public Ardi01Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new Ardi01ProtocolDecoder(Ardi01Protocol.this));
+			}
+		});
+	}
 
 }

@@ -19,52 +19,53 @@ import javax.json.JsonObject;
 
 public class GeocodeFarmGeocoder extends JsonGeocoder {
 
-    private static String formatUrl(String key, String language) {
-        String url = "https://www.geocode.farm/v3/json/reverse/";
-        url += "?lat=%f&lon=%f&country=us&count=1";
-        if (key != null) {
-            url += "&key=" + key;
-        }
-        if (language != null) {
-            url += "&lang=" + language;
-        }
-        return url;
-    }
-    public GeocodeFarmGeocoder(String key, String language, int cacheSize, AddressFormat addressFormat) {
-        super(formatUrl(key, language), cacheSize, addressFormat);
-    }
+	public GeocodeFarmGeocoder(String key, String language, int cacheSize, AddressFormat addressFormat) {
+		super(formatUrl(key, language), cacheSize, addressFormat);
+	}
 
-    @Override
-    public Address parseAddress(JsonObject json) {
-        Address address = new Address();
+	private static String formatUrl(String key, String language) {
+		String url = "https://www.geocode.farm/v3/json/reverse/";
+		url += "?lat=%f&lon=%f&country=us&count=1";
+		if (key != null) {
+			url += "&key=" + key;
+		}
+		if (language != null) {
+			url += "&lang=" + language;
+		}
+		return url;
+	}
 
-        JsonObject result = json
-                .getJsonObject("geocoding_results")
-                .getJsonArray("RESULTS")
-                .getJsonObject(0);
+	@Override
+	public Address parseAddress(JsonObject json) {
+		Address address = new Address();
 
-        JsonObject resultAddress = result.getJsonObject("ADDRESS");
+		JsonObject result = json
+				.getJsonObject("geocoding_results")
+				.getJsonArray("RESULTS")
+				.getJsonObject(0);
 
-        if (result.containsKey("formatted_address")) {
-            address.setFormattedAddress(result.getString("formatted_address"));
-        }
-        if (resultAddress.containsKey("street_number")) {
-            address.setStreet(resultAddress.getString("street_number"));
-        }
-        if (resultAddress.containsKey("street_name")) {
-            address.setStreet(resultAddress.getString("street_name"));
-        }
-        if (resultAddress.containsKey("locality")) {
-            address.setSettlement(resultAddress.getString("locality"));
-        }
-        if (resultAddress.containsKey("admin_1")) {
-            address.setState(resultAddress.getString("admin_1"));
-        }
-        if (resultAddress.containsKey("country")) {
-            address.setCountry(resultAddress.getString("country"));
-        }
+		JsonObject resultAddress = result.getJsonObject("ADDRESS");
 
-        return address;
-    }
+		if (result.containsKey("formatted_address")) {
+			address.setFormattedAddress(result.getString("formatted_address"));
+		}
+		if (resultAddress.containsKey("street_number")) {
+			address.setStreet(resultAddress.getString("street_number"));
+		}
+		if (resultAddress.containsKey("street_name")) {
+			address.setStreet(resultAddress.getString("street_name"));
+		}
+		if (resultAddress.containsKey("locality")) {
+			address.setSettlement(resultAddress.getString("locality"));
+		}
+		if (resultAddress.containsKey("admin_1")) {
+			address.setState(resultAddress.getString("admin_1"));
+		}
+		if (resultAddress.containsKey("country")) {
+			address.setCountry(resultAddress.getString("country"));
+		}
+
+		return address;
+	}
 
 }

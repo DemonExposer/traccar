@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class SolarPoweredProtocol extends BaseProtocol {
 
-    public SolarPoweredProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new HuabaoFrameDecoder());
-                pipeline.addLast(new SolarPoweredProtocolDecoder(SolarPoweredProtocol.this));
-            }
-        });
-    }
+	public SolarPoweredProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new HuabaoFrameDecoder());
+				pipeline.addLast(new SolarPoweredProtocolDecoder(SolarPoweredProtocol.this));
+			}
+		});
+	}
 
 }

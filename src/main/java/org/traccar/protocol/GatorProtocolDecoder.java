@@ -32,105 +32,104 @@ import java.net.SocketAddress;
 
 public class GatorProtocolDecoder extends BaseProtocolDecoder {
 
-    public GatorProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public static final int MSG_HEARTBEAT = 0x21;
+	public static final int MSG_POSITION_DATA = 0x80;
+	public static final int MSG_ROLLCALL_RESPONSE = 0x81;
+	public static final int MSG_ALARM_DATA = 0x82;
+	public static final int MSG_TERMINAL_STATUS = 0x83;
+	public static final int MSG_MESSAGE = 0x84;
+	public static final int MSG_TERMINAL_ANSWER = 0x85;
+	public static final int MSG_BLIND_AREA = 0x8E;
+	public static final int MSG_PICTURE_FRAME = 0x54;
+	public static final int MSG_CAMERA_RESPONSE = 0x56;
+	public static final int MSG_PICTURE_DATA = 0x57;
+	public GatorProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    public static final int MSG_HEARTBEAT = 0x21;
-    public static final int MSG_POSITION_DATA = 0x80;
-    public static final int MSG_ROLLCALL_RESPONSE = 0x81;
-    public static final int MSG_ALARM_DATA = 0x82;
-    public static final int MSG_TERMINAL_STATUS = 0x83;
-    public static final int MSG_MESSAGE = 0x84;
-    public static final int MSG_TERMINAL_ANSWER = 0x85;
-    public static final int MSG_BLIND_AREA = 0x8E;
-    public static final int MSG_PICTURE_FRAME = 0x54;
-    public static final int MSG_CAMERA_RESPONSE = 0x56;
-    public static final int MSG_PICTURE_DATA = 0x57;
+	public static String decodeId(int b1, int b2, int b3, int b4) {
 
-    public static String decodeId(int b1, int b2, int b3, int b4) {
+		int d1 = 30 + ((b1 >> 7) << 3) + ((b2 >> 7) << 2) + ((b3 >> 7) << 1) + (b4 >> 7);
+		int d2 = b1 & 0x7f;
+		int d3 = b2 & 0x7f;
+		int d4 = b3 & 0x7f;
+		int d5 = b4 & 0x7f;
 
-        int d1 = 30 + ((b1 >> 7) << 3) + ((b2 >> 7) << 2) + ((b3 >> 7) << 1) + (b4 >> 7);
-        int d2 = b1 & 0x7f;
-        int d3 = b2 & 0x7f;
-        int d4 = b3 & 0x7f;
-        int d5 = b4 & 0x7f;
+		return String.format("%02d%02d%02d%02d%02d", d1, d2, d3, d4, d5);
+	}
 
-        return String.format("%02d%02d%02d%02d%02d", d1, d2, d3, d4, d5);
-    }
+	private void sendResponse(Channel channel, SocketAddress remoteAddress, int type, int checksum) {
+		if (channel != null) {
+			ByteBuf response = Unpooled.buffer();
+			response.writeShort(0x2424); // header
+			response.writeByte(MSG_HEARTBEAT);
+			response.writeShort(5); // length
+			response.writeByte(checksum);
+			response.writeByte(type);
+			response.writeByte(0); // subtype
+			response.writeByte(Checksum.xor(response.nioBuffer(2, response.writerIndex())));
+			response.writeByte(0x0D);
+			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+		}
+	}
 
-    private void sendResponse(Channel channel, SocketAddress remoteAddress, int type, int checksum) {
-        if (channel != null) {
-            ByteBuf response = Unpooled.buffer();
-            response.writeShort(0x2424); // header
-            response.writeByte(MSG_HEARTBEAT);
-            response.writeShort(5); // length
-            response.writeByte(checksum);
-            response.writeByte(type);
-            response.writeByte(0); // subtype
-            response.writeByte(Checksum.xor(response.nioBuffer(2, response.writerIndex())));
-            response.writeByte(0x0D);
-            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-        }
-    }
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+		ByteBuf buf = (ByteBuf) msg;
 
-        ByteBuf buf = (ByteBuf) msg;
+		buf.skipBytes(2); // header
+		int type = buf.readUnsignedByte();
+		buf.readUnsignedShort(); // length
 
-        buf.skipBytes(2); // header
-        int type = buf.readUnsignedByte();
-        buf.readUnsignedShort(); // length
+		String id = decodeId(
+				buf.readUnsignedByte(), buf.readUnsignedByte(),
+				buf.readUnsignedByte(), buf.readUnsignedByte());
 
-        String id = decodeId(
-                buf.readUnsignedByte(), buf.readUnsignedByte(),
-                buf.readUnsignedByte(), buf.readUnsignedByte());
+		sendResponse(channel, remoteAddress, type, buf.getByte(buf.writerIndex() - 2));
 
-        sendResponse(channel, remoteAddress, type, buf.getByte(buf.writerIndex() - 2));
+		if (type == MSG_POSITION_DATA || type == MSG_ROLLCALL_RESPONSE
+				|| type == MSG_ALARM_DATA || type == MSG_BLIND_AREA) {
 
-        if (type == MSG_POSITION_DATA || type == MSG_ROLLCALL_RESPONSE
-                || type == MSG_ALARM_DATA || type == MSG_BLIND_AREA) {
+			Position position = new Position(getProtocolName());
 
-            Position position = new Position(getProtocolName());
+			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, "1" + id, id);
+			if (deviceSession == null) {
+				return null;
+			}
+			position.setDeviceId(deviceSession.getDeviceId());
 
-            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, "1" + id, id);
-            if (deviceSession == null) {
-                return null;
-            }
-            position.setDeviceId(deviceSession.getDeviceId());
+			DateBuilder dateBuilder = new DateBuilder()
+					.setYear(BcdUtil.readInteger(buf, 2))
+					.setMonth(BcdUtil.readInteger(buf, 2))
+					.setDay(BcdUtil.readInteger(buf, 2))
+					.setHour(BcdUtil.readInteger(buf, 2))
+					.setMinute(BcdUtil.readInteger(buf, 2))
+					.setSecond(BcdUtil.readInteger(buf, 2));
+			position.setTime(dateBuilder.getDate());
 
-            DateBuilder dateBuilder = new DateBuilder()
-                    .setYear(BcdUtil.readInteger(buf, 2))
-                    .setMonth(BcdUtil.readInteger(buf, 2))
-                    .setDay(BcdUtil.readInteger(buf, 2))
-                    .setHour(BcdUtil.readInteger(buf, 2))
-                    .setMinute(BcdUtil.readInteger(buf, 2))
-                    .setSecond(BcdUtil.readInteger(buf, 2));
-            position.setTime(dateBuilder.getDate());
+			position.setLatitude(BcdUtil.readCoordinate(buf));
+			position.setLongitude(BcdUtil.readCoordinate(buf));
+			position.setSpeed(UnitsConverter.knotsFromKph(BcdUtil.readInteger(buf, 4)));
+			position.setCourse(BcdUtil.readInteger(buf, 4));
 
-            position.setLatitude(BcdUtil.readCoordinate(buf));
-            position.setLongitude(BcdUtil.readCoordinate(buf));
-            position.setSpeed(UnitsConverter.knotsFromKph(BcdUtil.readInteger(buf, 4)));
-            position.setCourse(BcdUtil.readInteger(buf, 4));
+			int flags = buf.readUnsignedByte();
+			position.setValid((flags & 0x80) != 0);
+			position.set(Position.KEY_SATELLITES, flags & 0x0f);
 
-            int flags = buf.readUnsignedByte();
-            position.setValid((flags & 0x80) != 0);
-            position.set(Position.KEY_SATELLITES, flags & 0x0f);
+			position.set(Position.KEY_STATUS, buf.readUnsignedByte());
+			position.set("key", buf.readUnsignedByte());
 
-            position.set(Position.KEY_STATUS, buf.readUnsignedByte());
-            position.set("key", buf.readUnsignedByte());
+			position.set(Position.PREFIX_ADC + 1, buf.readUnsignedByte() + buf.readUnsignedByte() * 0.01);
+			position.set(Position.PREFIX_ADC + 2, buf.readUnsignedByte() + buf.readUnsignedByte() * 0.01);
 
-            position.set(Position.PREFIX_ADC + 1, buf.readUnsignedByte() + buf.readUnsignedByte() * 0.01);
-            position.set(Position.PREFIX_ADC + 2, buf.readUnsignedByte() + buf.readUnsignedByte() * 0.01);
+			position.set(Position.KEY_ODOMETER, buf.readUnsignedInt());
 
-            position.set(Position.KEY_ODOMETER, buf.readUnsignedInt());
+			return position;
+		}
 
-            return position;
-        }
-
-        return null;
-    }
+		return null;
+	}
 
 }

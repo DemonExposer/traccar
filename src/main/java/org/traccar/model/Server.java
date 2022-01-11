@@ -22,164 +22,150 @@ import org.traccar.database.QueryIgnore;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Server extends ExtendedModel {
 
-    private boolean registration;
+	private boolean registration;
+	private boolean readonly;
+	private boolean deviceReadonly;
+	private String map;
+	private String bingKey;
+	private String mapUrl;
+	private double latitude;
+	private double longitude;
+	private int zoom;
+	private boolean twelveHourFormat;
+	private boolean forceSettings;
+	private String coordinateFormat;
+	private boolean limitCommands;
+	private String poiLayer;
+	private String announcement;
 
-    public boolean getRegistration() {
-        return registration;
-    }
+	public boolean getRegistration() {
+		return registration;
+	}
 
-    public void setRegistration(boolean registration) {
-        this.registration = registration;
-    }
+	public void setRegistration(boolean registration) {
+		this.registration = registration;
+	}
 
-    private boolean readonly;
+	public boolean getReadonly() {
+		return readonly;
+	}
 
-    public boolean getReadonly() {
-        return readonly;
-    }
+	public void setReadonly(boolean readonly) {
+		this.readonly = readonly;
+	}
 
-    public void setReadonly(boolean readonly) {
-        this.readonly = readonly;
-    }
+	public boolean getDeviceReadonly() {
+		return deviceReadonly;
+	}
 
-    private boolean deviceReadonly;
+	public void setDeviceReadonly(boolean deviceReadonly) {
+		this.deviceReadonly = deviceReadonly;
+	}
 
-    public boolean getDeviceReadonly() {
-        return deviceReadonly;
-    }
+	public String getMap() {
+		return map;
+	}
 
-    public void setDeviceReadonly(boolean deviceReadonly) {
-        this.deviceReadonly = deviceReadonly;
-    }
+	public void setMap(String map) {
+		this.map = map;
+	}
 
-    private String map;
+	public String getBingKey() {
+		return bingKey;
+	}
 
-    public String getMap() {
-        return map;
-    }
+	public void setBingKey(String bingKey) {
+		this.bingKey = bingKey;
+	}
 
-    public void setMap(String map) {
-        this.map = map;
-    }
+	public String getMapUrl() {
+		return mapUrl;
+	}
 
-    private String bingKey;
+	public void setMapUrl(String mapUrl) {
+		this.mapUrl = mapUrl;
+	}
 
-    public String getBingKey() {
-        return bingKey;
-    }
+	public double getLatitude() {
+		return latitude;
+	}
 
-    public void setBingKey(String bingKey) {
-        this.bingKey = bingKey;
-    }
+	public void setLatitude(double latitude) {
+		this.latitude = latitude;
+	}
 
-    private String mapUrl;
+	public double getLongitude() {
+		return longitude;
+	}
 
-    public String getMapUrl() {
-        return mapUrl;
-    }
+	public void setLongitude(double longitude) {
+		this.longitude = longitude;
+	}
 
-    public void setMapUrl(String mapUrl) {
-        this.mapUrl = mapUrl;
-    }
+	public int getZoom() {
+		return zoom;
+	}
 
-    private double latitude;
+	public void setZoom(int zoom) {
+		this.zoom = zoom;
+	}
 
-    public double getLatitude() {
-        return latitude;
-    }
+	public boolean getTwelveHourFormat() {
+		return twelveHourFormat;
+	}
 
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
+	public void setTwelveHourFormat(boolean twelveHourFormat) {
+		this.twelveHourFormat = twelveHourFormat;
+	}
 
-    private double longitude;
+	public boolean getForceSettings() {
+		return forceSettings;
+	}
 
-    public double getLongitude() {
-        return longitude;
-    }
+	public void setForceSettings(boolean forceSettings) {
+		this.forceSettings = forceSettings;
+	}
 
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
+	public String getCoordinateFormat() {
+		return coordinateFormat;
+	}
 
-    private int zoom;
+	public void setCoordinateFormat(String coordinateFormat) {
+		this.coordinateFormat = coordinateFormat;
+	}
 
-    public int getZoom() {
-        return zoom;
-    }
+	public boolean getLimitCommands() {
+		return limitCommands;
+	}
 
-    public void setZoom(int zoom) {
-        this.zoom = zoom;
-    }
+	public void setLimitCommands(boolean limitCommands) {
+		this.limitCommands = limitCommands;
+	}
 
-    private boolean twelveHourFormat;
+	public String getPoiLayer() {
+		return poiLayer;
+	}
 
-    public boolean getTwelveHourFormat() {
-        return twelveHourFormat;
-    }
+	public void setPoiLayer(String poiLayer) {
+		this.poiLayer = poiLayer;
+	}
 
-    public void setTwelveHourFormat(boolean twelveHourFormat) {
-        this.twelveHourFormat = twelveHourFormat;
-    }
+	public String getAnnouncement() {
+		return announcement;
+	}
 
-    private boolean forceSettings;
+	public void setAnnouncement(String announcement) {
+		this.announcement = announcement;
+	}
 
-    public boolean getForceSettings() {
-        return forceSettings;
-    }
+	@QueryIgnore
+	public String getVersion() {
+		return getClass().getPackage().getImplementationVersion();
+	}
 
-    public void setForceSettings(boolean forceSettings) {
-        this.forceSettings = forceSettings;
-    }
-
-    private String coordinateFormat;
-
-    public String getCoordinateFormat() {
-        return coordinateFormat;
-    }
-
-    public void setCoordinateFormat(String coordinateFormat) {
-        this.coordinateFormat = coordinateFormat;
-    }
-
-    private boolean limitCommands;
-
-    public boolean getLimitCommands() {
-        return limitCommands;
-    }
-
-    public void setLimitCommands(boolean limitCommands) {
-        this.limitCommands = limitCommands;
-    }
-
-    private String poiLayer;
-
-    public String getPoiLayer() {
-        return poiLayer;
-    }
-
-    public void setPoiLayer(String poiLayer) {
-        this.poiLayer = poiLayer;
-    }
-
-    private String announcement;
-
-    public String getAnnouncement() {
-        return announcement;
-    }
-
-    public void setAnnouncement(String announcement) {
-        this.announcement = announcement;
-    }
-
-    @QueryIgnore
-    public String getVersion() {
-        return getClass().getPackage().getImplementationVersion();
-    }
-
-    @QueryIgnore
-    public Boolean getEmailEnabled() {
-        return Context.getMailManager().getEmailEnabled();
-    }
+	@QueryIgnore
+	public Boolean getEmailEnabled() {
+		return Context.getMailManager().getEmailEnabled();
+	}
 
 }

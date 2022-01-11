@@ -26,17 +26,17 @@ import org.traccar.config.Keys;
 
 public class Mta6Protocol extends BaseProtocol {
 
-    public Mta6Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new HttpResponseEncoder());
-                pipeline.addLast(new HttpRequestDecoder());
-                pipeline.addLast(new HttpObjectAggregator(65535));
-                pipeline.addLast(new Mta6ProtocolDecoder(
-                        Mta6Protocol.this, !Context.getConfig().getBoolean(Keys.PROTOCOL_CAN.withPrefix(getName()))));
-            }
-        });
-    }
+	public Mta6Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new HttpResponseEncoder());
+				pipeline.addLast(new HttpRequestDecoder());
+				pipeline.addLast(new HttpObjectAggregator(65535));
+				pipeline.addLast(new Mta6ProtocolDecoder(
+						Mta6Protocol.this, !Context.getConfig().getBoolean(Keys.PROTOCOL_CAN.withPrefix(getName()))));
+			}
+		});
+	}
 
 }

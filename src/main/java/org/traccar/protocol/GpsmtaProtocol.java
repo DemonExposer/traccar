@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class GpsmtaProtocol extends BaseProtocol {
 
-    public GpsmtaProtocol() {
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new GpsmtaProtocolDecoder(GpsmtaProtocol.this));
-            }
-        });
-    }
+	public GpsmtaProtocol() {
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new GpsmtaProtocolDecoder(GpsmtaProtocol.this));
+			}
+		});
+	}
 
 }

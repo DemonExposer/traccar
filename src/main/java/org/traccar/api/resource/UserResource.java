@@ -42,54 +42,54 @@ import java.util.Set;
 @Consumes(MediaType.APPLICATION_JSON)
 public class UserResource extends BaseObjectResource<User> {
 
-    public UserResource() {
-        super(User.class);
-    }
+	public UserResource() {
+		super(User.class);
+	}
 
-    @GET
-    public Collection<User> get(@QueryParam("userId") long userId) throws SQLException {
-        UsersManager usersManager = Context.getUsersManager();
-        Set<Long> result;
-        if (Context.getPermissionsManager().getUserAdmin(getUserId())) {
-            if (userId != 0) {
-                result = usersManager.getUserItems(userId);
-            } else {
-                result = usersManager.getAllItems();
-            }
-        } else if (Context.getPermissionsManager().getUserManager(getUserId())) {
-            result = usersManager.getManagedItems(getUserId());
-        } else {
-            throw new SecurityException("Admin or manager access required");
-        }
-        return usersManager.getItems(result);
-    }
+	@GET
+	public Collection<User> get(@QueryParam("userId") long userId) throws SQLException {
+		UsersManager usersManager = Context.getUsersManager();
+		Set<Long> result;
+		if (Context.getPermissionsManager().getUserAdmin(getUserId())) {
+			if (userId != 0) {
+				result = usersManager.getUserItems(userId);
+			} else {
+				result = usersManager.getAllItems();
+			}
+		} else if (Context.getPermissionsManager().getUserManager(getUserId())) {
+			result = usersManager.getManagedItems(getUserId());
+		} else {
+			throw new SecurityException("Admin or manager access required");
+		}
+		return usersManager.getItems(result);
+	}
 
-    @Override
-    @PermitAll
-    @POST
-    public Response add(User entity) throws SQLException {
-        if (!Context.getPermissionsManager().getUserAdmin(getUserId())) {
-            Context.getPermissionsManager().checkUserUpdate(getUserId(), new User(), entity);
-            if (Context.getPermissionsManager().getUserManager(getUserId())) {
-                Context.getPermissionsManager().checkUserLimit(getUserId());
-            } else {
-                Context.getPermissionsManager().checkRegistration(getUserId());
-                entity.setDeviceLimit(Context.getConfig().getInteger(Keys.USERS_DEFAULT_DEVICE_LIMIT));
-                int expirationDays = Context.getConfig().getInteger(Keys.USERS_DEFAULT_EXPIRATION_DAYS);
-                if (expirationDays > 0) {
-                    entity.setExpirationTime(
-                        new Date(System.currentTimeMillis() + (long) expirationDays * 24 * 3600 * 1000));
-                }
-            }
-        }
-        Context.getUsersManager().addItem(entity);
-        LogAction.create(getUserId(), entity);
-        if (Context.getPermissionsManager().getUserManager(getUserId())) {
-            Context.getDataManager().linkObject(User.class, getUserId(), ManagedUser.class, entity.getId(), true);
-            LogAction.link(getUserId(), User.class, getUserId(), ManagedUser.class, entity.getId());
-        }
-        Context.getUsersManager().refreshUserItems();
-        return Response.ok(entity).build();
-    }
+	@Override
+	@PermitAll
+	@POST
+	public Response add(User entity) throws SQLException {
+		if (!Context.getPermissionsManager().getUserAdmin(getUserId())) {
+			Context.getPermissionsManager().checkUserUpdate(getUserId(), new User(), entity);
+			if (Context.getPermissionsManager().getUserManager(getUserId())) {
+				Context.getPermissionsManager().checkUserLimit(getUserId());
+			} else {
+				Context.getPermissionsManager().checkRegistration(getUserId());
+				entity.setDeviceLimit(Context.getConfig().getInteger(Keys.USERS_DEFAULT_DEVICE_LIMIT));
+				int expirationDays = Context.getConfig().getInteger(Keys.USERS_DEFAULT_EXPIRATION_DAYS);
+				if (expirationDays > 0) {
+					entity.setExpirationTime(
+							new Date(System.currentTimeMillis() + (long) expirationDays * 24 * 3600 * 1000));
+				}
+			}
+		}
+		Context.getUsersManager().addItem(entity);
+		LogAction.create(getUserId(), entity);
+		if (Context.getPermissionsManager().getUserManager(getUserId())) {
+			Context.getDataManager().linkObject(User.class, getUserId(), ManagedUser.class, entity.getId(), true);
+			LogAction.link(getUserId(), User.class, getUserId(), ManagedUser.class, entity.getId());
+		}
+		Context.getUsersManager().refreshUserItems();
+		return Response.ok(entity).build();
+	}
 
 }

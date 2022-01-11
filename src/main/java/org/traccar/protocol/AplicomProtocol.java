@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class AplicomProtocol extends BaseProtocol {
 
-    public AplicomProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new AplicomFrameDecoder());
-                pipeline.addLast(new AplicomProtocolDecoder(AplicomProtocol.this));
-            }
-        });
-    }
+	public AplicomProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new AplicomFrameDecoder());
+				pipeline.addLast(new AplicomProtocolDecoder(AplicomProtocol.this));
+			}
+		});
+	}
 
 }

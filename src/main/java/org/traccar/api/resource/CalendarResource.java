@@ -29,8 +29,8 @@ import org.traccar.model.Calendar;
 @Consumes(MediaType.APPLICATION_JSON)
 public class CalendarResource extends SimpleObjectResource<Calendar> {
 
-    public CalendarResource() {
-        super(Calendar.class);
-    }
+	public CalendarResource() {
+		super(Calendar.class);
+	}
 
 }

@@ -35,282 +35,280 @@ import java.util.List;
 
 public class RuptelaProtocolDecoder extends BaseProtocolDecoder {
 
-    private ByteBuf photo;
+	public static final int MSG_RECORDS = 1;
+	public static final int MSG_DEVICE_CONFIGURATION = 2;
+	public static final int MSG_DEVICE_VERSION = 3;
+	public static final int MSG_FIRMWARE_UPDATE = 4;
+	public static final int MSG_SET_CONNECTION = 5;
+	public static final int MSG_SET_ODOMETER = 6;
+	public static final int MSG_SMS_VIA_GPRS_RESPONSE = 7;
+	public static final int MSG_SMS_VIA_GPRS = 8;
+	public static final int MSG_DTCS = 9;
+	public static final int MSG_SET_IO = 17;
+	public static final int MSG_FILES = 37;
+	public static final int MSG_EXTENDED_RECORDS = 68;
+	private ByteBuf photo;
+	public RuptelaProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    public RuptelaProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	private Position decodeCommandResponse(DeviceSession deviceSession, int type, ByteBuf buf) {
+		Position position = new Position(getProtocolName());
+		position.setDeviceId(deviceSession.getDeviceId());
 
-    public static final int MSG_RECORDS = 1;
-    public static final int MSG_DEVICE_CONFIGURATION = 2;
-    public static final int MSG_DEVICE_VERSION = 3;
-    public static final int MSG_FIRMWARE_UPDATE = 4;
-    public static final int MSG_SET_CONNECTION = 5;
-    public static final int MSG_SET_ODOMETER = 6;
-    public static final int MSG_SMS_VIA_GPRS_RESPONSE = 7;
-    public static final int MSG_SMS_VIA_GPRS = 8;
-    public static final int MSG_DTCS = 9;
-    public static final int MSG_SET_IO = 17;
-    public static final int MSG_FILES = 37;
-    public static final int MSG_EXTENDED_RECORDS = 68;
+		getLastLocation(position, null);
 
-    private Position decodeCommandResponse(DeviceSession deviceSession, int type, ByteBuf buf) {
-        Position position = new Position(getProtocolName());
-        position.setDeviceId(deviceSession.getDeviceId());
+		position.set(Position.KEY_TYPE, type);
 
-        getLastLocation(position, null);
+		switch (type) {
+			case MSG_DEVICE_CONFIGURATION:
+			case MSG_DEVICE_VERSION:
+			case MSG_FIRMWARE_UPDATE:
+			case MSG_SMS_VIA_GPRS_RESPONSE:
+				position.set(Position.KEY_RESULT,
+						buf.toString(buf.readerIndex(), buf.readableBytes() - 2, StandardCharsets.US_ASCII).trim());
+				return position;
+			case MSG_SET_IO:
+				position.set(Position.KEY_RESULT,
+						String.valueOf(buf.readUnsignedByte()));
+				return position;
+			default:
+				return null;
+		}
+	}
 
-        position.set(Position.KEY_TYPE, type);
+	private long readValue(ByteBuf buf, int length, boolean signed) {
+		switch (length) {
+			case 1:
+				return signed ? buf.readByte() : buf.readUnsignedByte();
+			case 2:
+				return signed ? buf.readShort() : buf.readUnsignedShort();
+			case 4:
+				return signed ? buf.readInt() : buf.readUnsignedInt();
+			default:
+				return buf.readLong();
+		}
+	}
 
-        switch (type) {
-            case MSG_DEVICE_CONFIGURATION:
-            case MSG_DEVICE_VERSION:
-            case MSG_FIRMWARE_UPDATE:
-            case MSG_SMS_VIA_GPRS_RESPONSE:
-                position.set(Position.KEY_RESULT,
-                        buf.toString(buf.readerIndex(), buf.readableBytes() - 2, StandardCharsets.US_ASCII).trim());
-                return position;
-            case MSG_SET_IO:
-                position.set(Position.KEY_RESULT,
-                        String.valueOf(buf.readUnsignedByte()));
-                return position;
-            default:
-                return null;
-        }
-    }
+	private void decodeParameter(Position position, int id, ByteBuf buf, int length) {
+		switch (id) {
+			case 2:
+			case 3:
+			case 4:
+				position.set("di" + (id - 1), readValue(buf, length, false));
+				break;
+			case 5:
+				position.set(Position.KEY_IGNITION, readValue(buf, length, false) == 1);
+				break;
+			case 29:
+				position.set(Position.KEY_POWER, readValue(buf, length, false));
+				break;
+			case 30:
+				position.set(Position.KEY_BATTERY, readValue(buf, length, false) * 0.001);
+				break;
+			case 74:
+				position.set(Position.PREFIX_TEMP + 3, readValue(buf, length, true) * 0.1);
+				break;
+			case 78:
+			case 79:
+			case 80:
+				position.set(Position.PREFIX_TEMP + (id - 78), readValue(buf, length, true) * 0.1);
+				break;
+			case 134:
+				if (readValue(buf, length, false) > 0) {
+					position.set(Position.KEY_ALARM, Position.ALARM_BRAKING);
+				}
+				break;
+			case 136:
+				if (readValue(buf, length, false) > 0) {
+					position.set(Position.KEY_ALARM, Position.ALARM_ACCELERATION);
+				}
+				break;
+			case 197:
+				position.set(Position.KEY_RPM, readValue(buf, length, false) * 0.125);
+				break;
+			default:
+				position.set(Position.PREFIX_IO + id, readValue(buf, length, false));
+				break;
+		}
+	}
 
-    private long readValue(ByteBuf buf, int length, boolean signed) {
-        switch (length) {
-            case 1:
-                return signed ? buf.readByte() : buf.readUnsignedByte();
-            case 2:
-                return signed ? buf.readShort() : buf.readUnsignedShort();
-            case 4:
-                return signed ? buf.readInt() : buf.readUnsignedInt();
-            default:
-                return buf.readLong();
-        }
-    }
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-    private void decodeParameter(Position position, int id, ByteBuf buf, int length) {
-        switch (id) {
-            case 2:
-            case 3:
-            case 4:
-                position.set("di" + (id - 1), readValue(buf, length, false));
-                break;
-            case 5:
-                position.set(Position.KEY_IGNITION, readValue(buf, length, false) == 1);
-                break;
-            case 29:
-                position.set(Position.KEY_POWER, readValue(buf, length, false));
-                break;
-            case 30:
-                position.set(Position.KEY_BATTERY, readValue(buf, length, false) * 0.001);
-                break;
-            case 74:
-                position.set(Position.PREFIX_TEMP + 3, readValue(buf, length, true) * 0.1);
-                break;
-            case 78:
-            case 79:
-            case 80:
-                position.set(Position.PREFIX_TEMP + (id - 78), readValue(buf, length, true) * 0.1);
-                break;
-            case 134:
-                if (readValue(buf, length, false) > 0) {
-                    position.set(Position.KEY_ALARM, Position.ALARM_BRAKING);
-                }
-                break;
-            case 136:
-                if (readValue(buf, length, false) > 0) {
-                    position.set(Position.KEY_ALARM, Position.ALARM_ACCELERATION);
-                }
-                break;
-            case 197:
-                position.set(Position.KEY_RPM, readValue(buf, length, false) * 0.125);
-                break;
-            default:
-                position.set(Position.PREFIX_IO + id, readValue(buf, length, false));
-                break;
-        }
-    }
+		ByteBuf buf = (ByteBuf) msg;
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+		buf.readUnsignedShort(); // data length
 
-        ByteBuf buf = (ByteBuf) msg;
+		String imei = String.format("%015d", buf.readLong());
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+		if (deviceSession == null) {
+			return null;
+		}
 
-        buf.readUnsignedShort(); // data length
+		int type = buf.readUnsignedByte();
 
-        String imei = String.format("%015d", buf.readLong());
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-        if (deviceSession == null) {
-            return null;
-        }
+		if (type == MSG_RECORDS || type == MSG_EXTENDED_RECORDS) {
 
-        int type = buf.readUnsignedByte();
+			List<Position> positions = new LinkedList<>();
 
-        if (type == MSG_RECORDS || type == MSG_EXTENDED_RECORDS) {
+			buf.readUnsignedByte(); // records left
+			int count = buf.readUnsignedByte();
 
-            List<Position> positions = new LinkedList<>();
+			for (int i = 0; i < count; i++) {
+				Position position = new Position(getProtocolName());
+				position.setDeviceId(deviceSession.getDeviceId());
 
-            buf.readUnsignedByte(); // records left
-            int count = buf.readUnsignedByte();
+				position.setTime(new Date(buf.readUnsignedInt() * 1000));
+				buf.readUnsignedByte(); // timestamp extension
 
-            for (int i = 0; i < count; i++) {
-                Position position = new Position(getProtocolName());
-                position.setDeviceId(deviceSession.getDeviceId());
+				if (type == MSG_EXTENDED_RECORDS) {
+					buf.readUnsignedByte(); // record extension
+				}
 
-                position.setTime(new Date(buf.readUnsignedInt() * 1000));
-                buf.readUnsignedByte(); // timestamp extension
+				buf.readUnsignedByte(); // priority (reserved)
 
-                if (type == MSG_EXTENDED_RECORDS) {
-                    buf.readUnsignedByte(); // record extension
-                }
+				position.setValid(true);
+				position.setLongitude(buf.readInt() / 10000000.0);
+				position.setLatitude(buf.readInt() / 10000000.0);
+				position.setAltitude(buf.readUnsignedShort() / 10.0);
+				position.setCourse(buf.readUnsignedShort() / 100.0);
 
-                buf.readUnsignedByte(); // priority (reserved)
+				position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
 
-                position.setValid(true);
-                position.setLongitude(buf.readInt() / 10000000.0);
-                position.setLatitude(buf.readInt() / 10000000.0);
-                position.setAltitude(buf.readUnsignedShort() / 10.0);
-                position.setCourse(buf.readUnsignedShort() / 100.0);
+				position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShort()));
 
-                position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
+				position.set(Position.KEY_HDOP, buf.readUnsignedByte() / 10.0);
 
-                position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShort()));
+				if (type == MSG_EXTENDED_RECORDS) {
+					position.set(Position.KEY_EVENT, buf.readUnsignedShort());
+				} else {
+					position.set(Position.KEY_EVENT, buf.readUnsignedByte());
+				}
 
-                position.set(Position.KEY_HDOP, buf.readUnsignedByte() / 10.0);
+				// Read 1 byte data
+				int valueCount = buf.readUnsignedByte();
+				for (int j = 0; j < valueCount; j++) {
+					int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
+					decodeParameter(position, id, buf, 1);
+				}
 
-                if (type == MSG_EXTENDED_RECORDS) {
-                    position.set(Position.KEY_EVENT, buf.readUnsignedShort());
-                } else {
-                    position.set(Position.KEY_EVENT, buf.readUnsignedByte());
-                }
+				// Read 2 byte data
+				valueCount = buf.readUnsignedByte();
+				for (int j = 0; j < valueCount; j++) {
+					int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
+					decodeParameter(position, id, buf, 2);
+				}
 
-                // Read 1 byte data
-                int valueCount = buf.readUnsignedByte();
-                for (int j = 0; j < valueCount; j++) {
-                    int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
-                    decodeParameter(position, id, buf, 1);
-                }
+				// Read 4 byte data
+				valueCount = buf.readUnsignedByte();
+				for (int j = 0; j < valueCount; j++) {
+					int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
+					decodeParameter(position, id, buf, 4);
+				}
 
-                // Read 2 byte data
-                valueCount = buf.readUnsignedByte();
-                for (int j = 0; j < valueCount; j++) {
-                    int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
-                    decodeParameter(position, id, buf, 2);
-                }
+				// Read 8 byte data
+				valueCount = buf.readUnsignedByte();
+				for (int j = 0; j < valueCount; j++) {
+					int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
+					decodeParameter(position, id, buf, 8);
+				}
 
-                // Read 4 byte data
-                valueCount = buf.readUnsignedByte();
-                for (int j = 0; j < valueCount; j++) {
-                    int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
-                    decodeParameter(position, id, buf, 4);
-                }
+				Long driverIdPart1 = (Long) position.getAttributes().remove(Position.PREFIX_IO + 126);
+				Long driverIdPart2 = (Long) position.getAttributes().remove(Position.PREFIX_IO + 127);
+				if (driverIdPart1 != null && driverIdPart2 != null) {
+					ByteBuf driverId = Unpooled.copyLong(driverIdPart1, driverIdPart2);
+					position.set(Position.KEY_DRIVER_UNIQUE_ID, driverId.toString(StandardCharsets.US_ASCII));
+					driverId.release();
+				}
 
-                // Read 8 byte data
-                valueCount = buf.readUnsignedByte();
-                for (int j = 0; j < valueCount; j++) {
-                    int id = type == MSG_EXTENDED_RECORDS ? buf.readUnsignedShort() : buf.readUnsignedByte();
-                    decodeParameter(position, id, buf, 8);
-                }
+				positions.add(position);
+			}
 
-                Long driverIdPart1 = (Long) position.getAttributes().remove(Position.PREFIX_IO + 126);
-                Long driverIdPart2 = (Long) position.getAttributes().remove(Position.PREFIX_IO + 127);
-                if (driverIdPart1 != null && driverIdPart2 != null) {
-                    ByteBuf driverId = Unpooled.copyLong(driverIdPart1, driverIdPart2);
-                    position.set(Position.KEY_DRIVER_UNIQUE_ID, driverId.toString(StandardCharsets.US_ASCII));
-                    driverId.release();
-                }
+			if (channel != null) {
+				channel.writeAndFlush(new NetworkMessage(
+						Unpooled.wrappedBuffer(DataConverter.parseHex("0002640113bc")), remoteAddress));
+			}
 
-                positions.add(position);
-            }
+			return positions;
 
-            if (channel != null) {
-                channel.writeAndFlush(new NetworkMessage(
-                        Unpooled.wrappedBuffer(DataConverter.parseHex("0002640113bc")), remoteAddress));
-            }
+		} else if (type == MSG_DTCS) {
 
-            return positions;
+			List<Position> positions = new LinkedList<>();
 
-        } else if (type == MSG_DTCS) {
+			int count = buf.readUnsignedByte();
 
-            List<Position> positions = new LinkedList<>();
+			for (int i = 0; i < count; i++) {
+				Position position = new Position(getProtocolName());
+				position.setDeviceId(deviceSession.getDeviceId());
 
-            int count = buf.readUnsignedByte();
+				buf.readUnsignedByte(); // reserved
 
-            for (int i = 0; i < count; i++) {
-                Position position = new Position(getProtocolName());
-                position.setDeviceId(deviceSession.getDeviceId());
+				position.setTime(new Date(buf.readUnsignedInt() * 1000));
 
-                buf.readUnsignedByte(); // reserved
+				position.setValid(true);
+				position.setLongitude(buf.readInt() / 10000000.0);
+				position.setLatitude(buf.readInt() / 10000000.0);
 
-                position.setTime(new Date(buf.readUnsignedInt() * 1000));
+				if (buf.readUnsignedByte() == 2) {
+					position.set(Position.KEY_ARCHIVE, true);
+				}
 
-                position.setValid(true);
-                position.setLongitude(buf.readInt() / 10000000.0);
-                position.setLatitude(buf.readInt() / 10000000.0);
+				position.set(Position.KEY_DTCS, buf.readSlice(5).toString(StandardCharsets.US_ASCII));
 
-                if (buf.readUnsignedByte() == 2) {
-                    position.set(Position.KEY_ARCHIVE, true);
-                }
+				positions.add(position);
+			}
 
-                position.set(Position.KEY_DTCS, buf.readSlice(5).toString(StandardCharsets.US_ASCII));
+			if (channel != null) {
+				channel.writeAndFlush(new NetworkMessage(
+						Unpooled.wrappedBuffer(DataConverter.parseHex("00026d01c4a4")), remoteAddress));
+			}
 
-                positions.add(position);
-            }
+			return positions;
 
-            if (channel != null) {
-                channel.writeAndFlush(new NetworkMessage(
-                        Unpooled.wrappedBuffer(DataConverter.parseHex("00026d01c4a4")), remoteAddress));
-            }
+		} else if (type == MSG_FILES) {
 
-            return positions;
+			int subtype = buf.readUnsignedByte();
+			int source = buf.readUnsignedByte();
 
-        } else if (type == MSG_FILES) {
+			if (subtype == 2) {
+				ByteBuf filename = buf.readSlice(8);
+				int total = buf.readUnsignedShort();
+				int current = buf.readUnsignedShort();
+				if (photo == null) {
+					photo = Unpooled.buffer();
+				}
+				photo.writeBytes(buf.readSlice(buf.readableBytes() - 2));
+				if (current < total - 1) {
+					ByteBuf content = Unpooled.buffer();
+					content.writeByte(subtype);
+					content.writeByte(source);
+					content.writeBytes(filename);
+					content.writeShort(current + 1);
+					ByteBuf response = RuptelaProtocolEncoder.encodeContent(type, content);
+					content.release();
+					if (channel != null) {
+						channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+					}
+				} else {
+					Position position = new Position(getProtocolName());
+					position.setDeviceId(deviceSession.getDeviceId());
+					getLastLocation(position, null);
+					position.set(Position.KEY_IMAGE, Context.getMediaManager().writeFile(imei, photo, "jpg"));
+					photo.release();
+					photo = null;
+					return position;
+				}
+			}
 
-            int subtype = buf.readUnsignedByte();
-            int source = buf.readUnsignedByte();
+			return null;
 
-            if (subtype == 2) {
-                ByteBuf filename = buf.readSlice(8);
-                int total = buf.readUnsignedShort();
-                int current = buf.readUnsignedShort();
-                if (photo == null) {
-                    photo = Unpooled.buffer();
-                }
-                photo.writeBytes(buf.readSlice(buf.readableBytes() - 2));
-                if (current < total - 1) {
-                    ByteBuf content = Unpooled.buffer();
-                    content.writeByte(subtype);
-                    content.writeByte(source);
-                    content.writeBytes(filename);
-                    content.writeShort(current + 1);
-                    ByteBuf response = RuptelaProtocolEncoder.encodeContent(type, content);
-                    content.release();
-                    if (channel != null) {
-                        channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-                    }
-                } else {
-                    Position position = new Position(getProtocolName());
-                    position.setDeviceId(deviceSession.getDeviceId());
-                    getLastLocation(position, null);
-                    position.set(Position.KEY_IMAGE, Context.getMediaManager().writeFile(imei, photo, "jpg"));
-                    photo.release();
-                    photo = null;
-                    return position;
-                }
-            }
+		} else {
 
-            return null;
+			return decodeCommandResponse(deviceSession, type, buf);
 
-        } else {
-
-            return decodeCommandResponse(deviceSession, type, buf);
-
-        }
-    }
+		}
+	}
 
 }

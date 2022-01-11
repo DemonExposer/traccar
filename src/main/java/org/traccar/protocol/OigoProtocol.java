@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class OigoProtocol extends BaseProtocol {
 
-    public OigoProtocol() {
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new OigoProtocolDecoder(OigoProtocol.this));
-            }
-        });
-    }
+	public OigoProtocol() {
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new OigoProtocolDecoder(OigoProtocol.this));
+			}
+		});
+	}
 
 }

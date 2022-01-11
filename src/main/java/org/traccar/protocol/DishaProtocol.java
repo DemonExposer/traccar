@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class DishaProtocol extends BaseProtocol {
 
-    public DishaProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new DishaProtocolDecoder(DishaProtocol.this));
-            }
-        });
-    }
+	public DishaProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new DishaProtocolDecoder(DishaProtocol.this));
+			}
+		});
+	}
 
 }

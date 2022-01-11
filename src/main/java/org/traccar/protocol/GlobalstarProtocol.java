@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class GlobalstarProtocol extends BaseProtocol {
 
-    public GlobalstarProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new HttpResponseEncoder());
-                pipeline.addLast(new HttpRequestDecoder());
-                pipeline.addLast(new HttpObjectAggregator(65535));
-                pipeline.addLast(new GlobalstarProtocolDecoder(GlobalstarProtocol.this));
-            }
-        });
-    }
+	public GlobalstarProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new HttpResponseEncoder());
+				pipeline.addLast(new HttpRequestDecoder());
+				pipeline.addLast(new HttpObjectAggregator(65535));
+				pipeline.addLast(new GlobalstarProtocolDecoder(GlobalstarProtocol.this));
+			}
+		});
+	}
 
 }

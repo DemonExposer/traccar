@@ -18,19 +18,19 @@ package org.traccar.notification;
 
 public class NotificationMessage {
 
-    private String subject;
-    private String body;
+	private String subject;
+	private String body;
 
-    public NotificationMessage(String subject, String body) {
-        this.subject = subject;
-        this.body = body;
-    }
+	public NotificationMessage(String subject, String body) {
+		this.subject = subject;
+		this.body = body;
+	}
 
-    public String getSubject() {
-        return subject;
-    }
+	public String getSubject() {
+		return subject;
+	}
 
-    public String getBody() {
-        return body;
-    }
+	public String getBody() {
+		return body;
+	}
 }

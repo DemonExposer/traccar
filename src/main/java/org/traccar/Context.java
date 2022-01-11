@@ -74,343 +74,315 @@ import java.util.Properties;
 
 public final class Context {
 
-    private Context() {
-    }
+	private static Config config;
+	private static ObjectMapper objectMapper;
+	private static IdentityManager identityManager;
+	private static DataManager dataManager;
+	private static LdapProvider ldapProvider;
+	private static MailManager mailManager;
+	private static MediaManager mediaManager;
+	private static UsersManager usersManager;
+	private static GroupsManager groupsManager;
+	private static DeviceManager deviceManager;
+	private static ConnectionManager connectionManager;
+	private static PermissionsManager permissionsManager;
+	private static WebServer webServer;
+	private static ServerManager serverManager;
+	private static ScheduleManager scheduleManager;
+	private static GeofenceManager geofenceManager;
+	private static CalendarManager calendarManager;
+	private static NotificationManager notificationManager;
+	private static NotificatorManager notificatorManager;
+	private static VelocityEngine velocityEngine;
+	private static Client client = ClientBuilder.newClient();
+	private static EventForwarder eventForwarder;
+	private static AttributesManager attributesManager;
+	private static DriversManager driversManager;
+	private static CommandsManager commandsManager;
+	private static MaintenancesManager maintenancesManager;
+	private static OrderManager orderManager;
+	private static SmsManager smsManager;
+	private static TripsConfig tripsConfig;
+
+	private Context() {
+	}
+
+	public static Config getConfig() {
+		return config;
+	}
+
+	public static ObjectMapper getObjectMapper() {
+		return objectMapper;
+	}
+
+	public static IdentityManager getIdentityManager() {
+		return identityManager;
+	}
+
+	public static DataManager getDataManager() {
+		return dataManager;
+	}
+
+	public static LdapProvider getLdapProvider() {
+		return ldapProvider;
+	}
+
+	public static MailManager getMailManager() {
+		return mailManager;
+	}
+
+	public static MediaManager getMediaManager() {
+		return mediaManager;
+	}
+
+	public static UsersManager getUsersManager() {
+		return usersManager;
+	}
+
+	public static GroupsManager getGroupsManager() {
+		return groupsManager;
+	}
+
+	public static DeviceManager getDeviceManager() {
+		return deviceManager;
+	}
+
+	public static ConnectionManager getConnectionManager() {
+		return connectionManager;
+	}
+
+	public static PermissionsManager getPermissionsManager() {
+		return permissionsManager;
+	}
+
+	public static Geocoder getGeocoder() {
+		return Main.getInjector() != null ? Main.getInjector().getInstance(Geocoder.class) : null;
+	}
+
+	public static WebServer getWebServer() {
+		return webServer;
+	}
+
+	public static ServerManager getServerManager() {
+		return serverManager;
+	}
+
+	public static ScheduleManager getScheduleManager() {
+		return scheduleManager;
+	}
+
+	public static GeofenceManager getGeofenceManager() {
+		return geofenceManager;
+	}
+
+	public static CalendarManager getCalendarManager() {
+		return calendarManager;
+	}
+
+	public static NotificationManager getNotificationManager() {
+		return notificationManager;
+	}
+
+	public static NotificatorManager getNotificatorManager() {
+		return notificatorManager;
+	}
 
-    private static Config config;
+	public static VelocityEngine getVelocityEngine() {
+		return velocityEngine;
+	}
 
-    public static Config getConfig() {
-        return config;
-    }
+	public static Client getClient() {
+		return client;
+	}
 
-    private static ObjectMapper objectMapper;
+	public static EventForwarder getEventForwarder() {
+		return eventForwarder;
+	}
 
-    public static ObjectMapper getObjectMapper() {
-        return objectMapper;
-    }
+	public static AttributesManager getAttributesManager() {
+		return attributesManager;
+	}
 
-    private static IdentityManager identityManager;
+	public static DriversManager getDriversManager() {
+		return driversManager;
+	}
 
-    public static IdentityManager getIdentityManager() {
-        return identityManager;
-    }
+	public static CommandsManager getCommandsManager() {
+		return commandsManager;
+	}
 
-    private static DataManager dataManager;
+	public static MaintenancesManager getMaintenancesManager() {
+		return maintenancesManager;
+	}
 
-    public static DataManager getDataManager() {
-        return dataManager;
-    }
+	public static OrderManager getOrderManager() {
+		return orderManager;
+	}
 
-    private static LdapProvider ldapProvider;
+	public static SmsManager getSmsManager() {
+		return smsManager;
+	}
 
-    public static LdapProvider getLdapProvider() {
-        return ldapProvider;
-    }
+	public static TripsConfig getTripsConfig() {
+		return tripsConfig;
+	}
 
-    private static MailManager mailManager;
+	public static TripsConfig initTripsConfig() {
+		return new TripsConfig(
+				config.getLong(Keys.REPORT_TRIP_MINIMAL_TRIP_DISTANCE),
+				config.getLong(Keys.REPORT_TRIP_MINIMAL_TRIP_DURATION) * 1000,
+				config.getLong(Keys.REPORT_TRIP_MINIMAL_PARKING_DURATION) * 1000,
+				config.getLong(Keys.REPORT_TRIP_MINIMAL_NO_DATA_DURATION) * 1000,
+				config.getBoolean(Keys.REPORT_TRIP_USE_IGNITION),
+				config.getBoolean(Keys.EVENT_MOTION_PROCESS_INVALID_POSITIONS),
+				config.getDouble(Keys.EVENT_MOTION_SPEED_THRESHOLD));
+	}
 
-    public static MailManager getMailManager() {
-        return mailManager;
-    }
+	public static void init(String configFile) throws Exception {
 
-    private static MediaManager mediaManager;
-
-    public static MediaManager getMediaManager() {
-        return mediaManager;
-    }
-
-    private static UsersManager usersManager;
-
-    public static UsersManager getUsersManager() {
-        return usersManager;
-    }
-
-    private static GroupsManager groupsManager;
-
-    public static GroupsManager getGroupsManager() {
-        return groupsManager;
-    }
-
-    private static DeviceManager deviceManager;
-
-    public static DeviceManager getDeviceManager() {
-        return deviceManager;
-    }
-
-    private static ConnectionManager connectionManager;
-
-    public static ConnectionManager getConnectionManager() {
-        return connectionManager;
-    }
-
-    private static PermissionsManager permissionsManager;
-
-    public static PermissionsManager getPermissionsManager() {
-        return permissionsManager;
-    }
-
-    public static Geocoder getGeocoder() {
-        return Main.getInjector() != null ? Main.getInjector().getInstance(Geocoder.class) : null;
-    }
-
-    private static WebServer webServer;
-
-    public static WebServer getWebServer() {
-        return webServer;
-    }
-
-    private static ServerManager serverManager;
-
-    public static ServerManager getServerManager() {
-        return serverManager;
-    }
-
-    private static ScheduleManager scheduleManager;
-
-    public static ScheduleManager getScheduleManager() {
-        return scheduleManager;
-    }
-
-    private static GeofenceManager geofenceManager;
-
-    public static GeofenceManager getGeofenceManager() {
-        return geofenceManager;
-    }
-
-    private static CalendarManager calendarManager;
-
-    public static CalendarManager getCalendarManager() {
-        return calendarManager;
-    }
-
-    private static NotificationManager notificationManager;
-
-    public static NotificationManager getNotificationManager() {
-        return notificationManager;
-    }
-
-    private static NotificatorManager notificatorManager;
-
-    public static NotificatorManager getNotificatorManager() {
-        return notificatorManager;
-    }
-
-    private static VelocityEngine velocityEngine;
-
-    public static VelocityEngine getVelocityEngine() {
-        return velocityEngine;
-    }
-
-    private static Client client = ClientBuilder.newClient();
-
-    public static Client getClient() {
-        return client;
-    }
-
-    private static EventForwarder eventForwarder;
-
-    public static EventForwarder getEventForwarder() {
-        return eventForwarder;
-    }
-
-    private static AttributesManager attributesManager;
-
-    public static AttributesManager getAttributesManager() {
-        return attributesManager;
-    }
-
-    private static DriversManager driversManager;
-
-    public static DriversManager getDriversManager() {
-        return driversManager;
-    }
-
-    private static CommandsManager commandsManager;
-
-    public static CommandsManager getCommandsManager() {
-        return commandsManager;
-    }
-
-    private static MaintenancesManager maintenancesManager;
-
-    public static MaintenancesManager getMaintenancesManager() {
-        return maintenancesManager;
-    }
-
-    private static OrderManager orderManager;
-
-    public static OrderManager getOrderManager() {
-        return orderManager;
-    }
-
-    private static SmsManager smsManager;
-
-    public static SmsManager getSmsManager() {
-        return smsManager;
-    }
-
-    private static TripsConfig tripsConfig;
-
-    public static TripsConfig getTripsConfig() {
-        return tripsConfig;
-    }
-
-    public static TripsConfig initTripsConfig() {
-        return new TripsConfig(
-                config.getLong(Keys.REPORT_TRIP_MINIMAL_TRIP_DISTANCE),
-                config.getLong(Keys.REPORT_TRIP_MINIMAL_TRIP_DURATION) * 1000,
-                config.getLong(Keys.REPORT_TRIP_MINIMAL_PARKING_DURATION) * 1000,
-                config.getLong(Keys.REPORT_TRIP_MINIMAL_NO_DATA_DURATION) * 1000,
-                config.getBoolean(Keys.REPORT_TRIP_USE_IGNITION),
-                config.getBoolean(Keys.EVENT_MOTION_PROCESS_INVALID_POSITIONS),
-                config.getDouble(Keys.EVENT_MOTION_SPEED_THRESHOLD));
-    }
-
-    private static class ObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
-
-        @Override
-        public ObjectMapper getContext(Class<?> clazz) {
-            return objectMapper;
-        }
-
-    }
-
-    public static void init(String configFile) throws Exception {
-
-        try {
-            config = new Config(configFile);
-            Log.setupLogger(config);
-        } catch (Exception e) {
-            config = new Config();
-            Log.setupDefaultLogger();
-            throw e;
-        }
-
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new SanitizerModule());
-        objectMapper.registerModule(new JSR353Module());
-        objectMapper.setConfig(
-                objectMapper.getSerializationConfig().without(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS));
-
-        client = ClientBuilder.newClient().register(new ObjectMapperContextResolver());
-
-        if (config.hasKey(Keys.DATABASE_URL)) {
-            dataManager = new DataManager(config);
-        }
-
-        if (config.hasKey(Keys.LDAP_URL)) {
-            ldapProvider = new LdapProvider(config);
-        }
-
-        mailManager = new MailManager();
-
-        mediaManager = new MediaManager(config.getString(Keys.MEDIA_PATH));
-
-        if (dataManager != null) {
-            usersManager = new UsersManager(dataManager);
-            groupsManager = new GroupsManager(dataManager);
-            deviceManager = new DeviceManager(dataManager);
-        }
-
-        identityManager = deviceManager;
-
-        if (config.hasKey(Keys.WEB_PORT)) {
-            webServer = new WebServer(config);
-        }
-
-        permissionsManager = new PermissionsManager(dataManager, usersManager);
-
-        connectionManager = new ConnectionManager();
-
-        tripsConfig = initTripsConfig();
-
-        if (config.hasKey(Keys.SMS_HTTP_URL)) {
-            smsManager = new HttpSmsClient();
-        } else if (config.hasKey(Keys.SMS_AWS_REGION)) {
-            smsManager = new SnsSmsClient();
-        }
-
-        initEventsModule();
-
-        serverManager = new ServerManager();
-        scheduleManager = new ScheduleManager();
-
-        if (config.hasKey(Keys.EVENT_FORWARD_URL)) {
-            eventForwarder = new EventForwarder();
-        }
-
-        attributesManager = new AttributesManager(dataManager);
-
-        driversManager = new DriversManager(dataManager);
-
-        commandsManager = new CommandsManager(dataManager, config.getBoolean(Keys.COMMANDS_QUEUEING));
-
-        orderManager = new OrderManager(dataManager);
-
-    }
-
-    private static void initEventsModule() {
-
-        geofenceManager = new GeofenceManager(dataManager);
-        calendarManager = new CalendarManager(dataManager);
-        maintenancesManager = new MaintenancesManager(dataManager);
-        notificationManager = new NotificationManager(dataManager);
-        notificatorManager = new NotificatorManager();
-        Properties velocityProperties = new Properties();
-        velocityProperties.setProperty("file.resource.loader.path",
-                Context.getConfig().getString("templates.rootPath", "templates") + "/");
-        velocityProperties.setProperty("runtime.log.logsystem.class",
-                "org.apache.velocity.runtime.log.NullLogChute");
-
-        String address;
-        try {
-            address = config.getString(Keys.WEB_ADDRESS, InetAddress.getLocalHost().getHostAddress());
-        } catch (UnknownHostException e) {
-            address = "localhost";
-        }
-
-        String webUrl = URIUtil.newURI("http", address, config.getInteger(Keys.WEB_PORT), "", "");
-        webUrl = Context.getConfig().getString("web.url", webUrl);
-        velocityProperties.setProperty("web.url", webUrl);
-
-        velocityEngine = new VelocityEngine();
-        velocityEngine.init(velocityProperties);
-    }
-
-    public static void init(IdentityManager testIdentityManager, MediaManager testMediaManager) {
-        config = new Config();
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JSR353Module());
-        client = ClientBuilder.newClient().register(new ObjectMapperContextResolver());
-        identityManager = testIdentityManager;
-        mediaManager = testMediaManager;
-    }
-
-    public static <T extends BaseModel> BaseObjectManager<T> getManager(Class<T> clazz) {
-        if (clazz.equals(Device.class)) {
-            return (BaseObjectManager<T>) deviceManager;
-        } else if (clazz.equals(Group.class)) {
-            return (BaseObjectManager<T>) groupsManager;
-        } else if (clazz.equals(User.class)) {
-            return (BaseObjectManager<T>) usersManager;
-        } else if (clazz.equals(Calendar.class)) {
-            return (BaseObjectManager<T>) calendarManager;
-        } else if (clazz.equals(Attribute.class)) {
-            return (BaseObjectManager<T>) attributesManager;
-        } else if (clazz.equals(Geofence.class)) {
-            return (BaseObjectManager<T>) geofenceManager;
-        } else if (clazz.equals(Driver.class)) {
-            return (BaseObjectManager<T>) driversManager;
-        } else if (clazz.equals(Command.class)) {
-            return (BaseObjectManager<T>) commandsManager;
-        } else if (clazz.equals(Maintenance.class)) {
-            return (BaseObjectManager<T>) maintenancesManager;
-        } else if (clazz.equals(Notification.class)) {
-            return (BaseObjectManager<T>) notificationManager;
-        } else if (clazz.equals(Order.class)) {
-            return (BaseObjectManager<T>) orderManager;
-        }
-        return null;
-    }
+		try {
+			config = new Config(configFile);
+			Log.setupLogger(config);
+		} catch (Exception e) {
+			config = new Config();
+			Log.setupDefaultLogger();
+			throw e;
+		}
+
+		objectMapper = new ObjectMapper();
+		objectMapper.registerModule(new SanitizerModule());
+		objectMapper.registerModule(new JSR353Module());
+		objectMapper.setConfig(
+				objectMapper.getSerializationConfig().without(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS));
+
+		client = ClientBuilder.newClient().register(new ObjectMapperContextResolver());
+
+		if (config.hasKey(Keys.DATABASE_URL)) {
+			dataManager = new DataManager(config);
+		}
+
+		if (config.hasKey(Keys.LDAP_URL)) {
+			ldapProvider = new LdapProvider(config);
+		}
+
+		mailManager = new MailManager();
+
+		mediaManager = new MediaManager(config.getString(Keys.MEDIA_PATH));
+
+		if (dataManager != null) {
+			usersManager = new UsersManager(dataManager);
+			groupsManager = new GroupsManager(dataManager);
+			deviceManager = new DeviceManager(dataManager);
+		}
+
+		identityManager = deviceManager;
+
+		if (config.hasKey(Keys.WEB_PORT)) {
+			webServer = new WebServer(config);
+		}
+
+		permissionsManager = new PermissionsManager(dataManager, usersManager);
+
+		connectionManager = new ConnectionManager();
+
+		tripsConfig = initTripsConfig();
+
+		if (config.hasKey(Keys.SMS_HTTP_URL)) {
+			smsManager = new HttpSmsClient();
+		} else if (config.hasKey(Keys.SMS_AWS_REGION)) {
+			smsManager = new SnsSmsClient();
+		}
+
+		initEventsModule();
+
+		serverManager = new ServerManager();
+		scheduleManager = new ScheduleManager();
+
+		if (config.hasKey(Keys.EVENT_FORWARD_URL)) {
+			eventForwarder = new EventForwarder();
+		}
+
+		attributesManager = new AttributesManager(dataManager);
+
+		driversManager = new DriversManager(dataManager);
+
+		commandsManager = new CommandsManager(dataManager, config.getBoolean(Keys.COMMANDS_QUEUEING));
+
+		orderManager = new OrderManager(dataManager);
+
+	}
+
+	private static void initEventsModule() {
+
+		geofenceManager = new GeofenceManager(dataManager);
+		calendarManager = new CalendarManager(dataManager);
+		maintenancesManager = new MaintenancesManager(dataManager);
+		notificationManager = new NotificationManager(dataManager);
+		notificatorManager = new NotificatorManager();
+		Properties velocityProperties = new Properties();
+		velocityProperties.setProperty("file.resource.loader.path",
+				Context.getConfig().getString("templates.rootPath", "templates") + "/");
+		velocityProperties.setProperty("runtime.log.logsystem.class",
+				"org.apache.velocity.runtime.log.NullLogChute");
+
+		String address;
+		try {
+			address = config.getString(Keys.WEB_ADDRESS, InetAddress.getLocalHost().getHostAddress());
+		} catch (UnknownHostException e) {
+			address = "localhost";
+		}
+
+		String webUrl = URIUtil.newURI("http", address, config.getInteger(Keys.WEB_PORT), "", "");
+		webUrl = Context.getConfig().getString("web.url", webUrl);
+		velocityProperties.setProperty("web.url", webUrl);
+
+		velocityEngine = new VelocityEngine();
+		velocityEngine.init(velocityProperties);
+	}
+
+	public static void init(IdentityManager testIdentityManager, MediaManager testMediaManager) {
+		config = new Config();
+		objectMapper = new ObjectMapper();
+		objectMapper.registerModule(new JSR353Module());
+		client = ClientBuilder.newClient().register(new ObjectMapperContextResolver());
+		identityManager = testIdentityManager;
+		mediaManager = testMediaManager;
+	}
+
+	public static <T extends BaseModel> BaseObjectManager<T> getManager(Class<T> clazz) {
+		if (clazz.equals(Device.class)) {
+			return (BaseObjectManager<T>) deviceManager;
+		} else if (clazz.equals(Group.class)) {
+			return (BaseObjectManager<T>) groupsManager;
+		} else if (clazz.equals(User.class)) {
+			return (BaseObjectManager<T>) usersManager;
+		} else if (clazz.equals(Calendar.class)) {
+			return (BaseObjectManager<T>) calendarManager;
+		} else if (clazz.equals(Attribute.class)) {
+			return (BaseObjectManager<T>) attributesManager;
+		} else if (clazz.equals(Geofence.class)) {
+			return (BaseObjectManager<T>) geofenceManager;
+		} else if (clazz.equals(Driver.class)) {
+			return (BaseObjectManager<T>) driversManager;
+		} else if (clazz.equals(Command.class)) {
+			return (BaseObjectManager<T>) commandsManager;
+		} else if (clazz.equals(Maintenance.class)) {
+			return (BaseObjectManager<T>) maintenancesManager;
+		} else if (clazz.equals(Notification.class)) {
+			return (BaseObjectManager<T>) notificationManager;
+		} else if (clazz.equals(Order.class)) {
+			return (BaseObjectManager<T>) orderManager;
+		}
+		return null;
+	}
+
+	private static class ObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
+
+		@Override
+		public ObjectMapper getContext(Class<?> clazz) {
+			return objectMapper;
+		}
+
+	}
 
 }

@@ -30,87 +30,84 @@ import java.net.InetSocketAddress;
 
 public abstract class TrackerServer {
 
-    private final boolean datagram;
-    private final AbstractBootstrap bootstrap;
+	private final boolean datagram;
+	private final AbstractBootstrap bootstrap;
+	private final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+	private int port;
+	private String address;
 
-    public boolean isDatagram() {
-        return datagram;
-    }
+	public TrackerServer(boolean datagram, String protocol) {
+		this.datagram = datagram;
 
-    public TrackerServer(boolean datagram, String protocol) {
-        this.datagram = datagram;
+		address = Context.getConfig().getString(Keys.PROTOCOL_ADDRESS.withPrefix(protocol));
+		port = Context.getConfig().getInteger(Keys.PROTOCOL_PORT.withPrefix(protocol));
 
-        address = Context.getConfig().getString(Keys.PROTOCOL_ADDRESS.withPrefix(protocol));
-        port = Context.getConfig().getInteger(Keys.PROTOCOL_PORT.withPrefix(protocol));
+		BasePipelineFactory pipelineFactory = new BasePipelineFactory(this, protocol) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				TrackerServer.this.addProtocolHandlers(pipeline);
+			}
+		};
 
-        BasePipelineFactory pipelineFactory = new BasePipelineFactory(this, protocol) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                TrackerServer.this.addProtocolHandlers(pipeline);
-            }
-        };
+		if (datagram) {
 
-        if (datagram) {
+			this.bootstrap = new Bootstrap()
+					.group(EventLoopGroupFactory.getWorkerGroup())
+					.channel(NioDatagramChannel.class)
+					.handler(pipelineFactory);
 
-            this.bootstrap = new Bootstrap()
-                    .group(EventLoopGroupFactory.getWorkerGroup())
-                    .channel(NioDatagramChannel.class)
-                    .handler(pipelineFactory);
+		} else {
 
-        } else {
+			this.bootstrap = new ServerBootstrap()
+					.group(EventLoopGroupFactory.getBossGroup(), EventLoopGroupFactory.getWorkerGroup())
+					.channel(NioServerSocketChannel.class)
+					.childHandler(pipelineFactory);
 
-            this.bootstrap = new ServerBootstrap()
-                    .group(EventLoopGroupFactory.getBossGroup(), EventLoopGroupFactory.getWorkerGroup())
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(pipelineFactory);
+		}
+	}
 
-        }
-    }
+	public boolean isDatagram() {
+		return datagram;
+	}
 
-    protected abstract void addProtocolHandlers(PipelineBuilder pipeline);
+	protected abstract void addProtocolHandlers(PipelineBuilder pipeline);
 
-    private int port;
+	public int getPort() {
+		return port;
+	}
 
-    public int getPort() {
-        return port;
-    }
+	public void setPort(int port) {
+		this.port = port;
+	}
 
-    public void setPort(int port) {
-        this.port = port;
-    }
+	public String getAddress() {
+		return address;
+	}
 
-    private String address;
+	public void setAddress(String address) {
+		this.address = address;
+	}
 
-    public String getAddress() {
-        return address;
-    }
+	public ChannelGroup getChannelGroup() {
+		return channelGroup;
+	}
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+	public void start() throws Exception {
+		InetSocketAddress endpoint;
+		if (address == null) {
+			endpoint = new InetSocketAddress(port);
+		} else {
+			endpoint = new InetSocketAddress(address, port);
+		}
 
-    private final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+		Channel channel = bootstrap.bind(endpoint).sync().channel();
+		if (channel != null) {
+			getChannelGroup().add(channel);
+		}
+	}
 
-    public ChannelGroup getChannelGroup() {
-        return channelGroup;
-    }
-
-    public void start() throws Exception {
-        InetSocketAddress endpoint;
-        if (address == null) {
-            endpoint = new InetSocketAddress(port);
-        } else {
-            endpoint = new InetSocketAddress(address, port);
-        }
-
-        Channel channel = bootstrap.bind(endpoint).sync().channel();
-        if (channel != null) {
-            getChannelGroup().add(channel);
-        }
-    }
-
-    public void stop() {
-        channelGroup.close().awaitUninterruptibly();
-    }
+	public void stop() {
+		channelGroup.close().awaitUninterruptibly();
+	}
 
 }

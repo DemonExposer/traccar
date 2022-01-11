@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class NiotProtocol extends BaseProtocol {
 
-    public NiotProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 2));
-                pipeline.addLast(new NiotProtocolDecoder(NiotProtocol.this));
-            }
-        });
-    }
+	public NiotProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 2));
+				pipeline.addLast(new NiotProtocolDecoder(NiotProtocol.this));
+			}
+		});
+	}
 
 }

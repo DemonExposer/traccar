@@ -22,34 +22,34 @@ import org.traccar.BaseFrameDecoder;
 
 public class JsonFrameDecoder extends BaseFrameDecoder {
 
-    @Override
-    protected Object decode(
-            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+	@Override
+	protected Object decode(
+			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-        int startIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '{');
-        if (startIndex >= 0) {
+		int startIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '{');
+		if (startIndex >= 0) {
 
-            buf.readerIndex(startIndex);
+			buf.readerIndex(startIndex);
 
-            int currentIndex = startIndex + 1;
-            int nesting = 1;
-            while (currentIndex < buf.writerIndex() && nesting > 0) {
-                byte currentByte = buf.getByte(currentIndex);
-                if (currentByte == '{') {
-                    nesting += 1;
-                } else if (currentByte == '}') {
-                    nesting -= 1;
-                }
-                currentIndex += 1;
-            }
+			int currentIndex = startIndex + 1;
+			int nesting = 1;
+			while (currentIndex < buf.writerIndex() && nesting > 0) {
+				byte currentByte = buf.getByte(currentIndex);
+				if (currentByte == '{') {
+					nesting += 1;
+				} else if (currentByte == '}') {
+					nesting -= 1;
+				}
+				currentIndex += 1;
+			}
 
-            if (nesting == 0) {
-                return buf.readRetainedSlice(currentIndex - startIndex);
-            }
+			if (nesting == 0) {
+				return buf.readRetainedSlice(currentIndex - startIndex);
+			}
 
-        }
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 }

@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class MegastekProtocol extends BaseProtocol {
 
-    public MegastekProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new MegastekFrameDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new MegastekProtocolDecoder(MegastekProtocol.this));
-            }
-        });
-    }
+	public MegastekProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new MegastekFrameDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new MegastekProtocolDecoder(MegastekProtocol.this));
+			}
+		});
+	}
 
 }

@@ -17,10 +17,10 @@ package org.traccar.geolocation;
 
 public class MozillaGeolocationProvider extends UniversalGeolocationProvider {
 
-    private static final String URL = "https://location.services.mozilla.com/v1/geolocate";
+	private static final String URL = "https://location.services.mozilla.com/v1/geolocate";
 
-    public MozillaGeolocationProvider(String key) {
-        super(URL, key != null ? key : "test");
-    }
+	public MozillaGeolocationProvider(String key) {
+		super(URL, key != null ? key : "test");
+	}
 
 }

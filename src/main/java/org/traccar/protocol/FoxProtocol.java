@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class FoxProtocol extends BaseProtocol {
 
-    public FoxProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "</fox>"));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new FoxProtocolDecoder(FoxProtocol.this));
-            }
-        });
-    }
+	public FoxProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "</fox>"));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new FoxProtocolDecoder(FoxProtocol.this));
+			}
+		});
+	}
 
 }

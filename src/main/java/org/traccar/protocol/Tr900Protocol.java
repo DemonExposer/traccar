@@ -24,24 +24,24 @@ import org.traccar.TrackerServer;
 
 public class Tr900Protocol extends BaseProtocol {
 
-    public Tr900Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new Tr900ProtocolDecoder(Tr900Protocol.this));
-            }
-        });
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new Tr900ProtocolDecoder(Tr900Protocol.this));
-            }
-        });
-    }
+	public Tr900Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new Tr900ProtocolDecoder(Tr900Protocol.this));
+			}
+		});
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new Tr900ProtocolDecoder(Tr900Protocol.this));
+			}
+		});
+	}
 
 }

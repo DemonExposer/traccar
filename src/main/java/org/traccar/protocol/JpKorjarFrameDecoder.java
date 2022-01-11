@@ -23,25 +23,25 @@ import org.traccar.BaseFrameDecoder;
 
 public class JpKorjarFrameDecoder extends BaseFrameDecoder {
 
-    @Override
-    protected Object decode(
-            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+	@Override
+	protected Object decode(
+			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-        if (buf.readableBytes() < 80) {
-            return null;
-        }
+		if (buf.readableBytes() < 80) {
+			return null;
+		}
 
-        int spaceIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ' ');
-        if (spaceIndex == -1) {
-            return null;
-        }
+		int spaceIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ' ');
+		if (spaceIndex == -1) {
+			return null;
+		}
 
-        int endIndex = buf.indexOf(spaceIndex, buf.writerIndex(), (byte) ',');
-        if (endIndex == -1) {
-            return null;
-        }
+		int endIndex = buf.indexOf(spaceIndex, buf.writerIndex(), (byte) ',');
+		if (endIndex == -1) {
+			return null;
+		}
 
-        return buf.readRetainedSlice(endIndex + 1);
-    }
+		return buf.readRetainedSlice(endIndex + 1);
+	}
 
 }

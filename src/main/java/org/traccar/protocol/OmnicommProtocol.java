@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class OmnicommProtocol extends BaseProtocol {
 
-    public OmnicommProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new OmnicommFrameDecoder());
-                pipeline.addLast(new OmnicommProtocolDecoder(OmnicommProtocol.this));
-            }
-        });
-    }
+	public OmnicommProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new OmnicommFrameDecoder());
+				pipeline.addLast(new OmnicommProtocolDecoder(OmnicommProtocol.this));
+			}
+		});
+	}
 
 }

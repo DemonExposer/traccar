@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class CguardProtocol extends BaseProtocol {
 
-    public CguardProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LineBasedFrameDecoder(1024));
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new CguardProtocolDecoder(CguardProtocol.this));
-            }
-        });
-    }
+	public CguardProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LineBasedFrameDecoder(1024));
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new CguardProtocolDecoder(CguardProtocol.this));
+			}
+		});
+	}
 
 }

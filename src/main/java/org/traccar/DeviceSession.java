@@ -19,24 +19,23 @@ import java.util.TimeZone;
 
 public class DeviceSession {
 
-    private final long deviceId;
+	private final long deviceId;
+	private TimeZone timeZone;
 
-    public DeviceSession(long deviceId) {
-        this.deviceId = deviceId;
-    }
+	public DeviceSession(long deviceId) {
+		this.deviceId = deviceId;
+	}
 
-    public long getDeviceId() {
-        return deviceId;
-    }
+	public long getDeviceId() {
+		return deviceId;
+	}
 
-    private TimeZone timeZone;
+	public TimeZone getTimeZone() {
+		return timeZone;
+	}
 
-    public void setTimeZone(TimeZone timeZone) {
-        this.timeZone = timeZone;
-    }
-
-    public TimeZone getTimeZone() {
-        return timeZone;
-    }
+	public void setTimeZone(TimeZone timeZone) {
+		this.timeZone = timeZone;
+	}
 
 }

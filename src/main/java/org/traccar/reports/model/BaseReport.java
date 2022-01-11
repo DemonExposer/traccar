@@ -20,107 +20,99 @@ import java.util.Date;
 
 public class BaseReport {
 
-    private long deviceId;
+	private long deviceId;
+	private String deviceName;
+	private double distance;
+	private double averageSpeed;
+	private double maxSpeed;
+	private double spentFuel;
+	private double startOdometer;
+	private double endOdometer;
+	private Date startTime;
+	private Date endTime;
 
-    public long getDeviceId() {
-        return deviceId;
-    }
+	public long getDeviceId() {
+		return deviceId;
+	}
 
-    public void setDeviceId(long deviceId) {
-        this.deviceId = deviceId;
-    }
+	public void setDeviceId(long deviceId) {
+		this.deviceId = deviceId;
+	}
 
-    private String deviceName;
+	public String getDeviceName() {
+		return deviceName;
+	}
 
-    public String getDeviceName() {
-        return deviceName;
-    }
+	public void setDeviceName(String deviceName) {
+		this.deviceName = deviceName;
+	}
 
-    public void setDeviceName(String deviceName) {
-        this.deviceName = deviceName;
-    }
+	public double getDistance() {
+		return distance;
+	}
 
-    private double distance;
+	public void setDistance(double distance) {
+		this.distance = distance;
+	}
 
-    public double getDistance() {
-        return distance;
-    }
+	public void addDistance(double distance) {
+		this.distance += distance;
+	}
 
-    public void setDistance(double distance) {
-        this.distance = distance;
-    }
+	public double getAverageSpeed() {
+		return averageSpeed;
+	}
 
-    public void addDistance(double distance) {
-        this.distance += distance;
-    }
+	public void setAverageSpeed(double averageSpeed) {
+		this.averageSpeed = averageSpeed;
+	}
 
-    private double averageSpeed;
+	public double getMaxSpeed() {
+		return maxSpeed;
+	}
 
-    public double getAverageSpeed() {
-        return averageSpeed;
-    }
+	public void setMaxSpeed(double maxSpeed) {
+		this.maxSpeed = maxSpeed;
+	}
 
-    public void setAverageSpeed(double averageSpeed) {
-        this.averageSpeed = averageSpeed;
-    }
+	public double getSpentFuel() {
+		return spentFuel;
+	}
 
-    private double maxSpeed;
+	public void setSpentFuel(double spentFuel) {
+		this.spentFuel = spentFuel;
+	}
 
-    public double getMaxSpeed() {
-        return maxSpeed;
-    }
+	public double getStartOdometer() {
+		return startOdometer;
+	}
 
-    public void setMaxSpeed(double maxSpeed) {
-        this.maxSpeed = maxSpeed;
-    }
+	public void setStartOdometer(double startOdometer) {
+		this.startOdometer = startOdometer;
+	}
 
-    private double spentFuel;
+	public double getEndOdometer() {
+		return endOdometer;
+	}
 
-    public double getSpentFuel() {
-        return spentFuel;
-    }
+	public void setEndOdometer(double endOdometer) {
+		this.endOdometer = endOdometer;
+	}
 
-    public void setSpentFuel(double spentFuel) {
-        this.spentFuel = spentFuel;
-    }
+	public Date getStartTime() {
+		return startTime;
+	}
 
-    private double startOdometer;
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
 
-    public double getStartOdometer() {
-        return startOdometer;
-    }
+	public Date getEndTime() {
+		return endTime;
+	}
 
-    public void setStartOdometer(double startOdometer) {
-        this.startOdometer = startOdometer;
-    }
-    private double endOdometer;
-
-    public double getEndOdometer() {
-        return endOdometer;
-    }
-
-    public void setEndOdometer(double endOdometer) {
-        this.endOdometer = endOdometer;
-    }
-
-    private Date startTime;
-
-    public Date getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(Date startTime) {
-        this.startTime = startTime;
-    }
-
-    private Date endTime;
-
-    public Date getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(Date endTime) {
-        this.endTime = endTime;
-    }
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
 
 }

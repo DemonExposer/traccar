@@ -33,152 +33,150 @@ import java.util.regex.Pattern;
 
 public class Pt60ProtocolDecoder extends BaseProtocolDecoder {
 
-    public Pt60ProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public static final int MSG_G_TRACK = 6;
+	public static final int MSG_G_STEP_COUNT = 13;
+	public static final int MSG_G_HEART_RATE = 14;
+	public static final int MSG_B_POSITION = 1;
+	private static final Pattern PATTERN = new PatternBuilder()
+			.expression("@(.)#@[,|]")            // header
+			.number("V?dd[,|]")                  // protocol version
+			.number("(d+)[,|]")                  // type
+			.number("(d+)[,|]")                  // imei
+			.number("d+[,|]")                    // imsi
+			.groupBegin()
+			.expression("[^,|]+[,|]").optional() // firmware version
+			.number("[01][,|]")                  // state
+			.number("d+[,|]")                    // battery
+			.groupEnd("?")
+			.number("(dddd)(dd)(dd)")            // date (yyyymmdd)
+			.number("(dd)(dd)(dd)[,|]")          // time (hhmmss)
+			.expression("(.*)")                  // data
+			.expression("[,|]")
+			.compile();
 
-    public static final int MSG_G_TRACK = 6;
-    public static final int MSG_G_STEP_COUNT = 13;
-    public static final int MSG_G_HEART_RATE = 14;
+	public Pt60ProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    public static final int MSG_B_POSITION = 1;
+	private void sendResponse(Channel channel, SocketAddress remoteAddress, String format, int type, String imei) {
+		if (channel != null) {
+			String message;
+			String time = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+			if (format.equals("G")) {
+				message = String.format("@G#@,V01,38,%s,@R#@", time);
+			} else {
+				message = String.format("@B#@|01|%03d|%s|0|%s|@E#@", type + 1, imei, time);
+			}
+			channel.writeAndFlush(new NetworkMessage(message, remoteAddress));
+		}
+	}
 
-    private static final Pattern PATTERN = new PatternBuilder()
-            .expression("@(.)#@[,|]")            // header
-            .number("V?dd[,|]")                  // protocol version
-            .number("(d+)[,|]")                  // type
-            .number("(d+)[,|]")                  // imei
-            .number("d+[,|]")                    // imsi
-            .groupBegin()
-            .expression("[^,|]+[,|]").optional() // firmware version
-            .number("[01][,|]")                  // state
-            .number("d+[,|]")                    // battery
-            .groupEnd("?")
-            .number("(dddd)(dd)(dd)")            // date (yyyymmdd)
-            .number("(dd)(dd)(dd)[,|]")          // time (hhmmss)
-            .expression("(.*)")                  // data
-            .expression("[,|]")
-            .compile();
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-    private void sendResponse(Channel channel, SocketAddress remoteAddress, String format, int type, String imei) {
-        if (channel != null) {
-            String message;
-            String time = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-            if (format.equals("G")) {
-                message = String.format("@G#@,V01,38,%s,@R#@", time);
-            } else {
-                message = String.format("@B#@|01|%03d|%s|0|%s|@E#@", type + 1, imei, time);
-            }
-            channel.writeAndFlush(new NetworkMessage(message, remoteAddress));
-        }
-    }
+		Parser parser = new Parser(PATTERN, (String) msg);
+		if (!parser.matches()) {
+			return null;
+		}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+		String format = parser.next();
+		int type = parser.nextInt();
+		String imei = parser.next();
 
-        Parser parser = new Parser(PATTERN, (String) msg);
-        if (!parser.matches()) {
-            return null;
-        }
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+		if (deviceSession == null) {
+			return null;
+		}
 
-        String format = parser.next();
-        int type = parser.nextInt();
-        String imei = parser.next();
+		sendResponse(channel, remoteAddress, format, type, imei);
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-        if (deviceSession == null) {
-            return null;
-        }
+		if (format.equals("G")) {
 
-        sendResponse(channel, remoteAddress, format, type, imei);
+			if (type != MSG_G_TRACK && type != MSG_G_STEP_COUNT && type != MSG_G_HEART_RATE) {
+				return null;
+			}
 
-        if (format.equals("G")) {
+			Position position = new Position(getProtocolName());
+			position.setDeviceId(deviceSession.getDeviceId());
+			position.setDeviceTime(parser.nextDateTime());
 
-            if (type != MSG_G_TRACK && type != MSG_G_STEP_COUNT && type != MSG_G_HEART_RATE) {
-                return null;
-            }
+			String[] values = parser.next().split(",");
 
-            Position position = new Position(getProtocolName());
-            position.setDeviceId(deviceSession.getDeviceId());
-            position.setDeviceTime(parser.nextDateTime());
+			if (type == MSG_G_TRACK) {
 
-            String[] values = parser.next().split(",");
+				position.setValid(true);
+				position.setFixTime(position.getDeviceTime());
 
-            if (type == MSG_G_TRACK) {
+				String[] coordinates = values[0].split(";");
+				position.setLatitude(Double.parseDouble(coordinates[0]));
+				position.setLongitude(Double.parseDouble(coordinates[1]));
 
-                position.setValid(true);
-                position.setFixTime(position.getDeviceTime());
+			} else {
 
-                String[] coordinates = values[0].split(";");
-                position.setLatitude(Double.parseDouble(coordinates[0]));
-                position.setLongitude(Double.parseDouble(coordinates[1]));
+				getLastLocation(position, position.getDeviceTime());
 
-            } else {
+				switch (type) {
+					case MSG_G_STEP_COUNT:
+						position.set(Position.KEY_STEPS, Integer.parseInt(values[0]));
+						break;
+					case MSG_G_HEART_RATE:
+						position.set(Position.KEY_HEART_RATE, Integer.parseInt(values[0]));
+						position.set(Position.KEY_BATTERY, Integer.parseInt(values[1]));
+						break;
+					default:
+						break;
+				}
 
-                getLastLocation(position, position.getDeviceTime());
+			}
 
-                switch (type) {
-                    case MSG_G_STEP_COUNT:
-                        position.set(Position.KEY_STEPS, Integer.parseInt(values[0]));
-                        break;
-                    case MSG_G_HEART_RATE:
-                        position.set(Position.KEY_HEART_RATE, Integer.parseInt(values[0]));
-                        position.set(Position.KEY_BATTERY, Integer.parseInt(values[1]));
-                        break;
-                    default:
-                        break;
-                }
+			return position;
 
-            }
+		} else {
 
-            return position;
+			if (type != MSG_B_POSITION) {
+				return null;
+			}
 
-        } else {
+			Position position = new Position(getProtocolName());
+			position.setDeviceId(deviceSession.getDeviceId());
+			position.setDeviceTime(parser.nextDateTime());
 
-            if (type != MSG_B_POSITION) {
-                return null;
-            }
+			String[] values = parser.next().split("\\|");
 
-            Position position = new Position(getProtocolName());
-            position.setDeviceId(deviceSession.getDeviceId());
-            position.setDeviceTime(parser.nextDateTime());
+			if (Integer.parseInt(values[values.length - 1]) == 2) {
 
-            String[] values = parser.next().split("\\|");
+				getLastLocation(position, position.getDeviceTime());
 
-            if (Integer.parseInt(values[values.length - 1]) == 2) {
+				Network network = new Network();
 
-                getLastLocation(position, position.getDeviceTime());
+				for (int i = 0; i < values.length - 1; i++) {
+					String[] cellValues = values[i].split(",");
+					CellTower tower = new CellTower();
+					tower.setCellId(Long.parseLong(cellValues[0]));
+					tower.setLocationAreaCode(Integer.parseInt(cellValues[1]));
+					tower.setMobileNetworkCode(Integer.parseInt(cellValues[2]));
+					tower.setMobileCountryCode(Integer.parseInt(cellValues[3]));
+					tower.setSignalStrength(Integer.parseInt(cellValues[4]));
+					network.addCellTower(tower);
+				}
 
-                Network network = new Network();
-
-                for (int i = 0; i < values.length - 1; i++) {
-                    String[] cellValues = values[i].split(",");
-                    CellTower tower = new CellTower();
-                    tower.setCellId(Long.parseLong(cellValues[0]));
-                    tower.setLocationAreaCode(Integer.parseInt(cellValues[1]));
-                    tower.setMobileNetworkCode(Integer.parseInt(cellValues[2]));
-                    tower.setMobileCountryCode(Integer.parseInt(cellValues[3]));
-                    tower.setSignalStrength(Integer.parseInt(cellValues[4]));
-                    network.addCellTower(tower);
-                }
-
-                position.setNetwork(network);
+				position.setNetwork(network);
 
 
-            } else {
+			} else {
 
-                position.setValid(true);
-                position.setFixTime(position.getDeviceTime());
+				position.setValid(true);
+				position.setFixTime(position.getDeviceTime());
 
-                position.setLatitude(Double.parseDouble(values[0]));
-                position.setLongitude(Double.parseDouble(values[1]));
+				position.setLatitude(Double.parseDouble(values[0]));
+				position.setLongitude(Double.parseDouble(values[1]));
 
-            }
+			}
 
-            return position;
+			return position;
 
-        }
-    }
+		}
+	}
 
 }

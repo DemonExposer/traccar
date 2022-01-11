@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class FutureWayProtocol extends BaseProtocol {
 
-    public FutureWayProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new FutureWayFrameDecoder());
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new FutureWayProtocolDecoder(FutureWayProtocol.this));
-            }
-        });
-    }
+	public FutureWayProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new FutureWayFrameDecoder());
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new FutureWayProtocolDecoder(FutureWayProtocol.this));
+			}
+		});
+	}
 
 }

@@ -28,84 +28,82 @@ import java.util.regex.Pattern;
 
 public class GnxProtocolDecoder extends BaseProtocolDecoder {
 
-    public GnxProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	private static final Pattern PATTERN_LOCATION = new PatternBuilder()
+			.number("(d+),")                     // imei
+			.number("d+,")                       // length
+			.expression("([01]),")               // history
+			.number("(dd)(dd)(dd),")             // device time (hhmmss)
+			.number("(dd)(dd)(dd),")             // device date (ddmmyy)
+			.number("(dd)(dd)(dd),")             // fix time (hhmmss)
+			.number("(dd)(dd)(dd),")             // fix date (ddmmyy)
+			.number("(d),")                      // valid
+			.number("(dd.d+),")                  // latitude
+			.expression("([NS]),")
+			.number("(ddd.d+),")                 // longitude
+			.expression("([EW]),")
+			.compile();
+	private static final Pattern PATTERN_MIF = new PatternBuilder()
+			.text("$GNX_MIF,")
+			.expression(PATTERN_LOCATION.pattern())
+			.expression("[01],")                 // valid card
+			.expression("([^,]+),")              // rfid
+			.any()
+			.compile();
+	private static final Pattern PATTERN_OTHER = new PatternBuilder()
+			.text("$GNX_")
+			.expression("...,")
+			.expression(PATTERN_LOCATION.pattern())
+			.any()
+			.compile();
 
-    private static final Pattern PATTERN_LOCATION = new PatternBuilder()
-            .number("(d+),")                     // imei
-            .number("d+,")                       // length
-            .expression("([01]),")               // history
-            .number("(dd)(dd)(dd),")             // device time (hhmmss)
-            .number("(dd)(dd)(dd),")             // device date (ddmmyy)
-            .number("(dd)(dd)(dd),")             // fix time (hhmmss)
-            .number("(dd)(dd)(dd),")             // fix date (ddmmyy)
-            .number("(d),")                      // valid
-            .number("(dd.d+),")                  // latitude
-            .expression("([NS]),")
-            .number("(ddd.d+),")                 // longitude
-            .expression("([EW]),")
-            .compile();
+	public GnxProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    private static final Pattern PATTERN_MIF = new PatternBuilder()
-            .text("$GNX_MIF,")
-            .expression(PATTERN_LOCATION.pattern())
-            .expression("[01],")                 // valid card
-            .expression("([^,]+),")              // rfid
-            .any()
-            .compile();
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-    private static final Pattern PATTERN_OTHER = new PatternBuilder()
-            .text("$GNX_")
-            .expression("...,")
-            .expression(PATTERN_LOCATION.pattern())
-            .any()
-            .compile();
+		String sentence = (String) msg;
+		String type = sentence.substring(5, 8);
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+		Pattern pattern;
+		if (type.equals("MIF")) {
+			pattern = PATTERN_MIF;
+		} else {
+			pattern = PATTERN_OTHER;
+		}
 
-        String sentence = (String) msg;
-        String type = sentence.substring(5, 8);
+		Parser parser = new Parser(pattern, sentence);
+		if (!parser.matches()) {
+			return null;
+		}
 
-        Pattern pattern;
-        if (type.equals("MIF")) {
-            pattern = PATTERN_MIF;
-        } else {
-            pattern = PATTERN_OTHER;
-        }
+		Position position = new Position(getProtocolName());
 
-        Parser parser = new Parser(pattern, sentence);
-        if (!parser.matches()) {
-            return null;
-        }
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+		if (deviceSession == null) {
+			return null;
+		}
+		position.setDeviceId(deviceSession.getDeviceId());
 
-        Position position = new Position(getProtocolName());
+		if (parser.nextInt(0) == 1) {
+			position.set(Position.KEY_ARCHIVE, true);
+		}
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-        if (deviceSession == null) {
-            return null;
-        }
-        position.setDeviceId(deviceSession.getDeviceId());
+		position.setDeviceTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY, "GMT+5:30"));
+		position.setFixTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY, "GMT+5:30"));
 
-        if (parser.nextInt(0) == 1) {
-            position.set(Position.KEY_ARCHIVE, true);
-        }
+		position.setValid(parser.nextInt(0) != 0);
 
-        position.setDeviceTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY, "GMT+5:30"));
-        position.setFixTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY, "GMT+5:30"));
+		position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_HEM));
+		position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_HEM));
 
-        position.setValid(parser.nextInt(0) != 0);
+		if (type.equals("MIF")) {
+			position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
+		}
 
-        position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_HEM));
-        position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_HEM));
-
-        if (type.equals("MIF")) {
-            position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
-        }
-
-        return position;
-    }
+		return position;
+	}
 
 }

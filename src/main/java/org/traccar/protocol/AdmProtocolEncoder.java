@@ -22,23 +22,23 @@ import org.traccar.Protocol;
 
 public class AdmProtocolEncoder extends StringProtocolEncoder {
 
-    public AdmProtocolEncoder(Protocol protocol) {
-        super(protocol);
-    }
+	public AdmProtocolEncoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    @Override
-    protected Object encodeCommand(Command command) {
+	@Override
+	protected Object encodeCommand(Command command) {
 
-        switch (command.getType()) {
-            case Command.TYPE_GET_DEVICE_STATUS:
-                return formatCommand(command, "STATUS\r\n");
+		switch (command.getType()) {
+			case Command.TYPE_GET_DEVICE_STATUS:
+				return formatCommand(command, "STATUS\r\n");
 
-            case Command.TYPE_CUSTOM:
-                return formatCommand(command, "%s\r\n", Command.KEY_DATA);
+			case Command.TYPE_CUSTOM:
+				return formatCommand(command, "%s\r\n", Command.KEY_DATA);
 
-            default:
-                return null;
-        }
-    }
+			default:
+				return null;
+		}
+	}
 
 }

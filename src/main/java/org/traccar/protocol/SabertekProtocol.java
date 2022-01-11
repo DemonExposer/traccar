@@ -22,15 +22,15 @@ import org.traccar.TrackerServer;
 
 public class SabertekProtocol extends BaseProtocol {
 
-    public SabertekProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new SabertekFrameDecoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new SabertekProtocolDecoder(SabertekProtocol.this));
-            }
-        });
-    }
+	public SabertekProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new SabertekFrameDecoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new SabertekProtocolDecoder(SabertekProtocol.this));
+			}
+		});
+	}
 
 }

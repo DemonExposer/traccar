@@ -20,10 +20,10 @@ import org.traccar.config.Keys;
 
 public class NotificatorTraccar extends NotificatorFirebase {
 
-    public NotificatorTraccar() {
-        super(
-                "https://www.traccar.org/push/",
-                Context.getConfig().getString(Keys.NOTIFICATOR_TRACCAR_KEY));
-    }
+	public NotificatorTraccar() {
+		super(
+				"https://www.traccar.org/push/",
+				Context.getConfig().getString(Keys.NOTIFICATOR_TRACCAR_KEY));
+	}
 
 }

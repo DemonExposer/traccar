@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class Gt02Protocol extends BaseProtocol {
 
-    public Gt02Protocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(256, 2, 1, 2, 0));
-                pipeline.addLast(new Gt02ProtocolDecoder(Gt02Protocol.this));
-            }
-        });
-    }
+	public Gt02Protocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(256, 2, 1, 2, 0));
+				pipeline.addLast(new Gt02ProtocolDecoder(Gt02Protocol.this));
+			}
+		});
+	}
 
 }

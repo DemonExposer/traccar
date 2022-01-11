@@ -22,20 +22,20 @@ import org.traccar.TrackerServer;
 
 public class GatorProtocol extends BaseProtocol {
 
-    public GatorProtocol() {
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 2));
-                pipeline.addLast(new GatorProtocolDecoder(GatorProtocol.this));
-            }
-        });
-        addServer(new TrackerServer(true, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new GatorProtocolDecoder(GatorProtocol.this));
-            }
-        });
-    }
+	public GatorProtocol() {
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 2));
+				pipeline.addLast(new GatorProtocolDecoder(GatorProtocol.this));
+			}
+		});
+		addServer(new TrackerServer(true, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new GatorProtocolDecoder(GatorProtocol.this));
+			}
+		});
+	}
 
 }

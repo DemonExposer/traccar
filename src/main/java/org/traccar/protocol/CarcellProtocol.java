@@ -25,20 +25,20 @@ import org.traccar.model.Command;
 
 public class CarcellProtocol extends BaseProtocol {
 
-    public CarcellProtocol() {
-        setSupportedDataCommands(
-                Command.TYPE_ENGINE_STOP,
-                Command.TYPE_ENGINE_RESUME);
-        addServer(new TrackerServer(false, getName()) {
-            @Override
-            protected void addProtocolHandlers(PipelineBuilder pipeline) {
-                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\r'));
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                pipeline.addLast(new CarcellProtocolEncoder(CarcellProtocol.this));
-                pipeline.addLast(new CarcellProtocolDecoder(CarcellProtocol.this));
-            }
-        });
-    }
+	public CarcellProtocol() {
+		setSupportedDataCommands(
+				Command.TYPE_ENGINE_STOP,
+				Command.TYPE_ENGINE_RESUME);
+		addServer(new TrackerServer(false, getName()) {
+			@Override
+			protected void addProtocolHandlers(PipelineBuilder pipeline) {
+				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\r'));
+				pipeline.addLast(new StringEncoder());
+				pipeline.addLast(new StringDecoder());
+				pipeline.addLast(new CarcellProtocolEncoder(CarcellProtocol.this));
+				pipeline.addLast(new CarcellProtocolDecoder(CarcellProtocol.this));
+			}
+		});
+	}
 
 }

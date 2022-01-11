@@ -30,54 +30,54 @@ import java.util.Date;
 
 public class DingtekProtocolDecoder extends BaseProtocolDecoder {
 
-    public DingtekProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public DingtekProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        String sentence = (String) msg;
+		String sentence = (String) msg;
 
-        int type = Integer.parseInt(sentence.substring(6, 8), 16);
+		int type = Integer.parseInt(sentence.substring(6, 8), 16);
 
-        if (type == 0x01 || type == 0x02 || type == 0x04) {
+		if (type == 0x01 || type == 0x02 || type == 0x04) {
 
-            ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(sentence));
+			ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(sentence));
 
-            buf.readUnsignedByte(); // header
-            buf.readUnsignedByte(); // forced
-            buf.readUnsignedByte(); // device type
-            buf.readUnsignedByte(); // type
-            buf.readUnsignedByte(); // length
+			buf.readUnsignedByte(); // header
+			buf.readUnsignedByte(); // forced
+			buf.readUnsignedByte(); // device type
+			buf.readUnsignedByte(); // type
+			buf.readUnsignedByte(); // length
 
-            String imei = ByteBufUtil.hexDump(buf.slice(buf.writerIndex() - 9, 8)).substring(1);
-            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-            if (deviceSession == null) {
-                return null;
-            }
+			String imei = ByteBufUtil.hexDump(buf.slice(buf.writerIndex() - 9, 8)).substring(1);
+			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+			if (deviceSession == null) {
+				return null;
+			}
 
-            Position position = new Position(getProtocolName());
-            position.setDeviceId(deviceSession.getDeviceId());
-            position.setTime(new Date());
+			Position position = new Position(getProtocolName());
+			position.setDeviceId(deviceSession.getDeviceId());
+			position.setTime(new Date());
 
-            position.set("height", buf.readUnsignedShort());
+			position.set("height", buf.readUnsignedShort());
 
-            position.setValid(buf.readUnsignedByte() > 0);
-            position.setLongitude(buf.readFloat());
-            position.setLatitude(buf.readFloat());
+			position.setValid(buf.readUnsignedByte() > 0);
+			position.setLongitude(buf.readFloat());
+			position.setLatitude(buf.readFloat());
 
-            position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedByte());
-            position.set(Position.KEY_STATUS, buf.readUnsignedInt());
-            position.set(Position.KEY_BATTERY, buf.readUnsignedShort() * 0.001);
-            position.set(Position.KEY_RSSI, buf.readFloat());
-            position.set(Position.KEY_INDEX, buf.readUnsignedShort());
+			position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedByte());
+			position.set(Position.KEY_STATUS, buf.readUnsignedInt());
+			position.set(Position.KEY_BATTERY, buf.readUnsignedShort() * 0.001);
+			position.set(Position.KEY_RSSI, buf.readFloat());
+			position.set(Position.KEY_INDEX, buf.readUnsignedShort());
 
-            return position;
-        }
+			return position;
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 }

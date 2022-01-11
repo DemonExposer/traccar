@@ -33,139 +33,136 @@ import java.util.regex.Pattern;
 
 public class RaceDynamicsProtocolDecoder extends BaseProtocolDecoder {
 
-    public RaceDynamicsProtocolDecoder(Protocol protocol) {
-        super(protocol);
-    }
+	public static final int MSG_LOGIN = 12;
+	public static final int MSG_LOCATION = 15;
+	private static final Pattern PATTERN_LOGIN = new PatternBuilder()
+			.text("$GPRMC,")
+			.number("d+,")                       // type
+			.number("d{6},")                     // date
+			.number("d{6},")                     // time
+			.number("(d{15}),")
+			.compile();
+	private static final Pattern PATTERN_LOCATION = new PatternBuilder()
+			.number("(dd)(dd)(dd),")             // time (hhmmss)
+			.expression("([AV]),")               // validity
+			.number("(dd)(dd.d+),")              // latitude
+			.expression("([NS]),")
+			.number("(ddd)(dd.d+),")             // longitude
+			.expression("([EW]),")
+			.number("(d+),")                     // speed
+			.number("(dd)(dd)(dd),")             // date (ddmmyy)
+			.number("(-?d+),")                   // altitude
+			.number("(d+),")                     // satellites
+			.number("([01]),")                   // ignition
+			.number("(d+),")                     // index
+			.text("%,")
+			.number("([^,]+),")                  // ibutton
+			.number("d+,")                       // acceleration
+			.number("d+,")                       // deceleration
+			.number("[01],")                     // cruise control
+			.number("[01],")                     // seat belt
+			.number("[01],")                     // wrong ibutton
+			.number("(d+),")                     // power
+			.number("[01],")                     // power status
+			.number("(d+),")                     // battery
+			.number("([01]),")                   // panic
+			.number("d+,")
+			.number("d+,")
+			.number("(d),")                      // overspeed
+			.number("d+,")                       // speed limit
+			.number("d+,")                       // tachometer
+			.number("d+,d+,d+,")                 // aux
+			.number("d+,")                       // geofence id
+			.number("d+,")                       // road speed type
+			.number("d+,")                       // ibutton count
+			.number("(d),")                      // overdriver alert
+			.any()
+			.compile();
+	private String imei;
 
-    public static final int MSG_LOGIN = 12;
-    public static final int MSG_LOCATION = 15;
+	public RaceDynamicsProtocolDecoder(Protocol protocol) {
+		super(protocol);
+	}
 
-    private static final Pattern PATTERN_LOGIN = new PatternBuilder()
-            .text("$GPRMC,")
-            .number("d+,")                       // type
-            .number("d{6},")                     // date
-            .number("d{6},")                     // time
-            .number("(d{15}),")
-            .compile();
+	private void sendResponse(Channel channel, SocketAddress remoteAddress, int type) {
+		if (channel != null) {
+			String response = String.format(
+					"$GPRMC,%1$d,%2$td%2$tm%2$ty,%2$tH%2$tM%2$tS,%3$s,\r\n", type, new Date(), imei);
+			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+		}
+	}
 
-    private static final Pattern PATTERN_LOCATION = new PatternBuilder()
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
-            .expression("([AV]),")               // validity
-            .number("(dd)(dd.d+),")              // latitude
-            .expression("([NS]),")
-            .number("(ddd)(dd.d+),")             // longitude
-            .expression("([EW]),")
-            .number("(d+),")                     // speed
-            .number("(dd)(dd)(dd),")             // date (ddmmyy)
-            .number("(-?d+),")                   // altitude
-            .number("(d+),")                     // satellites
-            .number("([01]),")                   // ignition
-            .number("(d+),")                     // index
-            .text("%,")
-            .number("([^,]+),")                  // ibutton
-            .number("d+,")                       // acceleration
-            .number("d+,")                       // deceleration
-            .number("[01],")                     // cruise control
-            .number("[01],")                     // seat belt
-            .number("[01],")                     // wrong ibutton
-            .number("(d+),")                     // power
-            .number("[01],")                     // power status
-            .number("(d+),")                     // battery
-            .number("([01]),")                   // panic
-            .number("d+,")
-            .number("d+,")
-            .number("(d),")                      // overspeed
-            .number("d+,")                       // speed limit
-            .number("d+,")                       // tachometer
-            .number("d+,d+,d+,")                 // aux
-            .number("d+,")                       // geofence id
-            .number("d+,")                       // road speed type
-            .number("d+,")                       // ibutton count
-            .number("(d),")                      // overdriver alert
-            .any()
-            .compile();
+	@Override
+	protected Object decode(
+			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-    private String imei;
+		String sentence = (String) msg;
 
-    private void sendResponse(Channel channel, SocketAddress remoteAddress, int type) {
-        if (channel != null) {
-            String response = String.format(
-                    "$GPRMC,%1$d,%2$td%2$tm%2$ty,%2$tH%2$tM%2$tS,%3$s,\r\n", type, new Date(), imei);
-            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-        }
-    }
+		int type = Integer.parseInt(sentence.substring(7, 9));
 
-    @Override
-    protected Object decode(
-            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+		if (type == MSG_LOGIN) {
 
-        String sentence = (String) msg;
+			Parser parser = new Parser(PATTERN_LOGIN, sentence);
+			if (parser.matches()) {
+				imei = parser.next();
+				getDeviceSession(channel, remoteAddress, imei);
+				sendResponse(channel, remoteAddress, type);
+			}
 
-        int type = Integer.parseInt(sentence.substring(7, 9));
+		} else if (type == MSG_LOCATION) {
 
-        if (type == MSG_LOGIN) {
+			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+			if (deviceSession == null) {
+				return null;
+			}
 
-            Parser parser = new Parser(PATTERN_LOGIN, sentence);
-            if (parser.matches()) {
-                imei = parser.next();
-                getDeviceSession(channel, remoteAddress, imei);
-                sendResponse(channel, remoteAddress, type);
-            }
+			List<Position> positions = new LinkedList<>();
 
-        } else if (type == MSG_LOCATION) {
+			for (String data : sentence.substring(17, sentence.length() - 3).split(",#,#,")) {
+				Parser parser = new Parser(PATTERN_LOCATION, data);
+				if (parser.matches()) {
 
-            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-            if (deviceSession == null) {
-                return null;
-            }
+					Position position = new Position(getProtocolName());
+					position.setDeviceId(deviceSession.getDeviceId());
 
-            List<Position> positions = new LinkedList<>();
+					DateBuilder dateBuilder = new DateBuilder()
+							.setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
-            for (String data : sentence.substring(17, sentence.length() - 3).split(",#,#,")) {
-                Parser parser = new Parser(PATTERN_LOCATION, data);
-                if (parser.matches()) {
+					position.setValid(parser.next().equals("A"));
+					position.setLatitude(parser.nextCoordinate());
+					position.setLongitude(parser.nextCoordinate());
+					position.setSpeed(parser.nextDouble());
 
-                    Position position = new Position(getProtocolName());
-                    position.setDeviceId(deviceSession.getDeviceId());
+					dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+					position.setTime(dateBuilder.getDate());
 
-                    DateBuilder dateBuilder = new DateBuilder()
-                            .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+					position.setAltitude(parser.nextInt());
+					position.set(Position.KEY_SATELLITES, parser.nextInt());
+					position.set(Position.KEY_IGNITION, parser.nextInt() == 1);
+					position.set(Position.KEY_INDEX, parser.nextInt());
+					position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
+					position.set(Position.KEY_POWER, parser.nextInt() * 0.01);
+					position.set(Position.KEY_BATTERY, parser.nextInt() * 0.01);
+					position.set(Position.KEY_ALARM, parser.nextInt() > 0 ? Position.ALARM_SOS : null);
+					position.set(Position.KEY_ALARM, parser.nextInt() > 0 ? Position.ALARM_OVERSPEED : null);
 
-                    position.setValid(parser.next().equals("A"));
-                    position.setLatitude(parser.nextCoordinate());
-                    position.setLongitude(parser.nextCoordinate());
-                    position.setSpeed(parser.nextDouble());
+					int overDriver = parser.nextInt();
+					if (overDriver > 0) {
+						position.set("overDriver", overDriver);
+					}
 
-                    dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
-                    position.setTime(dateBuilder.getDate());
+					positions.add(position);
 
-                    position.setAltitude(parser.nextInt());
-                    position.set(Position.KEY_SATELLITES, parser.nextInt());
-                    position.set(Position.KEY_IGNITION, parser.nextInt() == 1);
-                    position.set(Position.KEY_INDEX, parser.nextInt());
-                    position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
-                    position.set(Position.KEY_POWER, parser.nextInt() * 0.01);
-                    position.set(Position.KEY_BATTERY, parser.nextInt() * 0.01);
-                    position.set(Position.KEY_ALARM, parser.nextInt() > 0 ? Position.ALARM_SOS : null);
-                    position.set(Position.KEY_ALARM, parser.nextInt() > 0 ? Position.ALARM_OVERSPEED : null);
+				}
+			}
 
-                    int overDriver = parser.nextInt();
-                    if (overDriver > 0) {
-                        position.set("overDriver", overDriver);
-                    }
+			sendResponse(channel, remoteAddress, type);
 
-                    positions.add(position);
+			return positions;
 
-                }
-            }
+		}
 
-            sendResponse(channel, remoteAddress, type);
-
-            return positions;
-
-        }
-
-        return null;
-    }
+		return null;
+	}
 
 }

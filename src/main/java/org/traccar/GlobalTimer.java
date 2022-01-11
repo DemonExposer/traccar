@@ -20,23 +20,23 @@ import io.netty.util.Timer;
 
 public final class GlobalTimer {
 
-    private static Timer instance = null;
+	private static Timer instance = null;
 
-    private GlobalTimer() {
-    }
+	private GlobalTimer() {
+	}
 
-    public static void release() {
-        if (instance != null) {
-            instance.stop();
-        }
-        instance = null;
-    }
+	public static void release() {
+		if (instance != null) {
+			instance.stop();
+		}
+		instance = null;
+	}
 
-    public static Timer getTimer() {
-        if (instance == null) {
-            instance = new HashedWheelTimer();
-        }
-        return instance;
-    }
+	public static Timer getTimer() {
+		if (instance == null) {
+			instance = new HashedWheelTimer();
+		}
+		return instance;
+	}
 
 }

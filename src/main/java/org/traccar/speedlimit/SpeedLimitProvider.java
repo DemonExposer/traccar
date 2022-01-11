@@ -17,14 +17,14 @@ package org.traccar.speedlimit;
 
 public interface SpeedLimitProvider {
 
-    interface SpeedLimitProviderCallback {
+	void getSpeedLimit(double latitude, double longitude, SpeedLimitProviderCallback callback);
 
-        void onSuccess(double speedLimit);
+	interface SpeedLimitProviderCallback {
 
-        void onFailure(Throwable e);
+		void onSuccess(double speedLimit);
 
-    }
+		void onFailure(Throwable e);
 
-    void getSpeedLimit(double latitude, double longitude, SpeedLimitProviderCallback callback);
+	}
 
 }
