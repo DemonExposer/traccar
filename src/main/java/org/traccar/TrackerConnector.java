@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 - 2016 Anton Tananaev (anton@traccar.org)
+ * Copyright 2021 - 2022 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.traccar.api;
+package org.traccar;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.traccar.Context;
+import io.netty.channel.group.ChannelGroup;
 
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
+public interface TrackerConnector {
 
-@Provider
-public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
+    boolean isDatagram();
 
-	@Override
-	public ObjectMapper getContext(Class<?> type) {
-		return Context.getObjectMapper();
-	}
+    boolean isSecure();
+
+    ChannelGroup getChannelGroup();
+
+    void start() throws Exception;
+
+    void stop();
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 - 2018 Anton Tananaev (anton@traccar.org)
+ * Copyright 2012 - 2022 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,91 +23,113 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.traccar.config.Keys;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import java.net.InetSocketAddress;
 
-public abstract class TrackerServer {
+public abstract class TrackerServer implements TrackerConnector {
 
-	private final boolean datagram;
-	private final AbstractBootstrap bootstrap;
-	private final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-	private int port;
-	private String address;
+    private final boolean datagram;
+    private final boolean secure;
 
-	public TrackerServer(boolean datagram, String protocol) {
-		this.datagram = datagram;
+    @SuppressWarnings("rawtypes")
+    private final AbstractBootstrap bootstrap;
 
-		address = Context.getConfig().getString(Keys.PROTOCOL_ADDRESS.withPrefix(protocol));
-		port = Context.getConfig().getInteger(Keys.PROTOCOL_PORT.withPrefix(protocol));
+    private final int port;
+    private final String address;
 
-		BasePipelineFactory pipelineFactory = new BasePipelineFactory(this, protocol) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				TrackerServer.this.addProtocolHandlers(pipeline);
-			}
-		};
+    private final ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
-		if (datagram) {
+    @Override
+    public boolean isDatagram() {
+        return datagram;
+    }
 
-			this.bootstrap = new Bootstrap()
-					.group(EventLoopGroupFactory.getWorkerGroup())
-					.channel(NioDatagramChannel.class)
-					.handler(pipelineFactory);
+    @Override
+    public boolean isSecure() {
+        return secure;
+    }
 
-		} else {
+    public TrackerServer(boolean datagram, String protocol) {
+        this.datagram = datagram;
 
-			this.bootstrap = new ServerBootstrap()
-					.group(EventLoopGroupFactory.getBossGroup(), EventLoopGroupFactory.getWorkerGroup())
-					.channel(NioServerSocketChannel.class)
-					.childHandler(pipelineFactory);
+        secure = Context.getConfig().getBoolean(Keys.PROTOCOL_SSL.withPrefix(protocol));
+        address = Context.getConfig().getString(Keys.PROTOCOL_ADDRESS.withPrefix(protocol));
+        port = Context.getConfig().getInteger(Keys.PROTOCOL_PORT.withPrefix(protocol));
 
-		}
-	}
+        BasePipelineFactory pipelineFactory = new BasePipelineFactory(this, protocol) {
+            @Override
+            protected void addTransportHandlers(PipelineBuilder pipeline) {
+                try {
+                    if (isSecure()) {
+                        SSLEngine engine = SSLContext.getDefault().createSSLEngine();
+                        pipeline.addLast(new SslHandler(engine));
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
 
-	public boolean isDatagram() {
-		return datagram;
-	}
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                TrackerServer.this.addProtocolHandlers(pipeline);
+            }
+        };
 
-	protected abstract void addProtocolHandlers(PipelineBuilder pipeline);
+        if (datagram) {
 
-	public int getPort() {
-		return port;
-	}
+            bootstrap = new Bootstrap()
+                    .group(EventLoopGroupFactory.getWorkerGroup())
+                    .channel(NioDatagramChannel.class)
+                    .handler(pipelineFactory);
 
-	public void setPort(int port) {
-		this.port = port;
-	}
+        } else {
 
-	public String getAddress() {
-		return address;
-	}
+            bootstrap = new ServerBootstrap()
+                    .group(EventLoopGroupFactory.getBossGroup(), EventLoopGroupFactory.getWorkerGroup())
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(pipelineFactory);
 
-	public void setAddress(String address) {
-		this.address = address;
-	}
+        }
+    }
 
-	public ChannelGroup getChannelGroup() {
-		return channelGroup;
-	}
+    protected abstract void addProtocolHandlers(PipelineBuilder pipeline);
 
-	public void start() throws Exception {
-		InetSocketAddress endpoint;
-		if (address == null) {
-			endpoint = new InetSocketAddress(port);
-		} else {
-			endpoint = new InetSocketAddress(address, port);
-		}
+    public int getPort() {
+        return port;
+    }
 
-		Channel channel = bootstrap.bind(endpoint).sync().channel();
-		if (channel != null) {
-			getChannelGroup().add(channel);
-		}
-	}
+    public String getAddress() {
+        return address;
+    }
 
-	public void stop() {
-		channelGroup.close().awaitUninterruptibly();
-	}
+    @Override
+    public ChannelGroup getChannelGroup() {
+        return channelGroup;
+    }
+
+    @Override
+    public void start() throws Exception {
+        InetSocketAddress endpoint;
+        if (address == null) {
+            endpoint = new InetSocketAddress(port);
+        } else {
+            endpoint = new InetSocketAddress(address, port);
+        }
+
+        Channel channel = bootstrap.bind(endpoint).syncUninterruptibly().channel();
+        if (channel != null) {
+            getChannelGroup().add(channel);
+        }
+    }
+
+    @Override
+    public void stop() {
+        channelGroup.close().awaitUninterruptibly();
+    }
 
 }

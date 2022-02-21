@@ -16,24 +16,29 @@
  */
 package org.traccar.model;
 
+import org.traccar.storage.StorageName;
+
+@StorageName("tc_drivers")
 public class Driver extends ExtendedModel {
 
-	private String name;
-	private String uniqueId;
+    private String name;
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getUniqueId() {
-		return uniqueId;
-	}
+    private String uniqueId;
 
-	public void setUniqueId(String uniqueId) {
-		this.uniqueId = uniqueId;
-	}
+    public String getUniqueId() {
+        return uniqueId;
+    }
+
+    public void setUniqueId(String uniqueId) {
+        this.uniqueId = uniqueId;
+    }
+
 }

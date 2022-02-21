@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 Anton Tananaev (anton@traccar.org)
+ * Copyright 2018 - 2022 Anton Tananaev (anton@traccar.org)
  * Copyright 2018 Andrey Kunitsyn (andrey@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,33 +24,33 @@ import io.netty.buffer.Unpooled;
 
 public final class BufferUtil {
 
-	private BufferUtil() {
-	}
+    private BufferUtil() {
+    }
 
-	public static int indexOf(String needle, ByteBuf haystack) {
-		return indexOf(needle, haystack, haystack.readerIndex(), haystack.writerIndex());
-	}
+    public static int indexOf(String needle, ByteBuf haystack) {
+        return indexOf(needle, haystack, haystack.readerIndex(), haystack.writerIndex());
+    }
 
-	public static int indexOf(String needle, ByteBuf haystack, int startIndex, int endIndex) {
-		ByteBuf wrappedNeedle = Unpooled.wrappedBuffer(needle.getBytes(StandardCharsets.US_ASCII));
-		try {
-			return indexOf(wrappedNeedle, haystack, startIndex, endIndex);
-		} finally {
-			wrappedNeedle.release();
-		}
-	}
+    public static int indexOf(String needle, ByteBuf haystack, int startIndex, int endIndex) {
+        ByteBuf wrappedNeedle = Unpooled.wrappedBuffer(needle.getBytes(StandardCharsets.US_ASCII));
+        try {
+            return indexOf(wrappedNeedle, haystack, startIndex, endIndex);
+        } finally {
+            wrappedNeedle.release();
+        }
+    }
 
-	public static int indexOf(ByteBuf needle, ByteBuf haystack, int startIndex, int endIndex) {
-		ByteBuf wrappedHaystack;
-		if (startIndex == haystack.readerIndex() && endIndex == haystack.writerIndex()) {
-			wrappedHaystack = haystack;
-		} else {
-			wrappedHaystack = Unpooled.wrappedBuffer(haystack);
-			wrappedHaystack.readerIndex(startIndex - haystack.readerIndex());
-			wrappedHaystack.writerIndex(endIndex - haystack.readerIndex());
-		}
-		int result = ByteBufUtil.indexOf(needle, wrappedHaystack);
-		return result < 0 ? result : haystack.readerIndex() + startIndex + result;
-	}
+    public static int indexOf(ByteBuf needle, ByteBuf haystack, int startIndex, int endIndex) {
+        ByteBuf wrappedHaystack;
+        if (startIndex == haystack.readerIndex() && endIndex == haystack.writerIndex()) {
+            wrappedHaystack = haystack;
+        } else {
+            wrappedHaystack = Unpooled.wrappedBuffer(haystack);
+            wrappedHaystack.readerIndex(startIndex - haystack.readerIndex());
+            wrappedHaystack.writerIndex(endIndex - haystack.readerIndex());
+        }
+        int result = ByteBufUtil.indexOf(needle, wrappedHaystack);
+        return result < 0 ? result : startIndex + result;
+    }
 
 }

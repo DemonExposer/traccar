@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Anton Tananaev (anton@traccar.org)
+ * Copyright 2015 - 2022 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,37 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.traccar.api;
+package org.traccar.api.security;
 
 import javax.ws.rs.core.SecurityContext;
 import java.security.Principal;
 
 public class UserSecurityContext implements SecurityContext {
 
-	private UserPrincipal principal;
+    private final UserPrincipal principal;
 
-	public UserSecurityContext(UserPrincipal principal) {
-		this.principal = principal;
-	}
+    public UserSecurityContext(UserPrincipal principal) {
+        this.principal = principal;
+    }
 
-	@Override
-	public Principal getUserPrincipal() {
-		return principal;
-	}
+    @Override
+    public Principal getUserPrincipal() {
+        return principal;
+    }
 
-	@Override
-	public boolean isUserInRole(String role) {
-		return true;
-	}
+    @Override
+    public boolean isUserInRole(String role) {
+        return true;
+    }
 
-	@Override
-	public boolean isSecure() {
-		return false;
-	}
+    @Override
+    public boolean isSecure() {
+        return false;
+    }
 
-	@Override
-	public String getAuthenticationScheme() {
-		return BASIC_AUTH;
-	}
+    @Override
+    public String getAuthenticationScheme() {
+        return BASIC_AUTH;
+    }
 
 }

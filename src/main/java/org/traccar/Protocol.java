@@ -23,16 +23,16 @@ import java.util.Collection;
 
 public interface Protocol {
 
-	String getName();
+    String getName();
 
-	Collection<TrackerServer> getServerList();
+    Collection<TrackerConnector> getConnectorList();
 
-	Collection<String> getSupportedDataCommands();
+    Collection<String> getSupportedDataCommands();
 
-	void sendDataCommand(Channel channel, SocketAddress remoteAddress, Command command);
+    void sendDataCommand(Channel channel, SocketAddress remoteAddress, Command command);
 
-	Collection<String> getSupportedTextCommands();
+    Collection<String> getSupportedTextCommands();
 
-	void sendTextCommand(String destAddress, Command command) throws Exception;
+    void sendTextCommand(String destAddress, Command command) throws Exception;
 
 }

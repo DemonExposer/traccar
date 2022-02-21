@@ -18,52 +18,55 @@ package org.traccar.model;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.traccar.database.QueryIgnore;
+import org.traccar.storage.QueryIgnore;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.traccar.storage.StorageName;
 
+@StorageName("tc_notifications")
 public class Notification extends ScheduledModel {
 
-	private boolean always;
-	private String type;
-	private String notificators;
+    private boolean always;
 
-	public boolean getAlways() {
-		return always;
-	}
+    public boolean getAlways() {
+        return always;
+    }
 
-	public void setAlways(boolean always) {
-		this.always = always;
-	}
+    public void setAlways(boolean always) {
+        this.always = always;
+    }
 
-	public String getType() {
-		return type;
-	}
+    private String type;
 
-	public void setType(String type) {
-		this.type = type;
-	}
+    public String getType() {
+        return type;
+    }
 
-	public String getNotificators() {
-		return notificators;
-	}
+    public void setType(String type) {
+        this.type = type;
+    }
 
-	public void setNotificators(String transports) {
-		this.notificators = transports;
-	}
+    private String notificators;
 
+    public String getNotificators() {
+        return notificators;
+    }
 
-	@JsonIgnore
-	@QueryIgnore
-	public Set<String> getNotificatorsTypes() {
-		final Set<String> result = new HashSet<>();
-		if (notificators != null) {
-			final String[] transportsList = notificators.split(",");
-			for (String transport : transportsList) {
-				result.add(transport.trim());
-			}
-		}
-		return result;
-	}
+    public void setNotificators(String transports) {
+        this.notificators = transports;
+    }
+
+    @JsonIgnore
+    @QueryIgnore
+    public Set<String> getNotificatorsTypes() {
+        final Set<String> result = new HashSet<>();
+        if (notificators != null) {
+            final String[] transportsList = notificators.split(",");
+            for (String transport : transportsList) {
+                result.add(transport.trim());
+            }
+        }
+        return result;
+    }
 
 }

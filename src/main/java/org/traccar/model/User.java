@@ -17,239 +17,272 @@ package org.traccar.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import org.traccar.database.QueryExtended;
-import org.traccar.database.QueryIgnore;
+import org.traccar.storage.QueryExtended;
+import org.traccar.storage.QueryIgnore;
 import org.traccar.helper.Hashing;
+import org.traccar.storage.StorageName;
 
 import java.util.Date;
 
+@StorageName("tc_users")
 public class User extends ExtendedModel {
 
-	private String name;
-	private String login;
-	private String email;
-	private String phone;
-	private boolean readonly;
-	private boolean administrator;
-	private String map;
-	private double latitude;
-	private double longitude;
-	private int zoom;
-	private boolean twelveHourFormat;
-	private String coordinateFormat;
-	private boolean disabled;
-	private Date expirationTime;
-	private int deviceLimit;
-	private int userLimit;
-	private boolean deviceReadonly;
-	private String token;
-	private boolean limitCommands;
-	private String poiLayer;
-	private String hashedPassword;
-	private String salt;
+    private String name;
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getLogin() {
-		return login;
-	}
+    private String login;
 
-	public void setLogin(String login) {
-		this.login = login;
-	}
+    public String getLogin() {
+        return login;
+    }
 
-	public String getEmail() {
-		return email;
-	}
+    public void setLogin(String login) {
+        this.login = login;
+    }
 
-	public void setEmail(String email) {
-		this.email = email.trim();
-	}
+    private String email;
 
-	public String getPhone() {
-		return phone;
-	}
+    public String getEmail() {
+        return email;
+    }
 
-	public void setPhone(String phone) {
-		this.phone = phone;
-	}
+    public void setEmail(String email) {
+        this.email = email.trim();
+    }
 
-	public boolean getReadonly() {
-		return readonly;
-	}
+    private String phone;
 
-	public void setReadonly(boolean readonly) {
-		this.readonly = readonly;
-	}
+    public String getPhone() {
+        return phone;
+    }
 
-	public boolean getAdministrator() {
-		return administrator;
-	}
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
 
-	public void setAdministrator(boolean administrator) {
-		this.administrator = administrator;
-	}
+    private boolean readonly;
 
-	public String getMap() {
-		return map;
-	}
+    public boolean getReadonly() {
+        return readonly;
+    }
 
-	public void setMap(String map) {
-		this.map = map;
-	}
+    public void setReadonly(boolean readonly) {
+        this.readonly = readonly;
+    }
 
-	public double getLatitude() {
-		return latitude;
-	}
+    private boolean administrator;
 
-	public void setLatitude(double latitude) {
-		this.latitude = latitude;
-	}
+    public boolean getAdministrator() {
+        return administrator;
+    }
 
-	public double getLongitude() {
-		return longitude;
-	}
+    public void setAdministrator(boolean administrator) {
+        this.administrator = administrator;
+    }
 
-	public void setLongitude(double longitude) {
-		this.longitude = longitude;
-	}
+    private String map;
 
-	public int getZoom() {
-		return zoom;
-	}
+    public String getMap() {
+        return map;
+    }
 
-	public void setZoom(int zoom) {
-		this.zoom = zoom;
-	}
+    public void setMap(String map) {
+        this.map = map;
+    }
 
-	public boolean getTwelveHourFormat() {
-		return twelveHourFormat;
-	}
+    private double latitude;
 
-	public void setTwelveHourFormat(boolean twelveHourFormat) {
-		this.twelveHourFormat = twelveHourFormat;
-	}
+    public double getLatitude() {
+        return latitude;
+    }
 
-	public String getCoordinateFormat() {
-		return coordinateFormat;
-	}
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
 
-	public void setCoordinateFormat(String coordinateFormat) {
-		this.coordinateFormat = coordinateFormat;
-	}
+    private double longitude;
 
-	public boolean getDisabled() {
-		return disabled;
-	}
+    public double getLongitude() {
+        return longitude;
+    }
 
-	public void setDisabled(boolean disabled) {
-		this.disabled = disabled;
-	}
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
 
-	public Date getExpirationTime() {
-		return expirationTime;
-	}
+    private int zoom;
 
-	public void setExpirationTime(Date expirationTime) {
-		this.expirationTime = expirationTime;
-	}
+    public int getZoom() {
+        return zoom;
+    }
 
-	public int getDeviceLimit() {
-		return deviceLimit;
-	}
+    public void setZoom(int zoom) {
+        this.zoom = zoom;
+    }
 
-	public void setDeviceLimit(int deviceLimit) {
-		this.deviceLimit = deviceLimit;
-	}
+    private boolean twelveHourFormat;
 
-	public int getUserLimit() {
-		return userLimit;
-	}
+    public boolean getTwelveHourFormat() {
+        return twelveHourFormat;
+    }
 
-	public void setUserLimit(int userLimit) {
-		this.userLimit = userLimit;
-	}
+    public void setTwelveHourFormat(boolean twelveHourFormat) {
+        this.twelveHourFormat = twelveHourFormat;
+    }
 
-	public boolean getDeviceReadonly() {
-		return deviceReadonly;
-	}
+    private String coordinateFormat;
 
-	public void setDeviceReadonly(boolean deviceReadonly) {
-		this.deviceReadonly = deviceReadonly;
-	}
+    public String getCoordinateFormat() {
+        return coordinateFormat;
+    }
 
-	public String getToken() {
-		return token;
-	}
+    public void setCoordinateFormat(String coordinateFormat) {
+        this.coordinateFormat = coordinateFormat;
+    }
 
-	public void setToken(String token) {
-		if (token != null && !token.isEmpty()) {
-			if (!token.matches("^[a-zA-Z0-9-]{16,}$")) {
-				throw new IllegalArgumentException("Illegal token");
-			}
-			this.token = token;
-		} else {
-			this.token = null;
-		}
-	}
+    private boolean disabled;
 
-	public boolean getLimitCommands() {
-		return limitCommands;
-	}
+    public boolean getDisabled() {
+        return disabled;
+    }
 
-	public void setLimitCommands(boolean limitCommands) {
-		this.limitCommands = limitCommands;
-	}
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+    }
 
-	public String getPoiLayer() {
-		return poiLayer;
-	}
+    private Date expirationTime;
 
-	public void setPoiLayer(String poiLayer) {
-		this.poiLayer = poiLayer;
-	}
+    public Date getExpirationTime() {
+        return expirationTime;
+    }
 
-	@QueryIgnore
-	public String getPassword() {
-		return null;
-	}
+    public void setExpirationTime(Date expirationTime) {
+        this.expirationTime = expirationTime;
+    }
 
-	public void setPassword(String password) {
-		if (password != null && !password.isEmpty()) {
-			Hashing.HashingResult hashingResult = Hashing.createHash(password);
-			hashedPassword = hashingResult.getHash();
-			salt = hashingResult.getSalt();
-		}
-	}
+    private int deviceLimit;
 
-	@JsonIgnore
-	@QueryExtended
-	public String getHashedPassword() {
-		return hashedPassword;
-	}
+    public int getDeviceLimit() {
+        return deviceLimit;
+    }
 
-	public void setHashedPassword(String hashedPassword) {
-		this.hashedPassword = hashedPassword;
-	}
+    public void setDeviceLimit(int deviceLimit) {
+        this.deviceLimit = deviceLimit;
+    }
 
-	@JsonIgnore
-	@QueryExtended
-	public String getSalt() {
-		return salt;
-	}
+    private int userLimit;
 
-	public void setSalt(String salt) {
-		this.salt = salt;
-	}
+    public int getUserLimit() {
+        return userLimit;
+    }
 
-	public boolean isPasswordValid(String password) {
-		return Hashing.validatePassword(password, hashedPassword, salt);
-	}
+    public void setUserLimit(int userLimit) {
+        this.userLimit = userLimit;
+    }
+
+    private boolean deviceReadonly;
+
+    public boolean getDeviceReadonly() {
+        return deviceReadonly;
+    }
+
+    public void setDeviceReadonly(boolean deviceReadonly) {
+        this.deviceReadonly = deviceReadonly;
+    }
+
+    private String token;
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        if (token != null && !token.isEmpty()) {
+            if (!token.matches("^[a-zA-Z0-9-]{16,}$")) {
+                throw new IllegalArgumentException("Illegal token");
+            }
+            this.token = token;
+        } else {
+            this.token = null;
+        }
+    }
+
+    private boolean limitCommands;
+
+    public boolean getLimitCommands() {
+        return limitCommands;
+    }
+
+    public void setLimitCommands(boolean limitCommands) {
+        this.limitCommands = limitCommands;
+    }
+
+    private String poiLayer;
+
+    private boolean disableReports;
+
+    public boolean getDisableReports() {
+        return disableReports;
+    }
+
+    public void setDisableReports(boolean disableReports) {
+        this.disableReports = disableReports;
+    }
+
+    public String getPoiLayer() {
+        return poiLayer;
+    }
+
+    public void setPoiLayer(String poiLayer) {
+        this.poiLayer = poiLayer;
+    }
+
+    @QueryIgnore
+    public String getPassword() {
+        return null;
+    }
+
+    public void setPassword(String password) {
+        if (password != null && !password.isEmpty()) {
+            Hashing.HashingResult hashingResult = Hashing.createHash(password);
+            hashedPassword = hashingResult.getHash();
+            salt = hashingResult.getSalt();
+        }
+    }
+
+    private String hashedPassword;
+
+    @JsonIgnore
+    @QueryExtended
+    public String getHashedPassword() {
+        return hashedPassword;
+    }
+
+    public void setHashedPassword(String hashedPassword) {
+        this.hashedPassword = hashedPassword;
+    }
+
+    private String salt;
+
+    @JsonIgnore
+    @QueryExtended
+    public String getSalt() {
+        return salt;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
+    }
+
+    public boolean isPasswordValid(String password) {
+        return Hashing.validatePassword(password, hashedPassword, salt);
+    }
 
 }

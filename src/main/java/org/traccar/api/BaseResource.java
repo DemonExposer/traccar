@@ -15,18 +15,21 @@
  */
 package org.traccar.api;
 
+import org.traccar.api.security.UserPrincipal;
+
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
 public class BaseResource {
 
-	@javax.ws.rs.core.Context
-	private SecurityContext securityContext;
+    @Context
+    private SecurityContext securityContext;
 
-	protected long getUserId() {
-		UserPrincipal principal = (UserPrincipal) securityContext.getUserPrincipal();
-		if (principal != null) {
-			return principal.getUserId();
-		}
-		return 0;
-	}
+    protected long getUserId() {
+        UserPrincipal principal = (UserPrincipal) securityContext.getUserPrincipal();
+        if (principal != null) {
+            return principal.getUserId();
+        }
+        return 0;
+    }
 }

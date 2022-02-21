@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Anton Tananaev (anton@traccar.org)
+ * Copyright 2021 - 2022 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,43 +30,47 @@ import java.util.Date;
 
 public class HoopoProtocolDecoder extends BaseProtocolDecoder {
 
-	public HoopoProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public HoopoProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		JsonObject json = Json.createReader(new StringReader((String) msg)).readObject();
+        JsonObject json = Json.createReader(new StringReader((String) msg)).readObject();
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, json.getString("deviceId"));
-		if (deviceSession == null) {
-			return null;
-		}
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, json.getString("deviceId"));
+        if (deviceSession == null) {
+            return null;
+        }
 
-		if (json.containsKey("eventData")) {
+        if (json.containsKey("eventData")) {
 
-			JsonObject eventData = json.getJsonObject("eventData");
+            JsonObject eventData = json.getJsonObject("eventData");
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			Date time = new Date(OffsetDateTime.parse(json.getString("eventTime")).toInstant().toEpochMilli());
-			position.setTime(time);
+            Date time = new Date(OffsetDateTime.parse(json.getString("eventTime")).toInstant().toEpochMilli());
+            position.setTime(time);
 
-			position.setValid(true);
-			position.setLatitude(eventData.getJsonNumber("latitude").doubleValue());
-			position.setLongitude(eventData.getJsonNumber("longitude").doubleValue());
+            position.setValid(true);
+            position.setLatitude(eventData.getJsonNumber("latitude").doubleValue());
+            position.setLongitude(eventData.getJsonNumber("longitude").doubleValue());
 
-			position.set(Position.KEY_EVENT, eventData.getString("eventType"));
-			position.set(Position.KEY_BATTERY_LEVEL, eventData.getInt("batteryLevel"));
+            position.set(Position.KEY_EVENT, eventData.getString("eventType"));
+            position.set(Position.KEY_BATTERY_LEVEL, eventData.getInt("batteryLevel"));
 
-			return position;
+            if (json.containsKey("movement")) {
+                position.setSpeed(json.getJsonObject("movement").getInt("Speed"));
+            }
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }
