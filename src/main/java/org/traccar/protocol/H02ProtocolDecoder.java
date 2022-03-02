@@ -84,10 +84,15 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
             position.set(Position.KEY_ALARM, Position.ALARM_POWER_CUT);
         }
 
+		position.set(Position.KEY_IMMOBILIZER, !BitUtil.check(status, 27));
         position.set(Position.KEY_IGNITION, BitUtil.check(status, 10));
         position.set(Position.KEY_STATUS, status);
 
     }
+
+	private void processGPSData(Position position, String data) {
+
+	}
 
     private Integer decodeBattery(int value) {
         if (value == 0) {
@@ -108,6 +113,11 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
     private Position decodeBinary(ByteBuf buf, Channel channel, SocketAddress remoteAddress) {
 
         Position position = new Position(getProtocolName());
+
+		while (buf.isReadable())
+			System.out.println(buf.readByte());
+
+		System.out.println();
 
         boolean longId = buf.readableBytes() == 42;
 
@@ -155,6 +165,24 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
         position.setCourse((buf.readUnsignedByte() & 0x0f) * 100.0 + BcdUtil.readInteger(buf, 2));
 
         processStatus(position, buf.readUnsignedInt());
+
+		buf.readBytes(2);
+		int gsmSignal = BcdUtil.readInteger(buf, 2);
+		int gpsGlonassSignal = buf.readByte();
+
+		buf.readBytes(4);
+		buf.readBytes(2);
+		BcdUtil.readInteger(buf, 2);
+		BcdUtil.readInteger(buf, 4);
+		BcdUtil.readInteger(buf, 4);
+
+		int externalVoltage = 0;
+		for (int i = 0; i < 2; i++) {
+			externalVoltage <<= 8;
+			externalVoltage |= buf.readByte();
+		}
+		System.out.println(externalVoltage);
+		position.set(Position.KEY_EXTERNAL_VOLTAGE, externalVoltage);
 
         return position;
     }
@@ -311,90 +339,89 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
     }
 
     private Position decodeText(String sentence, Channel channel, SocketAddress remoteAddress) {
+		Parser parser = new Parser(PATTERN, sentence);
+		if (!parser.matches()) {
+			return null;
+		}
 
-        Parser parser = new Parser(PATTERN, sentence);
-        if (!parser.matches()) {
-            return null;
-        }
+		String id = parser.next();
+		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
+		if (deviceSession == null) {
+			return null;
+		}
 
-        String id = parser.next();
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
-        if (deviceSession == null) {
-            return null;
-        }
+		Position position = new Position(getProtocolName());
+		position.setDeviceId(deviceSession.getDeviceId());
 
-        Position position = new Position(getProtocolName());
-        position.setDeviceId(deviceSession.getDeviceId());
+		if (parser.hasNext()) {
+			position.set(Position.KEY_RESULT, parser.next());
+		}
 
-        if (parser.hasNext()) {
-            position.set(Position.KEY_RESULT, parser.next());
-        }
+		if (parser.hasNext() && parser.next().equals("V1")) {
+			sendResponse(channel, remoteAddress, id, "V1");
+		} else if (Context.getConfig().getBoolean(Keys.PROTOCOL_ACK.withPrefix(getProtocolName()))) {
+			sendResponse(channel, remoteAddress, id, "R12");
+		}
 
-        if (parser.hasNext() && parser.next().equals("V1")) {
-            sendResponse(channel, remoteAddress, id, "V1");
-        } else if (Context.getConfig().getBoolean(Keys.PROTOCOL_ACK.withPrefix(getProtocolName()))) {
-            sendResponse(channel, remoteAddress, id, "R12");
-        }
+		DateBuilder dateBuilder = new DateBuilder();
+		if (parser.hasNext(3)) {
+			dateBuilder.setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+		}
 
-        DateBuilder dateBuilder = new DateBuilder();
-        if (parser.hasNext(3)) {
-            dateBuilder.setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
-        }
+		if (parser.hasNext()) {
+			position.setValid(parser.next().equals("A"));
+		}
+		if (parser.hasNext()) {
+			parser.nextInt(); // coding scheme
+			position.setValid(true);
+		}
 
-        if (parser.hasNext()) {
-            position.setValid(parser.next().equals("A"));
-        }
-        if (parser.hasNext()) {
-            parser.nextInt(); // coding scheme
-            position.setValid(true);
-        }
+		if (parser.hasNext(2)) {
+			position.setLatitude(-parser.nextCoordinate());
+		}
+		if (parser.hasNext(2)) {
+			position.setLatitude(parser.nextCoordinate());
+		}
 
-        if (parser.hasNext(2)) {
-            position.setLatitude(-parser.nextCoordinate());
-        }
-        if (parser.hasNext(2)) {
-            position.setLatitude(parser.nextCoordinate());
-        }
+		if (parser.hasNext(2)) {
+			position.setLongitude(-parser.nextCoordinate());
+		}
+		if (parser.hasNext(2)) {
+			position.setLongitude(parser.nextCoordinate());
+		}
 
-        if (parser.hasNext(2)) {
-            position.setLongitude(-parser.nextCoordinate());
-        }
-        if (parser.hasNext(2)) {
-            position.setLongitude(parser.nextCoordinate());
-        }
+		position.setSpeed(parser.nextDouble(0));
+		position.setCourse(parser.nextDouble(0));
 
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+		if (parser.hasNext(3)) {
+			dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+			position.setTime(dateBuilder.getDate());
+		} else {
+			position.setTime(new Date());
+		}
 
-        if (parser.hasNext(3)) {
-            dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
-            position.setTime(dateBuilder.getDate());
-        } else {
-            position.setTime(new Date());
-        }
+		if (parser.hasNext()) {
+			processStatus(position, parser.nextLong(16, 0));
+		}
 
-        if (parser.hasNext()) {
-            processStatus(position, parser.nextLong(16, 0));
-        }
+		if (parser.hasNext(6)) {
+			position.set(Position.KEY_ODOMETER, parser.nextInt(0));
+			position.set(Position.PREFIX_TEMP + 1, parser.nextInt(0));
+			position.set(Position.KEY_FUEL_LEVEL, parser.nextDouble(0));
 
-        if (parser.hasNext(6)) {
-            position.set(Position.KEY_ODOMETER, parser.nextInt(0));
-            position.set(Position.PREFIX_TEMP + 1, parser.nextInt(0));
-            position.set(Position.KEY_FUEL_LEVEL, parser.nextDouble(0));
+			position.setAltitude(parser.nextInt(0));
 
-            position.setAltitude(parser.nextInt(0));
+			position.setNetwork(new Network(CellTower.fromLacCid(parser.nextHexInt(0), parser.nextHexInt(0))));
+		}
 
-            position.setNetwork(new Network(CellTower.fromLacCid(parser.nextHexInt(0), parser.nextHexInt(0))));
-        }
+		if (parser.hasNext()) {
+			String[] values = parser.next().split(",");
+			for (int i = 0; i < values.length; i++) {
+				position.set(Position.PREFIX_IO + (i + 1), values[i].trim());
+			}
+		}
 
-        if (parser.hasNext()) {
-            String[] values = parser.next().split(",");
-            for (int i = 0; i < values.length; i++) {
-                position.set(Position.PREFIX_IO + (i + 1), values[i].trim());
-            }
-        }
-
-        return position;
+		return position;
     }
 
     private Position decodeLbs(String sentence, Channel channel, SocketAddress remoteAddress) {
