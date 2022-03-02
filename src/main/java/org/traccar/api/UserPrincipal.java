@@ -19,19 +19,19 @@ import java.security.Principal;
 
 public class UserPrincipal implements Principal {
 
-	private final long userId;
+    private final long userId;
 
-	public UserPrincipal(long userId) {
-		this.userId = userId;
-	}
+    public UserPrincipal(long userId) {
+        this.userId = userId;
+    }
 
-	public Long getUserId() {
-		return userId;
-	}
+    public Long getUserId() {
+        return userId;
+    }
 
-	@Override
-	public String getName() {
-		return null;
-	}
+    @Override
+    public String getName() {
+        return null;
+    }
 
 }

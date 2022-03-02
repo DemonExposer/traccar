@@ -31,115 +31,115 @@ import java.net.SocketAddress;
 
 public class Avl301ProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_LOGIN = 'L';
-	public static final int MSG_STATUS = 'H';
-	public static final int MSG_GPS_LBS_STATUS = '$';
-	public Avl301ProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public Avl301ProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private String readImei(ByteBuf buf) {
-		int b = buf.readUnsignedByte();
-		StringBuilder imei = new StringBuilder();
-		imei.append(b & 0x0F);
-		for (int i = 0; i < 7; i++) {
-			b = buf.readUnsignedByte();
-			imei.append((b & 0xF0) >> 4);
-			imei.append(b & 0x0F);
-		}
-		return imei.toString();
-	}
+    private String readImei(ByteBuf buf) {
+        int b = buf.readUnsignedByte();
+        StringBuilder imei = new StringBuilder();
+        imei.append(b & 0x0F);
+        for (int i = 0; i < 7; i++) {
+            b = buf.readUnsignedByte();
+            imei.append((b & 0xF0) >> 4);
+            imei.append(b & 0x0F);
+        }
+        return imei.toString();
+    }
 
-	private void sendResponse(Channel channel, int type) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer(5);
-			response.writeByte('$');
-			response.writeByte(type);
-			response.writeByte('#');
-			response.writeByte('\r');
-			response.writeByte('\n');
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+    public static final int MSG_LOGIN = 'L';
+    public static final int MSG_STATUS = 'H';
+    public static final int MSG_GPS_LBS_STATUS = '$';
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private void sendResponse(Channel channel, int type) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer(5);
+            response.writeByte('$');
+            response.writeByte(type);
+            response.writeByte('#');
+            response.writeByte('\r'); response.writeByte('\n');
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(1); // header
-		int type = buf.readUnsignedByte();
-		buf.readUnsignedByte(); // length
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_LOGIN) {
+        buf.skipBytes(1); // header
+        int type = buf.readUnsignedByte();
+        buf.readUnsignedByte(); // length
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, readImei(buf));
-			if (deviceSession == null) {
-				sendResponse(channel, type);
-			}
+        if (type == MSG_LOGIN) {
 
-		} else if (type == MSG_STATUS) {
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, readImei(buf));
+            if (deviceSession == null) {
+                sendResponse(channel, type);
+            }
 
-			sendResponse(channel, type);
+        } else if (type == MSG_STATUS) {
 
-		} else if (type == MSG_GPS_LBS_STATUS) {
+            sendResponse(channel, type);
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+        } else if (type == MSG_GPS_LBS_STATUS) {
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			DateBuilder dateBuilder = new DateBuilder()
-					.setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
-					.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-			position.setTime(dateBuilder.getDate());
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			int gpsLength = buf.readUnsignedByte(); // gps len and sat
-			position.set(Position.KEY_SATELLITES, gpsLength & 0xf);
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
+                    .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+            position.setTime(dateBuilder.getDate());
 
-			position.set(Position.KEY_SATELLITES_VISIBLE, buf.readUnsignedByte()); // satellites
+            int gpsLength = buf.readUnsignedByte(); // gps len and sat
+            position.set(Position.KEY_SATELLITES, gpsLength & 0xf);
 
-			double latitude = buf.readUnsignedInt() / 600000.0;
-			double longitude = buf.readUnsignedInt() / 600000.0;
-			position.setSpeed(buf.readUnsignedByte());
+            position.set(Position.KEY_SATELLITES_VISIBLE, buf.readUnsignedByte()); // satellites
 
-			int union = buf.readUnsignedShort(); // course and flags
-			position.setCourse(union & 0x03FF);
-			position.setValid((union & 0x1000) != 0);
-			if ((union & 0x0400) != 0) {
-				latitude = -latitude;
-			}
-			if ((union & 0x0800) != 0) {
-				longitude = -longitude;
-			}
+            double latitude = buf.readUnsignedInt() / 600000.0;
+            double longitude = buf.readUnsignedInt() / 600000.0;
+            position.setSpeed(buf.readUnsignedByte());
 
-			position.setLatitude(latitude);
-			position.setLongitude(longitude);
+            int union = buf.readUnsignedShort(); // course and flags
+            position.setCourse(union & 0x03FF);
+            position.setValid((union & 0x1000) != 0);
+            if ((union & 0x0400) != 0) {
+                latitude = -latitude;
+            }
+            if ((union & 0x0800) != 0) {
+                longitude = -longitude;
+            }
 
-			if ((union & 0x4000) != 0) {
-				position.set("acc", (union & 0x8000) != 0);
-			}
+            position.setLatitude(latitude);
+            position.setLongitude(longitude);
 
-			position.setNetwork(new Network(
-					CellTower.fromLacCid(buf.readUnsignedShort(), buf.readUnsignedMedium())));
+            if ((union & 0x4000) != 0) {
+                position.set("acc", (union & 0x8000) != 0);
+            }
 
-			position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
-			int flags = buf.readUnsignedByte();
-			position.set("acc", (flags & 0x2) != 0);
+            position.setNetwork(new Network(
+                    CellTower.fromLacCid(buf.readUnsignedShort(), buf.readUnsignedMedium())));
 
-			// parse other flags
+            position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
+            int flags = buf.readUnsignedByte();
+            position.set("acc", (flags & 0x2) != 0);
 
-			position.set(Position.KEY_POWER, buf.readUnsignedByte());
-			position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+            // parse other flags
 
-			return position;
-		}
+            position.set(Position.KEY_POWER, buf.readUnsignedByte());
+            position.set(Position.KEY_RSSI, buf.readUnsignedByte());
 
-		return null;
-	}
+            return position;
+        }
+
+        return null;
+    }
 
 }

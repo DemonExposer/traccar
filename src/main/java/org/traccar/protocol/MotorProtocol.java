@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class MotorProtocol extends BaseProtocol {
 
-	public MotorProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new MotorProtocolDecoder(MotorProtocol.this));
-			}
-		});
-	}
+    public MotorProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new MotorProtocolDecoder(MotorProtocol.this));
+            }
+        });
+    }
 
 }

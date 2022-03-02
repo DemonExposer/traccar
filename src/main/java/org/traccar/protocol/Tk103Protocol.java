@@ -25,45 +25,45 @@ import org.traccar.model.Command;
 
 public class Tk103Protocol extends BaseProtocol {
 
-	public Tk103Protocol() {
-		setSupportedDataCommands(
-				Command.TYPE_CUSTOM,
-				Command.TYPE_GET_DEVICE_STATUS,
-				Command.TYPE_IDENTIFICATION,
-				Command.TYPE_MODE_DEEP_SLEEP,
-				Command.TYPE_MODE_POWER_SAVING,
-				Command.TYPE_ALARM_SOS,
-				Command.TYPE_SET_CONNECTION,
-				Command.TYPE_SOS_NUMBER,
-				Command.TYPE_POSITION_SINGLE,
-				Command.TYPE_POSITION_PERIODIC,
-				Command.TYPE_POSITION_STOP,
-				Command.TYPE_GET_VERSION,
-				Command.TYPE_POWER_OFF,
-				Command.TYPE_REBOOT_DEVICE,
-				Command.TYPE_SET_ODOMETER,
-				Command.TYPE_ENGINE_STOP,
-				Command.TYPE_ENGINE_RESUME,
-				Command.TYPE_OUTPUT_CONTROL);
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new Tk103FrameDecoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new Tk103ProtocolEncoder(Tk103Protocol.this));
-				pipeline.addLast(new Tk103ProtocolDecoder(Tk103Protocol.this));
-			}
-		});
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new Tk103ProtocolEncoder(Tk103Protocol.this));
-				pipeline.addLast(new Tk103ProtocolDecoder(Tk103Protocol.this));
-			}
-		});
-	}
+    public Tk103Protocol() {
+        setSupportedDataCommands(
+                Command.TYPE_CUSTOM,
+                Command.TYPE_GET_DEVICE_STATUS,
+                Command.TYPE_IDENTIFICATION,
+                Command.TYPE_MODE_DEEP_SLEEP,
+                Command.TYPE_MODE_POWER_SAVING,
+                Command.TYPE_ALARM_SOS,
+                Command.TYPE_SET_CONNECTION,
+                Command.TYPE_SOS_NUMBER,
+                Command.TYPE_POSITION_SINGLE,
+                Command.TYPE_POSITION_PERIODIC,
+                Command.TYPE_POSITION_STOP,
+                Command.TYPE_GET_VERSION,
+                Command.TYPE_POWER_OFF,
+                Command.TYPE_REBOOT_DEVICE,
+                Command.TYPE_SET_ODOMETER,
+                Command.TYPE_ENGINE_STOP,
+                Command.TYPE_ENGINE_RESUME,
+                Command.TYPE_OUTPUT_CONTROL);
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new Tk103FrameDecoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new Tk103ProtocolEncoder(Tk103Protocol.this));
+                pipeline.addLast(new Tk103ProtocolDecoder(Tk103Protocol.this));
+            }
+        });
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new Tk103ProtocolEncoder(Tk103Protocol.this));
+                pipeline.addLast(new Tk103ProtocolDecoder(Tk103Protocol.this));
+            }
+        });
+    }
 
 }

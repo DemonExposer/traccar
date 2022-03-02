@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class SpotProtocol extends BaseProtocol {
 
-	public SpotProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new HttpResponseEncoder());
-				pipeline.addLast(new HttpRequestDecoder());
-				pipeline.addLast(new HttpObjectAggregator(65535));
-				pipeline.addLast(new SpotProtocolDecoder(SpotProtocol.this));
-			}
-		});
-	}
+    public SpotProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new HttpResponseEncoder());
+                pipeline.addLast(new HttpRequestDecoder());
+                pipeline.addLast(new HttpObjectAggregator(65535));
+                pipeline.addLast(new SpotProtocolDecoder(SpotProtocol.this));
+            }
+        });
+    }
 
 }

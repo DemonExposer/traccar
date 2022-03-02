@@ -17,86 +17,94 @@ package org.traccar.geocoder;
 
 public class Address {
 
-	private String postcode;
-	private String country;
-	private String state;
-	private String district;
-	private String settlement;
-	private String suburb;
-	private String street;
-	private String house;
-	private String formattedAddress;
+    private String postcode;
 
-	public String getPostcode() {
-		return postcode;
-	}
+    public String getPostcode() {
+        return postcode;
+    }
 
-	public void setPostcode(String postcode) {
-		this.postcode = postcode;
-	}
+    public void setPostcode(String postcode) {
+        this.postcode = postcode;
+    }
 
-	public String getCountry() {
-		return country;
-	}
+    private String country;
 
-	public void setCountry(String country) {
-		this.country = country;
-	}
+    public String getCountry() {
+        return country;
+    }
 
-	public String getState() {
-		return state;
-	}
+    public void setCountry(String country) {
+        this.country = country;
+    }
 
-	public void setState(String state) {
-		this.state = state;
-	}
+    private String state;
 
-	public String getDistrict() {
-		return district;
-	}
+    public String getState() {
+        return state;
+    }
 
-	public void setDistrict(String district) {
-		this.district = district;
-	}
+    public void setState(String state) {
+        this.state = state;
+    }
 
-	public String getSettlement() {
-		return settlement;
-	}
+    private String district;
 
-	public void setSettlement(String settlement) {
-		this.settlement = settlement;
-	}
+    public String getDistrict() {
+        return district;
+    }
 
-	public String getSuburb() {
-		return suburb;
-	}
+    public void setDistrict(String district) {
+        this.district = district;
+    }
 
-	public void setSuburb(String suburb) {
-		this.suburb = suburb;
-	}
+    private String settlement;
 
-	public String getStreet() {
-		return street;
-	}
+    public String getSettlement() {
+        return settlement;
+    }
 
-	public void setStreet(String street) {
-		this.street = street;
-	}
+    public void setSettlement(String settlement) {
+        this.settlement = settlement;
+    }
 
-	public String getHouse() {
-		return house;
-	}
+    private String suburb;
 
-	public void setHouse(String house) {
-		this.house = house;
-	}
+    public String getSuburb() {
+        return suburb;
+    }
 
-	public String getFormattedAddress() {
-		return formattedAddress;
-	}
+    public void setSuburb(String suburb) {
+        this.suburb = suburb;
+    }
 
-	public void setFormattedAddress(String formattedAddress) {
-		this.formattedAddress = formattedAddress;
-	}
+    private String street;
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    private String house;
+
+    public String getHouse() {
+        return house;
+    }
+
+    public void setHouse(String house) {
+        this.house = house;
+    }
+
+    private String formattedAddress;
+
+    public String getFormattedAddress() {
+        return formattedAddress;
+    }
+
+    public void setFormattedAddress(String formattedAddress) {
+        this.formattedAddress = formattedAddress;
+    }
 
 }

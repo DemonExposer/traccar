@@ -27,101 +27,101 @@ import java.net.SocketAddress;
 
 public class M2mProtocolDecoder extends BaseProtocolDecoder {
 
-	private boolean firstPacket = true;
+    public M2mProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public M2mProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private boolean firstPacket = true;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		ByteBuf buf = (ByteBuf) msg;
+        ByteBuf buf = (ByteBuf) msg;
 
-		// Remove offset
-		for (int i = 0; i < buf.readableBytes(); i++) {
-			int b = buf.getByte(i);
-			if (b != 0x0b) {
-				buf.setByte(i, b - 0x20);
-			}
-		}
+        // Remove offset
+        for (int i = 0; i < buf.readableBytes(); i++) {
+            int b = buf.getByte(i);
+            if (b != 0x0b) {
+                buf.setByte(i, b - 0x20);
+            }
+        }
 
-		if (firstPacket) {
+        if (firstPacket) {
 
-			firstPacket = false;
+            firstPacket = false;
 
-			StringBuilder imei = new StringBuilder();
-			for (int i = 0; i < 8; i++) {
-				int b = buf.readByte();
-				if (i != 0) {
-					imei.append(b / 10);
-				}
-				imei.append(b % 10);
-			}
+            StringBuilder imei = new StringBuilder();
+            for (int i = 0; i < 8; i++) {
+                int b = buf.readByte();
+                if (i != 0) {
+                    imei.append(b / 10);
+                }
+                imei.append(b % 10);
+            }
 
-			getDeviceSession(channel, remoteAddress, imei.toString());
+            getDeviceSession(channel, remoteAddress, imei.toString());
 
-		} else {
+        } else {
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			DateBuilder dateBuilder = new DateBuilder()
-					.setDay(buf.readUnsignedByte() & 0x3f)
-					.setMonth(buf.readUnsignedByte() & 0x3f)
-					.setYear(buf.readUnsignedByte())
-					.setHour(buf.readUnsignedByte() & 0x3f)
-					.setMinute(buf.readUnsignedByte() & 0x7f)
-					.setSecond(buf.readUnsignedByte() & 0x7f);
-			position.setTime(dateBuilder.getDate());
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setDay(buf.readUnsignedByte() & 0x3f)
+                    .setMonth(buf.readUnsignedByte() & 0x3f)
+                    .setYear(buf.readUnsignedByte())
+                    .setHour(buf.readUnsignedByte() & 0x3f)
+                    .setMinute(buf.readUnsignedByte() & 0x7f)
+                    .setSecond(buf.readUnsignedByte() & 0x7f);
+            position.setTime(dateBuilder.getDate());
 
-			int degrees = buf.readUnsignedByte();
-			double latitude = buf.readUnsignedByte();
-			latitude += buf.readUnsignedByte() / 100.0;
-			latitude += buf.readUnsignedByte() / 10000.0;
-			latitude /= 60;
-			latitude += degrees;
+            int degrees = buf.readUnsignedByte();
+            double latitude = buf.readUnsignedByte();
+            latitude += buf.readUnsignedByte() / 100.0;
+            latitude += buf.readUnsignedByte() / 10000.0;
+            latitude /= 60;
+            latitude += degrees;
 
-			int b = buf.readUnsignedByte();
+            int b = buf.readUnsignedByte();
 
-			degrees = (b & 0x7f) * 100 + buf.readUnsignedByte();
-			double longitude = buf.readUnsignedByte();
-			longitude += buf.readUnsignedByte() / 100.0;
-			longitude += buf.readUnsignedByte() / 10000.0;
-			longitude /= 60;
-			longitude += degrees;
+            degrees = (b & 0x7f) * 100 + buf.readUnsignedByte();
+            double longitude = buf.readUnsignedByte();
+            longitude += buf.readUnsignedByte() / 100.0;
+            longitude += buf.readUnsignedByte() / 10000.0;
+            longitude /= 60;
+            longitude += degrees;
 
-			if ((b & 0x80) != 0) {
-				longitude = -longitude;
-			}
-			if ((b & 0x40) != 0) {
-				latitude = -latitude;
-			}
+            if ((b & 0x80) != 0) {
+                longitude = -longitude;
+            }
+            if ((b & 0x40) != 0) {
+                latitude = -latitude;
+            }
 
-			position.setValid(true);
-			position.setLatitude(latitude);
-			position.setLongitude(longitude);
-			position.setSpeed(buf.readUnsignedByte());
+            position.setValid(true);
+            position.setLatitude(latitude);
+            position.setLongitude(longitude);
+            position.setSpeed(buf.readUnsignedByte());
 
-			int satellites = buf.readUnsignedByte();
-			if (satellites == 0) {
-				return null; // cell information
-			}
-			position.set(Position.KEY_SATELLITES, satellites);
+            int satellites = buf.readUnsignedByte();
+            if (satellites == 0) {
+                return null; // cell information
+            }
+            position.set(Position.KEY_SATELLITES, satellites);
 
-			// decode other data
+            // decode other data
 
-			return position;
+            return position;
 
-		}
+        }
 
-		return null;
-	}
+        return null;
+    }
 
 }

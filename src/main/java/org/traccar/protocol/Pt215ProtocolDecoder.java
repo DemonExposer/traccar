@@ -31,87 +31,88 @@ import java.net.SocketAddress;
 
 public class Pt215ProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_LOGIN = 0x01;
-	public static final int MSG_HEARTBEAT = 0x08;
-	public static final int MSG_GPS_REALTIME = 0x10;
-	public static final int MSG_GPS_OFFLINE = 0x11;
-	public static final int MSG_STATUS = 0x13;
-	public Pt215ProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public Pt215ProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void sendResponse(
-			Channel channel, SocketAddress remoteAddress, int type, ByteBuf content) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer();
-			response.writeByte('X');
-			response.writeByte('X');
-			response.writeByte(content != null ? 1 + content.readableBytes() : 1);
-			response.writeByte(type);
-			if (content != null) {
-				response.writeBytes(content);
-				content.release();
-			}
-			response.writeByte('\r');
-			response.writeByte('\n');
-			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-		}
-	}
+    public static final int MSG_LOGIN = 0x01;
+    public static final int MSG_HEARTBEAT = 0x08;
+    public static final int MSG_GPS_REALTIME = 0x10;
+    public static final int MSG_GPS_OFFLINE = 0x11;
+    public static final int MSG_STATUS = 0x13;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private void sendResponse(
+            Channel channel, SocketAddress remoteAddress, int type, ByteBuf content) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeByte('X');
+            response.writeByte('X');
+            response.writeByte(content != null ? 1 + content.readableBytes() : 1);
+            response.writeByte(type);
+            if (content != null) {
+                response.writeBytes(content);
+                content.release();
+            }
+            response.writeByte('\r');
+            response.writeByte('\n');
+            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		buf.readUnsignedByte(); // length
-		int type = buf.readUnsignedByte();
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_LOGIN) {
+        buf.skipBytes(2); // header
+        buf.readUnsignedByte(); // length
+        int type = buf.readUnsignedByte();
 
-			getDeviceSession(channel, remoteAddress, ByteBufUtil.hexDump(buf.readSlice(8)).substring(1));
-			sendResponse(channel, remoteAddress, type, null);
+        if (type == MSG_LOGIN) {
 
-		} else if (type == MSG_GPS_OFFLINE || type == MSG_GPS_REALTIME) {
+            getDeviceSession(channel, remoteAddress, ByteBufUtil.hexDump(buf.readSlice(8)).substring(1));
+            sendResponse(channel, remoteAddress, type, null);
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+        } else if (type == MSG_GPS_OFFLINE || type == MSG_GPS_REALTIME) {
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			sendResponse(channel, remoteAddress, type, buf.retainedSlice(buf.readerIndex(), 6));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			DateBuilder dateBuilder = new DateBuilder()
-					.setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
-					.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-			position.setTime(dateBuilder.getDate());
+            sendResponse(channel, remoteAddress, type, buf.retainedSlice(buf.readerIndex(), 6));
 
-			double latitude = buf.readUnsignedInt() / 60.0 / 30000.0;
-			double longitude = buf.readUnsignedInt() / 60.0 / 30000.0;
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
+                    .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+            position.setTime(dateBuilder.getDate());
 
-			int flags = buf.readUnsignedShort();
-			position.setCourse(BitUtil.to(flags, 10));
-			position.setValid(BitUtil.check(flags, 12));
+            double latitude = buf.readUnsignedInt() / 60.0 / 30000.0;
+            double longitude = buf.readUnsignedInt() / 60.0 / 30000.0;
 
-			if (!BitUtil.check(flags, 10)) {
-				latitude = -latitude;
-			}
-			if (BitUtil.check(flags, 11)) {
-				longitude = -longitude;
-			}
+            int flags = buf.readUnsignedShort();
+            position.setCourse(BitUtil.to(flags, 10));
+            position.setValid(BitUtil.check(flags, 12));
 
-			position.setLatitude(latitude);
-			position.setLongitude(longitude);
+            if (!BitUtil.check(flags, 10)) {
+                latitude = -latitude;
+            }
+            if (BitUtil.check(flags, 11)) {
+                longitude = -longitude;
+            }
 
-			return position;
+            position.setLatitude(latitude);
+            position.setLongitude(longitude);
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

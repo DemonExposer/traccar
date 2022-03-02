@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class AlematicsProtocol extends BaseProtocol {
 
-	public AlematicsProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new AlematicsFrameDecoder(1024));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new AlematicsProtocolDecoder(AlematicsProtocol.this));
-			}
-		});
-	}
+    public AlematicsProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new AlematicsFrameDecoder(1024));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new AlematicsProtocolDecoder(AlematicsProtocol.this));
+            }
+        });
+    }
 
 }

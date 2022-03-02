@@ -34,97 +34,98 @@ import java.util.Date;
 
 public class RoboTrackProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_ID = 0x00;
-	public static final int MSG_ACK = 0x80;
-	public static final int MSG_GPS = 0x03;
-	public static final int MSG_GSM = 0x04;
-	public static final int MSG_IMAGE_START = 0x06;
-	public static final int MSG_IMAGE_DATA = 0x07;
-	public static final int MSG_IMAGE_END = 0x08;
-	public RoboTrackProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public RoboTrackProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    public static final int MSG_ID = 0x00;
+    public static final int MSG_ACK = 0x80;
+    public static final int MSG_GPS = 0x03;
+    public static final int MSG_GSM = 0x04;
+    public static final int MSG_IMAGE_START = 0x06;
+    public static final int MSG_IMAGE_DATA = 0x07;
+    public static final int MSG_IMAGE_END = 0x08;
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		int type = buf.readUnsignedByte();
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_ID) {
+        int type = buf.readUnsignedByte();
 
-			buf.skipBytes(16); // name
+        if (type == MSG_ID) {
 
-			String imei = buf.readSlice(15).toString(StandardCharsets.US_ASCII);
+            buf.skipBytes(16); // name
 
-			if (getDeviceSession(channel, remoteAddress, imei) != null && channel != null) {
-				ByteBuf response = Unpooled.buffer();
-				response.writeByte(MSG_ACK);
-				response.writeByte(0x01); // success
-				response.writeByte(0x66); // checksum
-				channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-			}
+            String imei = buf.readSlice(15).toString(StandardCharsets.US_ASCII);
 
-		} else if (type == MSG_GPS || type == MSG_GSM) {
+            if (getDeviceSession(channel, remoteAddress, imei) != null && channel != null) {
+                ByteBuf response = Unpooled.buffer();
+                response.writeByte(MSG_ACK);
+                response.writeByte(0x01); // success
+                response.writeByte(0x66); // checksum
+                channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+            }
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+        } else if (type == MSG_GPS || type == MSG_GSM) {
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			position.setDeviceTime(new Date(buf.readUnsignedIntLE() * 1000));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			if (type == MSG_GPS) {
+            position.setDeviceTime(new Date(buf.readUnsignedIntLE() * 1000));
 
-				position.setValid(true);
-				position.setFixTime(position.getDeviceTime());
-				position.setLatitude(buf.readIntLE() * 0.000001);
-				position.setLongitude(buf.readIntLE() * 0.000001);
-				position.setSpeed(UnitsConverter.knotsFromKph(buf.readByte()));
+            if (type == MSG_GPS) {
 
-			} else {
+                position.setValid(true);
+                position.setFixTime(position.getDeviceTime());
+                position.setLatitude(buf.readIntLE() * 0.000001);
+                position.setLongitude(buf.readIntLE() * 0.000001);
+                position.setSpeed(UnitsConverter.knotsFromKph(buf.readByte()));
 
-				getLastLocation(position, position.getDeviceTime());
+            } else {
 
-				position.setNetwork(new Network(CellTower.from(
-						buf.readUnsignedShortLE(), buf.readUnsignedShortLE(),
-						buf.readUnsignedShortLE(), buf.readUnsignedShortLE())));
+                getLastLocation(position, position.getDeviceTime());
 
-				buf.readUnsignedByte(); // reserved
+                position.setNetwork(new Network(CellTower.from(
+                        buf.readUnsignedShortLE(), buf.readUnsignedShortLE(),
+                        buf.readUnsignedShortLE(), buf.readUnsignedShortLE())));
 
-			}
+                buf.readUnsignedByte(); // reserved
 
-			int value = buf.readUnsignedByte();
+            }
 
-			position.set(Position.KEY_SATELLITES, BitUtil.to(value, 4));
-			position.set(Position.KEY_RSSI, BitUtil.between(value, 4, 7));
-			position.set(Position.KEY_MOTION, BitUtil.check(value, 7));
+            int value = buf.readUnsignedByte();
 
-			value = buf.readUnsignedByte();
+            position.set(Position.KEY_SATELLITES, BitUtil.to(value, 4));
+            position.set(Position.KEY_RSSI, BitUtil.between(value, 4, 7));
+            position.set(Position.KEY_MOTION, BitUtil.check(value, 7));
 
-			position.set(Position.KEY_CHARGE, BitUtil.check(value, 0));
+            value = buf.readUnsignedByte();
 
-			for (int i = 1; i <= 4; i++) {
-				position.set(Position.PREFIX_IN + i, BitUtil.check(value, i));
-			}
+            position.set(Position.KEY_CHARGE, BitUtil.check(value, 0));
 
-			position.set(Position.KEY_BATTERY_LEVEL, BitUtil.from(value, 5) * 100 / 7);
-			position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
+            for (int i = 1; i <= 4; i++) {
+                position.set(Position.PREFIX_IN + i, BitUtil.check(value, i));
+            }
 
-			for (int i = 1; i <= 3; i++) {
-				position.set(Position.PREFIX_ADC + i, buf.readUnsignedShortLE());
-			}
+            position.set(Position.KEY_BATTERY_LEVEL, BitUtil.from(value, 5) * 100 / 7);
+            position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
 
-			return position;
+            for (int i = 1; i <= 3; i++) {
+                position.set(Position.PREFIX_ADC + i, buf.readUnsignedShortLE());
+            }
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

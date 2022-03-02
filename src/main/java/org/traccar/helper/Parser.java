@@ -22,327 +22,327 @@ import java.util.regex.Pattern;
 
 public class Parser {
 
-	private final Matcher matcher;
-	private int position;
+    private int position;
+    private final Matcher matcher;
 
-	public Parser(Pattern pattern, String input) {
-		matcher = pattern.matcher(input);
-	}
+    public Parser(Pattern pattern, String input) {
+        matcher = pattern.matcher(input);
+    }
 
-	public boolean matches() {
-		position = 1;
-		return matcher.matches();
-	}
+    public boolean matches() {
+        position = 1;
+        return matcher.matches();
+    }
 
-	public boolean find() {
-		position = 1;
-		return matcher.find();
-	}
+    public boolean find() {
+        position = 1;
+        return matcher.find();
+    }
 
-	public void skip(int number) {
-		position += number;
-	}
+    public void skip(int number) {
+        position += number;
+    }
 
-	public boolean hasNext() {
-		return hasNext(1);
-	}
+    public boolean hasNext() {
+        return hasNext(1);
+    }
 
-	public boolean hasNext(int number) {
-		String value = matcher.group(position);
-		if (value != null && !value.isEmpty()) {
-			return true;
-		} else {
-			position += number;
-			return false;
-		}
-	}
+    public boolean hasNext(int number) {
+        String value = matcher.group(position);
+        if (value != null && !value.isEmpty()) {
+            return true;
+        } else {
+            position += number;
+            return false;
+        }
+    }
 
-	public String next() {
-		return matcher.group(position++);
-	}
+    public String next() {
+        return matcher.group(position++);
+    }
 
-	public Integer nextInt() {
-		if (hasNext()) {
-			return Integer.parseInt(next());
-		} else {
-			return null;
-		}
-	}
+    public Integer nextInt() {
+        if (hasNext()) {
+            return Integer.parseInt(next());
+        } else {
+            return null;
+        }
+    }
 
-	public int nextInt(int defaultValue) {
-		if (hasNext()) {
-			return Integer.parseInt(next());
-		} else {
-			return defaultValue;
-		}
-	}
+    public int nextInt(int defaultValue) {
+        if (hasNext()) {
+            return Integer.parseInt(next());
+        } else {
+            return defaultValue;
+        }
+    }
 
-	public Integer nextHexInt() {
-		if (hasNext()) {
-			return Integer.parseInt(next(), 16);
-		} else {
-			return null;
-		}
-	}
+    public Integer nextHexInt() {
+        if (hasNext()) {
+            return Integer.parseInt(next(), 16);
+        } else {
+            return null;
+        }
+    }
 
-	public int nextHexInt(int defaultValue) {
-		if (hasNext()) {
-			return Integer.parseInt(next(), 16);
-		} else {
-			return defaultValue;
-		}
-	}
+    public int nextHexInt(int defaultValue) {
+        if (hasNext()) {
+            return Integer.parseInt(next(), 16);
+        } else {
+            return defaultValue;
+        }
+    }
 
-	public Integer nextBinInt() {
-		if (hasNext()) {
-			return Integer.parseInt(next(), 2);
-		} else {
-			return null;
-		}
-	}
+    public Integer nextBinInt() {
+        if (hasNext()) {
+            return Integer.parseInt(next(), 2);
+        } else {
+            return null;
+        }
+    }
 
-	public int nextBinInt(int defaultValue) {
-		if (hasNext()) {
-			return Integer.parseInt(next(), 2);
-		} else {
-			return defaultValue;
-		}
-	}
+    public int nextBinInt(int defaultValue) {
+        if (hasNext()) {
+            return Integer.parseInt(next(), 2);
+        } else {
+            return defaultValue;
+        }
+    }
 
-	public Long nextLong() {
-		if (hasNext()) {
-			return Long.parseLong(next());
-		} else {
-			return null;
-		}
-	}
+    public Long nextLong() {
+        if (hasNext()) {
+            return Long.parseLong(next());
+        } else {
+            return null;
+        }
+    }
 
-	public Long nextHexLong() {
-		if (hasNext()) {
-			return Long.parseLong(next(), 16);
-		} else {
-			return null;
-		}
-	}
+    public Long nextHexLong() {
+        if (hasNext()) {
+            return Long.parseLong(next(), 16);
+        } else {
+            return null;
+        }
+    }
 
-	public long nextLong(long defaultValue) {
-		return nextLong(10, defaultValue);
-	}
+    public long nextLong(long defaultValue) {
+        return nextLong(10, defaultValue);
+    }
 
-	public long nextLong(int radix, long defaultValue) {
-		if (hasNext()) {
-			return Long.parseLong(next(), radix);
-		} else {
-			return defaultValue;
-		}
-	}
+    public long nextLong(int radix, long defaultValue) {
+        if (hasNext()) {
+            return Long.parseLong(next(), radix);
+        } else {
+            return defaultValue;
+        }
+    }
 
-	public Double nextDouble() {
-		if (hasNext()) {
-			return Double.parseDouble(next());
-		} else {
-			return null;
-		}
-	}
+    public Double nextDouble() {
+        if (hasNext()) {
+            return Double.parseDouble(next());
+        } else {
+            return null;
+        }
+    }
 
-	public double nextDouble(double defaultValue) {
-		if (hasNext()) {
-			return Double.parseDouble(next());
-		} else {
-			return defaultValue;
-		}
-	}
+    public double nextDouble(double defaultValue) {
+        if (hasNext()) {
+            return Double.parseDouble(next());
+        } else {
+            return defaultValue;
+        }
+    }
 
-	public double nextCoordinate(CoordinateFormat format) {
-		double coordinate;
-		String hemisphere = null;
+    public enum CoordinateFormat {
+        DEG_DEG,
+        DEG_HEM,
+        DEG_MIN_MIN,
+        DEG_MIN_HEM,
+        DEG_MIN_MIN_HEM,
+        HEM_DEG_MIN_MIN,
+        HEM_DEG,
+        HEM_DEG_MIN,
+        HEM_DEG_MIN_HEM
+    }
 
-		switch (format) {
-			case DEG_DEG:
-				coordinate = Double.parseDouble(next() + '.' + next());
-				break;
-			case DEG_HEM:
-				coordinate = nextDouble(0);
-				hemisphere = next();
-				break;
-			case DEG_MIN_MIN:
-				coordinate = nextInt(0);
-				coordinate += Double.parseDouble(next() + '.' + next()) / 60;
-				break;
-			case DEG_MIN_MIN_HEM:
-				coordinate = nextInt(0);
-				coordinate += Double.parseDouble(next() + '.' + next()) / 60;
-				hemisphere = next();
-				break;
-			case HEM_DEG:
-				hemisphere = next();
-				coordinate = nextDouble(0);
-				break;
-			case HEM_DEG_MIN:
-				hemisphere = next();
-				coordinate = nextInt(0);
-				coordinate += nextDouble(0) / 60;
-				break;
-			case HEM_DEG_MIN_HEM:
-				hemisphere = next();
-				coordinate = nextInt(0);
-				coordinate += nextDouble(0) / 60;
-				if (hasNext()) {
-					hemisphere = next();
-				}
-				break;
-			case HEM_DEG_MIN_MIN:
-				hemisphere = next();
-				coordinate = nextInt(0);
-				coordinate += Double.parseDouble(next() + '.' + next()) / 60;
-				break;
-			case DEG_MIN_HEM:
-			default:
-				coordinate = nextInt(0);
-				coordinate += nextDouble(0) / 60;
-				hemisphere = next();
-				break;
-		}
+    public double nextCoordinate(CoordinateFormat format) {
+        double coordinate;
+        String hemisphere = null;
 
-		if (hemisphere != null && (hemisphere.equals("S") || hemisphere.equals("W") || hemisphere.equals("-"))) {
-			coordinate = -Math.abs(coordinate);
-		}
+        switch (format) {
+            case DEG_DEG:
+                coordinate = Double.parseDouble(next() + '.' + next());
+                break;
+            case DEG_HEM:
+                coordinate = nextDouble(0);
+                hemisphere = next();
+                break;
+            case DEG_MIN_MIN:
+                coordinate = nextInt(0);
+                coordinate += Double.parseDouble(next() + '.' + next()) / 60;
+                break;
+            case DEG_MIN_MIN_HEM:
+                coordinate = nextInt(0);
+                coordinate += Double.parseDouble(next() + '.' + next()) / 60;
+                hemisphere = next();
+                break;
+            case HEM_DEG:
+                hemisphere = next();
+                coordinate = nextDouble(0);
+                break;
+            case HEM_DEG_MIN:
+                hemisphere = next();
+                coordinate = nextInt(0);
+                coordinate += nextDouble(0) / 60;
+                break;
+            case HEM_DEG_MIN_HEM:
+                hemisphere = next();
+                coordinate = nextInt(0);
+                coordinate += nextDouble(0) / 60;
+                if (hasNext()) {
+                    hemisphere = next();
+                }
+                break;
+            case HEM_DEG_MIN_MIN:
+                hemisphere = next();
+                coordinate = nextInt(0);
+                coordinate += Double.parseDouble(next() + '.' + next()) / 60;
+                break;
+            case DEG_MIN_HEM:
+            default:
+                coordinate = nextInt(0);
+                coordinate += nextDouble(0) / 60;
+                hemisphere = next();
+                break;
+        }
 
-		return coordinate;
-	}
+        if (hemisphere != null && (hemisphere.equals("S") || hemisphere.equals("W") || hemisphere.equals("-"))) {
+            coordinate = -Math.abs(coordinate);
+        }
 
-	public double nextCoordinate() {
-		return nextCoordinate(CoordinateFormat.DEG_MIN_HEM);
-	}
+        return coordinate;
+    }
 
-	public Date nextDateTime(DateTimeFormat format, String timeZone) {
-		int year = 0, month = 0, day = 0;
-		int hour, minute, second, millisecond = 0;
+    public double nextCoordinate() {
+        return nextCoordinate(CoordinateFormat.DEG_MIN_HEM);
+    }
 
-		switch (format) {
-			case HMS:
-				hour = nextInt(0);
-				minute = nextInt(0);
-				second = nextInt(0);
-				break;
-			case SMH:
-				second = nextInt(0);
-				minute = nextInt(0);
-				hour = nextInt(0);
-				break;
-			case HMS_YMD:
-				hour = nextInt(0);
-				minute = nextInt(0);
-				second = nextInt(0);
-				year = nextInt(0);
-				month = nextInt(0);
-				day = nextInt(0);
-				break;
-			case HMS_DMY:
-				hour = nextInt(0);
-				minute = nextInt(0);
-				second = nextInt(0);
-				day = nextInt(0);
-				month = nextInt(0);
-				year = nextInt(0);
-				break;
-			case SMH_YMD:
-				second = nextInt(0);
-				minute = nextInt(0);
-				hour = nextInt(0);
-				year = nextInt(0);
-				month = nextInt(0);
-				day = nextInt(0);
-				break;
-			case SMH_DMY:
-				second = nextInt(0);
-				minute = nextInt(0);
-				hour = nextInt(0);
-				day = nextInt(0);
-				month = nextInt(0);
-				year = nextInt(0);
-				break;
-			case DMY_HMS:
-			case DMY_HMSS:
-				day = nextInt(0);
-				month = nextInt(0);
-				year = nextInt(0);
-				hour = nextInt(0);
-				minute = nextInt(0);
-				second = nextInt(0);
-				break;
-			case YMD_HMS:
-			case YMD_HMSS:
-			default:
-				year = nextInt(0);
-				month = nextInt(0);
-				day = nextInt(0);
-				hour = nextInt(0);
-				minute = nextInt(0);
-				second = nextInt(0);
-				break;
-		}
+    public enum DateTimeFormat {
+        HMS,
+        SMH,
+        HMS_YMD,
+        HMS_DMY,
+        SMH_YMD,
+        SMH_DMY,
+        DMY_HMS,
+        DMY_HMSS,
+        YMD_HMS,
+        YMD_HMSS,
+    }
 
-		if (format == DateTimeFormat.YMD_HMSS || format == DateTimeFormat.DMY_HMSS) {
-			millisecond = nextInt(0); // (ddd)
-		}
+    public Date nextDateTime(DateTimeFormat format, String timeZone) {
+        int year = 0, month = 0, day = 0;
+        int hour, minute, second, millisecond = 0;
 
-		if (year >= 0 && year < 100) {
-			year += 2000;
-		}
+        switch (format) {
+            case HMS:
+                hour = nextInt(0);
+                minute = nextInt(0);
+                second = nextInt(0);
+                break;
+            case SMH:
+                second = nextInt(0);
+                minute = nextInt(0);
+                hour = nextInt(0);
+                break;
+            case HMS_YMD:
+                hour = nextInt(0);
+                minute = nextInt(0);
+                second = nextInt(0);
+                year = nextInt(0);
+                month = nextInt(0);
+                day = nextInt(0);
+                break;
+            case HMS_DMY:
+                hour = nextInt(0);
+                minute = nextInt(0);
+                second = nextInt(0);
+                day = nextInt(0);
+                month = nextInt(0);
+                year = nextInt(0);
+                break;
+            case SMH_YMD:
+                second = nextInt(0);
+                minute = nextInt(0);
+                hour = nextInt(0);
+                year = nextInt(0);
+                month = nextInt(0);
+                day = nextInt(0);
+                break;
+            case SMH_DMY:
+                second = nextInt(0);
+                minute = nextInt(0);
+                hour = nextInt(0);
+                day = nextInt(0);
+                month = nextInt(0);
+                year = nextInt(0);
+                break;
+            case DMY_HMS:
+            case DMY_HMSS:
+                day = nextInt(0);
+                month = nextInt(0);
+                year = nextInt(0);
+                hour = nextInt(0);
+                minute = nextInt(0);
+                second = nextInt(0);
+                break;
+            case YMD_HMS:
+            case YMD_HMSS:
+            default:
+                year = nextInt(0);
+                month = nextInt(0);
+                day = nextInt(0);
+                hour = nextInt(0);
+                minute = nextInt(0);
+                second = nextInt(0);
+                break;
+        }
 
-		DateBuilder dateBuilder;
-		if (format != DateTimeFormat.HMS && format != DateTimeFormat.SMH) {
-			if (timeZone != null) {
-				dateBuilder = new DateBuilder(TimeZone.getTimeZone(timeZone));
-			} else {
-				dateBuilder = new DateBuilder();
-			}
-			dateBuilder.setDate(year, month, day);
-		} else {
-			if (timeZone != null) {
-				dateBuilder = new DateBuilder(new Date(), TimeZone.getTimeZone(timeZone));
-			} else {
-				dateBuilder = new DateBuilder(new Date());
-			}
-		}
+        if (format == DateTimeFormat.YMD_HMSS || format == DateTimeFormat.DMY_HMSS) {
+            millisecond = nextInt(0); // (ddd)
+        }
 
-		dateBuilder.setTime(hour, minute, second, millisecond);
+        if (year >= 0 && year < 100) {
+            year += 2000;
+        }
 
-		return dateBuilder.getDate();
-	}
+        DateBuilder dateBuilder;
+        if (format != DateTimeFormat.HMS && format != DateTimeFormat.SMH) {
+            if (timeZone != null) {
+                dateBuilder = new DateBuilder(TimeZone.getTimeZone(timeZone));
+            } else {
+                dateBuilder = new DateBuilder();
+            }
+            dateBuilder.setDate(year, month, day);
+        } else {
+            if (timeZone != null) {
+                dateBuilder = new DateBuilder(new Date(), TimeZone.getTimeZone(timeZone));
+            } else {
+                dateBuilder = new DateBuilder(new Date());
+            }
+        }
 
-	public Date nextDateTime(DateTimeFormat format) {
-		return nextDateTime(format, null);
-	}
+        dateBuilder.setTime(hour, minute, second, millisecond);
 
-	public Date nextDateTime() {
-		return nextDateTime(DateTimeFormat.YMD_HMS, null);
-	}
+        return dateBuilder.getDate();
+    }
 
-	public enum CoordinateFormat {
-		DEG_DEG,
-		DEG_HEM,
-		DEG_MIN_MIN,
-		DEG_MIN_HEM,
-		DEG_MIN_MIN_HEM,
-		HEM_DEG_MIN_MIN,
-		HEM_DEG,
-		HEM_DEG_MIN,
-		HEM_DEG_MIN_HEM
-	}
+    public Date nextDateTime(DateTimeFormat format) {
+        return nextDateTime(format, null);
+    }
 
-	public enum DateTimeFormat {
-		HMS,
-		SMH,
-		HMS_YMD,
-		HMS_DMY,
-		SMH_YMD,
-		SMH_DMY,
-		DMY_HMS,
-		DMY_HMSS,
-		YMD_HMS,
-		YMD_HMSS,
-	}
+    public Date nextDateTime() {
+        return nextDateTime(DateTimeFormat.YMD_HMS, null);
+    }
 
 }

@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class CradlepointProtocol extends BaseProtocol {
 
-	public CradlepointProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new CradlepointProtocolDecoder(CradlepointProtocol.this));
-			}
-		});
-	}
+    public CradlepointProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new CradlepointProtocolDecoder(CradlepointProtocol.this));
+            }
+        });
+    }
 
 }

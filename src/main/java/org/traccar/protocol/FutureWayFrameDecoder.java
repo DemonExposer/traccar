@@ -26,22 +26,22 @@ import java.nio.charset.StandardCharsets;
 
 public class FutureWayFrameDecoder extends BaseFrameDecoder {
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(
+            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-		if (buf.readableBytes() < 10) {
-			return null;
-		}
+        if (buf.readableBytes() < 10) {
+            return null;
+        }
 
-		int length = Unpooled.wrappedBuffer(DataConverter.parseHex(
-				buf.getCharSequence(buf.readerIndex() + 2, 8, StandardCharsets.US_ASCII).toString())).readInt() + 17;
+        int length = Unpooled.wrappedBuffer(DataConverter.parseHex(
+                buf.getCharSequence(buf.readerIndex() + 2, 8, StandardCharsets.US_ASCII).toString())).readInt() + 17;
 
-		if (buf.readableBytes() >= length) {
-			return buf.readRetainedSlice(length);
-		}
+        if (buf.readableBytes() >= length) {
+            return buf.readRetainedSlice(length);
+        }
 
-		return null;
-	}
+        return null;
+    }
 
 }

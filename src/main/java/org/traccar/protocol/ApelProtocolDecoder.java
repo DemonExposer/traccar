@@ -34,175 +34,177 @@ import java.util.List;
 
 public class ApelProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final short MSG_NULL = 0;
-	public static final short MSG_REQUEST_TRACKER_ID = 10;
-	public static final short MSG_TRACKER_ID = 11;
-	public static final short MSG_TRACKER_ID_EXT = 12;
-	public static final short MSG_DISCONNECT = 20;
-	public static final short MSG_REQUEST_PASSWORD = 30;
-	public static final short MSG_PASSWORD = 31;
-	public static final short MSG_REQUEST_STATE_FULL_INFO = 90;
-	public static final short MSG_STATE_FULL_INFO_T104 = 92;
-	public static final short MSG_REQUEST_CURRENT_GPS_DATA = 100;
-	public static final short MSG_CURRENT_GPS_DATA = 101;
-	public static final short MSG_REQUEST_SENSORS_STATE = 110;
-	public static final short MSG_SENSORS_STATE = 111;
-	public static final short MSG_SENSORS_STATE_T100 = 112;
-	public static final short MSG_SENSORS_STATE_T100_4 = 113;
-	public static final short MSG_REQUEST_LAST_LOG_INDEX = 120;
-	public static final short MSG_LAST_LOG_INDEX = 121;
-	public static final short MSG_REQUEST_LOG_RECORDS = 130;
-	public static final short MSG_LOG_RECORDS = 131;
-	public static final short MSG_EVENT = 141;
-	public static final short MSG_TEXT = 150;
-	public static final short MSG_ACK_ALARM = 160;
-	public static final short MSG_SET_TRACKER_MODE = 170;
-	public static final short MSG_GPRS_COMMAND = 180;
-	private long lastIndex;
-	private long newIndex;
-	public ApelProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private long lastIndex;
+    private long newIndex;
 
-	private void sendSimpleMessage(Channel channel, short type) {
-		ByteBuf request = Unpooled.buffer(8);
-		request.writeShortLE(type);
-		request.writeShortLE(0);
-		request.writeIntLE(Checksum.crc32(request.nioBuffer(0, 4)));
-		channel.writeAndFlush(new NetworkMessage(request, channel.remoteAddress()));
-	}
+    public ApelProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void requestArchive(Channel channel) {
-		if (lastIndex == 0) {
-			lastIndex = newIndex;
-		} else if (newIndex > lastIndex) {
-			ByteBuf request = Unpooled.buffer(14);
-			request.writeShortLE(MSG_REQUEST_LOG_RECORDS);
-			request.writeShortLE(6);
-			request.writeIntLE((int) lastIndex);
-			request.writeShortLE(512);
-			request.writeIntLE(Checksum.crc32(request.nioBuffer(0, 10)));
-			channel.writeAndFlush(new NetworkMessage(request, channel.remoteAddress()));
-		}
-	}
+    public static final short MSG_NULL = 0;
+    public static final short MSG_REQUEST_TRACKER_ID = 10;
+    public static final short MSG_TRACKER_ID = 11;
+    public static final short MSG_TRACKER_ID_EXT = 12;
+    public static final short MSG_DISCONNECT = 20;
+    public static final short MSG_REQUEST_PASSWORD = 30;
+    public static final short MSG_PASSWORD = 31;
+    public static final short MSG_REQUEST_STATE_FULL_INFO = 90;
+    public static final short MSG_STATE_FULL_INFO_T104 = 92;
+    public static final short MSG_REQUEST_CURRENT_GPS_DATA = 100;
+    public static final short MSG_CURRENT_GPS_DATA = 101;
+    public static final short MSG_REQUEST_SENSORS_STATE = 110;
+    public static final short MSG_SENSORS_STATE = 111;
+    public static final short MSG_SENSORS_STATE_T100 = 112;
+    public static final short MSG_SENSORS_STATE_T100_4 = 113;
+    public static final short MSG_REQUEST_LAST_LOG_INDEX = 120;
+    public static final short MSG_LAST_LOG_INDEX = 121;
+    public static final short MSG_REQUEST_LOG_RECORDS = 130;
+    public static final short MSG_LOG_RECORDS = 131;
+    public static final short MSG_EVENT = 141;
+    public static final short MSG_TEXT = 150;
+    public static final short MSG_ACK_ALARM = 160;
+    public static final short MSG_SET_TRACKER_MODE = 170;
+    public static final short MSG_GPRS_COMMAND = 180;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private void sendSimpleMessage(Channel channel, short type) {
+        ByteBuf request = Unpooled.buffer(8);
+        request.writeShortLE(type);
+        request.writeShortLE(0);
+        request.writeIntLE(Checksum.crc32(request.nioBuffer(0, 4)));
+        channel.writeAndFlush(new NetworkMessage(request, channel.remoteAddress()));
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
-		int type = buf.readUnsignedShortLE();
-		boolean alarm = (type & 0x8000) != 0;
-		type = type & 0x7FFF;
-		buf.readUnsignedShortLE(); // length
+    private void requestArchive(Channel channel) {
+        if (lastIndex == 0) {
+            lastIndex = newIndex;
+        } else if (newIndex > lastIndex) {
+            ByteBuf request = Unpooled.buffer(14);
+            request.writeShortLE(MSG_REQUEST_LOG_RECORDS);
+            request.writeShortLE(6);
+            request.writeIntLE((int) lastIndex);
+            request.writeShortLE(512);
+            request.writeIntLE(Checksum.crc32(request.nioBuffer(0, 10)));
+            channel.writeAndFlush(new NetworkMessage(request, channel.remoteAddress()));
+        }
+    }
 
-		if (alarm) {
-			sendSimpleMessage(channel, MSG_ACK_ALARM);
-		}
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		if (type == MSG_TRACKER_ID) {
-			return null; // unsupported authentication type
-		}
+        ByteBuf buf = (ByteBuf) msg;
+        int type = buf.readUnsignedShortLE();
+        boolean alarm = (type & 0x8000) != 0;
+        type = type & 0x7FFF;
+        buf.readUnsignedShortLE(); // length
 
-		if (type == MSG_TRACKER_ID_EXT) {
+        if (alarm) {
+            sendSimpleMessage(channel, MSG_ACK_ALARM);
+        }
 
-			buf.readUnsignedIntLE(); // id
-			int length = buf.readUnsignedShortLE();
-			buf.skipBytes(length);
-			length = buf.readUnsignedShortLE();
-			getDeviceSession(channel, remoteAddress, buf.readSlice(length).toString(StandardCharsets.US_ASCII));
+        if (type == MSG_TRACKER_ID) {
+            return null; // unsupported authentication type
+        }
 
-		} else if (type == MSG_LAST_LOG_INDEX) {
+        if (type == MSG_TRACKER_ID_EXT) {
 
-			long index = buf.readUnsignedIntLE();
-			if (index > 0) {
-				newIndex = index;
-				requestArchive(channel);
-			}
+            buf.readUnsignedIntLE(); // id
+            int length = buf.readUnsignedShortLE();
+            buf.skipBytes(length);
+            length = buf.readUnsignedShortLE();
+            getDeviceSession(channel, remoteAddress, buf.readSlice(length).toString(StandardCharsets.US_ASCII));
 
-		} else if (type == MSG_CURRENT_GPS_DATA || type == MSG_STATE_FULL_INFO_T104 || type == MSG_LOG_RECORDS) {
+        } else if (type == MSG_LAST_LOG_INDEX) {
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+            long index = buf.readUnsignedIntLE();
+            if (index > 0) {
+                newIndex = index;
+                requestArchive(channel);
+            }
 
-			List<Position> positions = new LinkedList<>();
+        } else if (type == MSG_CURRENT_GPS_DATA || type == MSG_STATE_FULL_INFO_T104 || type == MSG_LOG_RECORDS) {
 
-			int recordCount = 1;
-			if (type == MSG_LOG_RECORDS) {
-				recordCount = buf.readUnsignedShortLE();
-			}
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			for (int j = 0; j < recordCount; j++) {
-				Position position = new Position(getProtocolName());
-				position.setDeviceId(deviceSession.getDeviceId());
+            List<Position> positions = new LinkedList<>();
 
-				int subtype = type;
-				if (type == MSG_LOG_RECORDS) {
-					position.set(Position.KEY_ARCHIVE, true);
-					lastIndex = buf.readUnsignedIntLE() + 1;
-					position.set(Position.KEY_INDEX, lastIndex);
+            int recordCount = 1;
+            if (type == MSG_LOG_RECORDS) {
+                recordCount = buf.readUnsignedShortLE();
+            }
 
-					subtype = buf.readUnsignedShortLE();
-					if (subtype != MSG_CURRENT_GPS_DATA && subtype != MSG_STATE_FULL_INFO_T104) {
-						buf.skipBytes(buf.readUnsignedShortLE());
-						continue;
-					}
-					buf.readUnsignedShortLE(); // length
-				}
+            for (int j = 0; j < recordCount; j++) {
+                Position position = new Position(getProtocolName());
+                position.setDeviceId(deviceSession.getDeviceId());
 
-				position.setTime(new Date(buf.readUnsignedIntLE() * 1000));
-				position.setLatitude(buf.readIntLE() * 180.0 / 0x7FFFFFFF);
-				position.setLongitude(buf.readIntLE() * 180.0 / 0x7FFFFFFF);
+                int subtype = type;
+                if (type == MSG_LOG_RECORDS) {
+                    position.set(Position.KEY_ARCHIVE, true);
+                    lastIndex = buf.readUnsignedIntLE() + 1;
+                    position.set(Position.KEY_INDEX, lastIndex);
 
-				if (subtype == MSG_STATE_FULL_INFO_T104) {
-					int speed = buf.readUnsignedByte();
-					position.setValid(speed != 255);
-					position.setSpeed(UnitsConverter.knotsFromKph(speed));
-					position.set(Position.KEY_HDOP, buf.readByte());
-				} else {
-					int speed = buf.readShortLE();
-					position.setValid(speed != -1);
-					position.setSpeed(UnitsConverter.knotsFromKph(speed * 0.01));
-				}
+                    subtype = buf.readUnsignedShortLE();
+                    if (subtype != MSG_CURRENT_GPS_DATA && subtype != MSG_STATE_FULL_INFO_T104) {
+                        buf.skipBytes(buf.readUnsignedShortLE());
+                        continue;
+                    }
+                    buf.readUnsignedShortLE(); // length
+                }
 
-				position.setCourse(buf.readShortLE() * 0.01);
-				position.setAltitude(buf.readShortLE());
+                position.setTime(new Date(buf.readUnsignedIntLE() * 1000));
+                position.setLatitude(buf.readIntLE() * 180.0 / 0x7FFFFFFF);
+                position.setLongitude(buf.readIntLE() * 180.0 / 0x7FFFFFFF);
 
-				if (subtype == MSG_STATE_FULL_INFO_T104) {
+                if (subtype == MSG_STATE_FULL_INFO_T104) {
+                    int speed = buf.readUnsignedByte();
+                    position.setValid(speed != 255);
+                    position.setSpeed(UnitsConverter.knotsFromKph(speed));
+                    position.set(Position.KEY_HDOP, buf.readByte());
+                } else {
+                    int speed = buf.readShortLE();
+                    position.setValid(speed != -1);
+                    position.setSpeed(UnitsConverter.knotsFromKph(speed * 0.01));
+                }
 
-					position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
-					position.set(Position.KEY_RSSI, buf.readUnsignedByte());
-					position.set(Position.KEY_EVENT, buf.readUnsignedShortLE());
-					position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
-					position.set(Position.KEY_INPUT, buf.readUnsignedByte());
-					position.set(Position.KEY_OUTPUT, buf.readUnsignedByte());
+                position.setCourse(buf.readShortLE() * 0.01);
+                position.setAltitude(buf.readShortLE());
 
-					for (int i = 1; i <= 8; i++) {
-						position.set(Position.PREFIX_ADC + i, buf.readUnsignedShortLE());
-					}
+                if (subtype == MSG_STATE_FULL_INFO_T104) {
 
-					position.set(Position.PREFIX_COUNT + 1, buf.readUnsignedIntLE());
-					position.set(Position.PREFIX_COUNT + 2, buf.readUnsignedIntLE());
-					position.set(Position.PREFIX_COUNT + 3, buf.readUnsignedIntLE());
-				}
+                    position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
+                    position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+                    position.set(Position.KEY_EVENT, buf.readUnsignedShortLE());
+                    position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
+                    position.set(Position.KEY_INPUT, buf.readUnsignedByte());
+                    position.set(Position.KEY_OUTPUT, buf.readUnsignedByte());
 
-				positions.add(position);
-			}
+                    for (int i = 1; i <= 8; i++) {
+                        position.set(Position.PREFIX_ADC + i, buf.readUnsignedShortLE());
+                    }
 
-			buf.readUnsignedIntLE(); // crc
+                    position.set(Position.PREFIX_COUNT + 1, buf.readUnsignedIntLE());
+                    position.set(Position.PREFIX_COUNT + 2, buf.readUnsignedIntLE());
+                    position.set(Position.PREFIX_COUNT + 3, buf.readUnsignedIntLE());
+                }
 
-			if (type == MSG_LOG_RECORDS) {
-				requestArchive(channel);
-			} else {
-				sendSimpleMessage(channel, MSG_REQUEST_LAST_LOG_INDEX);
-			}
+                positions.add(position);
+            }
 
-			return positions;
-		}
+            buf.readUnsignedIntLE(); // crc
 
-		return null;
-	}
+            if (type == MSG_LOG_RECORDS) {
+                requestArchive(channel);
+            } else {
+                sendSimpleMessage(channel, MSG_REQUEST_LAST_LOG_INDEX);
+            }
+
+            return positions;
+        }
+
+        return null;
+    }
 
 }

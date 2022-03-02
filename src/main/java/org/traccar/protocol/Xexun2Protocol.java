@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class Xexun2Protocol extends BaseProtocol {
 
-	public Xexun2Protocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new Xexun2FrameDecoder());
-				pipeline.addLast(new Xexun2ProtocolDecoder(Xexun2Protocol.this));
-			}
-		});
-	}
+    public Xexun2Protocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new Xexun2FrameDecoder());
+                pipeline.addLast(new Xexun2ProtocolDecoder(Xexun2Protocol.this));
+            }
+        });
+    }
 
 }

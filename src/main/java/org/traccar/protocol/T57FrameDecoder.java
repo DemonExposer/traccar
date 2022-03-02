@@ -24,26 +24,26 @@ import java.nio.charset.StandardCharsets;
 
 public class T57FrameDecoder extends BaseFrameDecoder {
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(
+            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-		if (buf.readableBytes() < 10) {
-			return null;
-		}
+        if (buf.readableBytes() < 10) {
+            return null;
+        }
 
-		String type = buf.toString(buf.readerIndex() + 5, 2, StandardCharsets.US_ASCII);
-		int count = type.equals("F3") ? 12 : 14;
+        String type = buf.toString(buf.readerIndex() + 5, 2, StandardCharsets.US_ASCII);
+        int count = type.equals("F3") ? 12 : 14;
 
-		int index = 0;
-		while (index >= 0 && count > 0) {
-			index = buf.indexOf(index + 1, buf.writerIndex(), (byte) '#');
-			if (index > 0) {
-				count -= 1;
-			}
-		}
+        int index = 0;
+        while (index >= 0 && count > 0) {
+            index = buf.indexOf(index + 1, buf.writerIndex(), (byte) '#');
+            if (index > 0) {
+                count -= 1;
+            }
+        }
 
-		return index > 0 ? buf.readRetainedSlice(index + 1 - buf.readerIndex()) : null;
-	}
+        return index > 0 ? buf.readRetainedSlice(index + 1 - buf.readerIndex()) : null;
+    }
 
 }

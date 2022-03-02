@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class C2stekProtocol extends BaseProtocol {
 
-	public C2stekProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, false, "$AP"));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new C2stekProtocolDecoder(C2stekProtocol.this));
-			}
-		});
-	}
+    public C2stekProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, false, "$AP"));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new C2stekProtocolDecoder(C2stekProtocol.this));
+            }
+        });
+    }
 
 }

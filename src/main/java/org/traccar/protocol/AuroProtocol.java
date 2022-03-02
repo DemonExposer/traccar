@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class AuroProtocol extends BaseProtocol {
 
-	public AuroProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new AuroProtocolDecoder(AuroProtocol.this));
-			}
-		});
-	}
+    public AuroProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new AuroProtocolDecoder(AuroProtocol.this));
+            }
+        });
+    }
 
 }

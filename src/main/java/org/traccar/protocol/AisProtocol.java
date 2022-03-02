@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class AisProtocol extends BaseProtocol {
 
-	public AisProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new AisProtocolDecoder(AisProtocol.this));
-			}
-		});
-	}
+    public AisProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new AisProtocolDecoder(AisProtocol.this));
+            }
+        });
+    }
 
 }

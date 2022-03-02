@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class NvsProtocol extends BaseProtocol {
 
-	public NvsProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new NvsFrameDecoder());
-				pipeline.addLast(new NvsProtocolDecoder(NvsProtocol.this));
-			}
-		});
-	}
+    public NvsProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new NvsFrameDecoder());
+                pipeline.addLast(new NvsProtocolDecoder(NvsProtocol.this));
+            }
+        });
+    }
 
 }

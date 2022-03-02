@@ -38,79 +38,82 @@ import java.sql.SQLException;
 
 public class SecurityRequestFilter implements ContainerRequestFilter {
 
-	public static final String AUTHORIZATION_HEADER = "Authorization";
-	public static final String WWW_AUTHENTICATE = "WWW-Authenticate";
-	public static final String BASIC_REALM = "Basic realm=\"api\"";
-	public static final String X_REQUESTED_WITH = "X-Requested-With";
-	public static final String XML_HTTP_REQUEST = "XMLHttpRequest";
-	private static final Logger LOGGER = LoggerFactory.getLogger(SecurityRequestFilter.class);
-	@javax.ws.rs.core.Context
-	private HttpServletRequest request;
-	@javax.ws.rs.core.Context
-	private ResourceInfo resourceInfo;
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityRequestFilter.class);
 
-	public static String[] decodeBasicAuth(String auth) {
-		auth = auth.replaceFirst("[B|b]asic ", "");
-		byte[] decodedBytes = DataConverter.parseBase64(auth);
-		if (decodedBytes != null && decodedBytes.length > 0) {
-			return new String(decodedBytes, StandardCharsets.US_ASCII).split(":", 2);
-		}
-		return null;
-	}
+    public static final String AUTHORIZATION_HEADER = "Authorization";
+    public static final String WWW_AUTHENTICATE = "WWW-Authenticate";
+    public static final String BASIC_REALM = "Basic realm=\"api\"";
+    public static final String X_REQUESTED_WITH = "X-Requested-With";
+    public static final String XML_HTTP_REQUEST = "XMLHttpRequest";
 
-	@Override
-	public void filter(ContainerRequestContext requestContext) {
+    public static String[] decodeBasicAuth(String auth) {
+        auth = auth.replaceFirst("[B|b]asic ", "");
+        byte[] decodedBytes = DataConverter.parseBase64(auth);
+        if (decodedBytes != null && decodedBytes.length > 0) {
+            return new String(decodedBytes, StandardCharsets.US_ASCII).split(":", 2);
+        }
+        return null;
+    }
 
-		if (requestContext.getMethod().equals("OPTIONS")) {
-			return;
-		}
+    @javax.ws.rs.core.Context
+    private HttpServletRequest request;
 
-		SecurityContext securityContext = null;
+    @javax.ws.rs.core.Context
+    private ResourceInfo resourceInfo;
 
-		try {
+    @Override
+    public void filter(ContainerRequestContext requestContext) {
 
-			String authHeader = requestContext.getHeaderString(AUTHORIZATION_HEADER);
-			if (authHeader != null) {
+        if (requestContext.getMethod().equals("OPTIONS")) {
+            return;
+        }
 
-				try {
-					String[] auth = decodeBasicAuth(authHeader);
-					User user = Context.getPermissionsManager().login(auth[0], auth[1]);
-					if (user != null) {
-						Main.getInjector().getInstance(StatisticsManager.class).registerRequest(user.getId());
-						securityContext = new UserSecurityContext(new UserPrincipal(user.getId()));
-					}
-				} catch (SQLException e) {
-					throw new WebApplicationException(e);
-				}
+        SecurityContext securityContext = null;
 
-			} else if (request.getSession() != null) {
+        try {
 
-				Long userId = (Long) request.getSession().getAttribute(SessionResource.USER_ID_KEY);
-				if (userId != null) {
-					Context.getPermissionsManager().checkUserEnabled(userId);
-					Main.getInjector().getInstance(StatisticsManager.class).registerRequest(userId);
-					securityContext = new UserSecurityContext(new UserPrincipal(userId));
-				}
+            String authHeader = requestContext.getHeaderString(AUTHORIZATION_HEADER);
+            if (authHeader != null) {
 
-			}
+                try {
+                    String[] auth = decodeBasicAuth(authHeader);
+                    User user = Context.getPermissionsManager().login(auth[0], auth[1]);
+                    if (user != null) {
+                        Main.getInjector().getInstance(StatisticsManager.class).registerRequest(user.getId());
+                        securityContext = new UserSecurityContext(new UserPrincipal(user.getId()));
+                    }
+                } catch (SQLException e) {
+                    throw new WebApplicationException(e);
+                }
 
-		} catch (SecurityException e) {
-			LOGGER.warn("Authentication error", e);
-		}
+            } else if (request.getSession() != null) {
 
-		if (securityContext != null) {
-			requestContext.setSecurityContext(securityContext);
-		} else {
-			Method method = resourceInfo.getResourceMethod();
-			if (!method.isAnnotationPresent(PermitAll.class)) {
-				Response.ResponseBuilder responseBuilder = Response.status(Response.Status.UNAUTHORIZED);
-				if (!XML_HTTP_REQUEST.equals(request.getHeader(X_REQUESTED_WITH))) {
-					responseBuilder.header(WWW_AUTHENTICATE, BASIC_REALM);
-				}
-				throw new WebApplicationException(responseBuilder.build());
-			}
-		}
+                Long userId = (Long) request.getSession().getAttribute(SessionResource.USER_ID_KEY);
+                if (userId != null) {
+                    Context.getPermissionsManager().checkUserEnabled(userId);
+                    Main.getInjector().getInstance(StatisticsManager.class).registerRequest(userId);
+                    securityContext = new UserSecurityContext(new UserPrincipal(userId));
+                }
 
-	}
+            }
+
+        } catch (SecurityException e) {
+            LOGGER.warn("Authentication error", e);
+        }
+
+        if (securityContext != null) {
+            requestContext.setSecurityContext(securityContext);
+        } else {
+            Method method = resourceInfo.getResourceMethod();
+            if (!method.isAnnotationPresent(PermitAll.class)) {
+                Response.ResponseBuilder responseBuilder = Response.status(Response.Status.UNAUTHORIZED);
+                if (!XML_HTTP_REQUEST.equals(request.getHeader(X_REQUESTED_WITH))) {
+                    responseBuilder.header(WWW_AUTHENTICATE, BASIC_REALM);
+                }
+                throw new WebApplicationException(responseBuilder.build());
+            }
+        }
+
+    }
 
 }

@@ -22,16 +22,16 @@ import org.traccar.BaseFrameDecoder;
 
 public class RetranslatorFrameDecoder extends BaseFrameDecoder {
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(
+            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-		int length = 4 + buf.getIntLE(buf.readerIndex());
-		if (buf.readableBytes() >= length) {
-			return buf.readRetainedSlice(length);
-		} else {
-			return null;
-		}
-	}
+        int length = 4 + buf.getIntLE(buf.readerIndex());
+        if (buf.readableBytes() >= length) {
+            return buf.readRetainedSlice(length);
+        } else {
+            return null;
+        }
+    }
 
 }

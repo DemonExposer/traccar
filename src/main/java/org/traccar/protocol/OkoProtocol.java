@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class OkoProtocol extends BaseProtocol {
 
-	public OkoProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '}'));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new OkoProtocolDecoder(OkoProtocol.this));
-			}
-		});
-	}
+    public OkoProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '}'));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new OkoProtocolDecoder(OkoProtocol.this));
+            }
+        });
+    }
 
 }

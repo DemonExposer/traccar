@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class S168Protocol extends BaseProtocol {
 
-	public S168Protocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '$'));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new S168ProtocolDecoder(S168Protocol.this));
-			}
-		});
-	}
+    public S168Protocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '$'));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new S168ProtocolDecoder(S168Protocol.this));
+            }
+        });
+    }
 
 }

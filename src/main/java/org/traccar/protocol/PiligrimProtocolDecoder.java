@@ -35,123 +35,124 @@ import java.util.List;
 
 public class PiligrimProtocolDecoder extends BaseHttpProtocolDecoder {
 
-	public static final int MSG_GPS = 0xF1;
-	public static final int MSG_GPS_SENSORS = 0xF2;
-	public static final int MSG_EVENTS = 0xF3;
-	public PiligrimProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public PiligrimProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void sendResponse(Channel channel, String message) {
-		sendResponse(channel, HttpResponseStatus.OK, Unpooled.copiedBuffer(message, StandardCharsets.US_ASCII));
-	}
+    private void sendResponse(Channel channel, String message) {
+        sendResponse(channel, HttpResponseStatus.OK, Unpooled.copiedBuffer(message, StandardCharsets.US_ASCII));
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    public static final int MSG_GPS = 0xF1;
+    public static final int MSG_GPS_SENSORS = 0xF2;
+    public static final int MSG_EVENTS = 0xF3;
 
-		FullHttpRequest request = (FullHttpRequest) msg;
-		String uri = request.uri();
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		if (uri.startsWith("/config")) {
+        FullHttpRequest request = (FullHttpRequest) msg;
+        String uri = request.uri();
 
-			sendResponse(channel, "CONFIG: OK");
+        if (uri.startsWith("/config")) {
 
-		} else if (uri.startsWith("/addlog")) {
+            sendResponse(channel, "CONFIG: OK");
 
-			sendResponse(channel, "ADDLOG: OK");
+        } else if (uri.startsWith("/addlog")) {
 
-		} else if (uri.startsWith("/inform")) {
+            sendResponse(channel, "ADDLOG: OK");
 
-			sendResponse(channel, "INFORM: OK");
+        } else if (uri.startsWith("/inform")) {
 
-		} else if (uri.startsWith("/bingps")) {
+            sendResponse(channel, "INFORM: OK");
 
-			sendResponse(channel, "BINGPS: OK");
+        } else if (uri.startsWith("/bingps")) {
 
-			QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-			DeviceSession deviceSession = getDeviceSession(
-					channel, remoteAddress, decoder.parameters().get("imei").get(0));
-			if (deviceSession == null) {
-				return null;
-			}
+            sendResponse(channel, "BINGPS: OK");
 
-			List<Position> positions = new LinkedList<>();
-			ByteBuf buf = request.content();
+            QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+            DeviceSession deviceSession = getDeviceSession(
+                    channel, remoteAddress, decoder.parameters().get("imei").get(0));
+            if (deviceSession == null) {
+                return null;
+            }
 
-			while (buf.readableBytes() > 2) {
+            List<Position> positions = new LinkedList<>();
+            ByteBuf buf = request.content();
 
-				buf.readUnsignedByte(); // header
-				int type = buf.readUnsignedByte();
-				buf.readUnsignedByte(); // length
+            while (buf.readableBytes() > 2) {
 
-				if (type == MSG_GPS || type == MSG_GPS_SENSORS) {
+                buf.readUnsignedByte(); // header
+                int type = buf.readUnsignedByte();
+                buf.readUnsignedByte(); // length
 
-					Position position = new Position(getProtocolName());
-					position.setDeviceId(deviceSession.getDeviceId());
+                if (type == MSG_GPS || type == MSG_GPS_SENSORS) {
 
-					DateBuilder dateBuilder = new DateBuilder()
-							.setDay(buf.readUnsignedByte())
-							.setMonth(buf.getByte(buf.readerIndex()) & 0x0f)
-							.setYear(2010 + (buf.readUnsignedByte() >> 4))
-							.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-					position.setTime(dateBuilder.getDate());
+                    Position position = new Position(getProtocolName());
+                    position.setDeviceId(deviceSession.getDeviceId());
 
-					double latitude = buf.readUnsignedByte();
-					latitude += buf.readUnsignedByte() / 60.0;
-					latitude += buf.readUnsignedByte() / 6000.0;
-					latitude += buf.readUnsignedByte() / 600000.0;
+                    DateBuilder dateBuilder = new DateBuilder()
+                            .setDay(buf.readUnsignedByte())
+                            .setMonth(buf.getByte(buf.readerIndex()) & 0x0f)
+                            .setYear(2010 + (buf.readUnsignedByte() >> 4))
+                            .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+                    position.setTime(dateBuilder.getDate());
 
-					double longitude = buf.readUnsignedByte();
-					longitude += buf.readUnsignedByte() / 60.0;
-					longitude += buf.readUnsignedByte() / 6000.0;
-					longitude += buf.readUnsignedByte() / 600000.0;
+                    double latitude = buf.readUnsignedByte();
+                    latitude += buf.readUnsignedByte() / 60.0;
+                    latitude += buf.readUnsignedByte() / 6000.0;
+                    latitude += buf.readUnsignedByte() / 600000.0;
 
-					int flags = buf.readUnsignedByte();
-					if (BitUtil.check(flags, 0)) {
-						latitude = -latitude;
-					}
-					if (BitUtil.check(flags, 1)) {
-						longitude = -longitude;
-					}
-					position.setLatitude(latitude);
-					position.setLongitude(longitude);
+                    double longitude = buf.readUnsignedByte();
+                    longitude += buf.readUnsignedByte() / 60.0;
+                    longitude += buf.readUnsignedByte() / 6000.0;
+                    longitude += buf.readUnsignedByte() / 600000.0;
 
-					int satellites = buf.readUnsignedByte();
-					position.set(Position.KEY_SATELLITES, satellites);
-					position.setValid(satellites >= 3);
+                    int flags = buf.readUnsignedByte();
+                    if (BitUtil.check(flags, 0)) {
+                        latitude = -latitude;
+                    }
+                    if (BitUtil.check(flags, 1)) {
+                        longitude = -longitude;
+                    }
+                    position.setLatitude(latitude);
+                    position.setLongitude(longitude);
 
-					position.setSpeed(buf.readUnsignedByte());
+                    int satellites = buf.readUnsignedByte();
+                    position.set(Position.KEY_SATELLITES, satellites);
+                    position.setValid(satellites >= 3);
 
-					double course = buf.readUnsignedByte() << 1;
-					course += (flags >> 2) & 1;
-					course += buf.readUnsignedByte() / 100.0;
-					position.setCourse(course);
+                    position.setSpeed(buf.readUnsignedByte());
 
-					if (type == MSG_GPS_SENSORS) {
-						double power = buf.readUnsignedByte();
-						power += buf.readUnsignedByte() << 8;
-						position.set(Position.KEY_POWER, power * 0.01);
+                    double course = buf.readUnsignedByte() << 1;
+                    course += (flags >> 2) & 1;
+                    course += buf.readUnsignedByte() / 100.0;
+                    position.setCourse(course);
 
-						double battery = buf.readUnsignedByte();
-						battery += buf.readUnsignedByte() << 8;
-						position.set(Position.KEY_BATTERY, battery * 0.01);
+                    if (type == MSG_GPS_SENSORS) {
+                        double power = buf.readUnsignedByte();
+                        power += buf.readUnsignedByte() << 8;
+                        position.set(Position.KEY_POWER, power * 0.01);
 
-						buf.skipBytes(6);
-					}
+                        double battery = buf.readUnsignedByte();
+                        battery += buf.readUnsignedByte() << 8;
+                        position.set(Position.KEY_BATTERY, battery * 0.01);
 
-					positions.add(position);
+                        buf.skipBytes(6);
+                    }
 
-				} else if (type == MSG_EVENTS) {
+                    positions.add(position);
 
-					buf.skipBytes(13);
-				}
-			}
+                } else if (type == MSG_EVENTS) {
 
-			return positions;
-		}
+                    buf.skipBytes(13);
+                }
+            }
 
-		return null;
-	}
+            return positions;
+        }
+
+        return null;
+    }
 
 }

@@ -21,17 +21,16 @@ import org.traccar.PipelineBuilder;
 import org.traccar.TrackerServer;
 
 import java.nio.ByteOrder;
-
 public class ApelProtocol extends BaseProtocol {
 
-	public ApelProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 2, 2, 4, 0, true));
-				pipeline.addLast(new ApelProtocolDecoder(ApelProtocol.this));
-			}
-		});
-	}
+    public ApelProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 2, 2, 4, 0, true));
+                pipeline.addLast(new ApelProtocolDecoder(ApelProtocol.this));
+            }
+        });
+    }
 
 }

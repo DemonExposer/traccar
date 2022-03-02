@@ -39,38 +39,38 @@ import org.traccar.notification.MessageException;
 @Consumes(MediaType.APPLICATION_JSON)
 public class NotificationResource extends ExtendedObjectResource<Notification> {
 
-	public NotificationResource() {
-		super(Notification.class);
-	}
+    public NotificationResource() {
+        super(Notification.class);
+    }
 
-	@GET
-	@Path("types")
-	public Collection<Typed> get() {
-		return Context.getNotificationManager().getAllNotificationTypes();
-	}
+    @GET
+    @Path("types")
+    public Collection<Typed> get() {
+        return Context.getNotificationManager().getAllNotificationTypes();
+    }
 
-	@GET
-	@Path("notificators")
-	public Collection<Typed> getNotificators() {
-		return Context.getNotificatorManager().getAllNotificatorTypes();
-	}
+    @GET
+    @Path("notificators")
+    public Collection<Typed> getNotificators() {
+        return Context.getNotificatorManager().getAllNotificatorTypes();
+    }
 
-	@POST
-	@Path("test")
-	public Response testMessage() throws MessageException, InterruptedException {
-		for (Typed method : Context.getNotificatorManager().getAllNotificatorTypes()) {
-			Context.getNotificatorManager()
-					.getNotificator(method.getType()).sendSync(getUserId(), new Event("test", 0), null);
-		}
-		return Response.noContent().build();
-	}
+    @POST
+    @Path("test")
+    public Response testMessage() throws MessageException, InterruptedException {
+        for (Typed method : Context.getNotificatorManager().getAllNotificatorTypes()) {
+            Context.getNotificatorManager()
+                    .getNotificator(method.getType()).sendSync(getUserId(), new Event("test", 0), null);
+        }
+        return Response.noContent().build();
+    }
 
-	@POST
-	@Path("test/{notificator}")
-	public Response testMessage(@PathParam("notificator") String notificator)
-			throws MessageException, InterruptedException {
-		Context.getNotificatorManager().getNotificator(notificator).sendSync(getUserId(), new Event("test", 0), null);
-		return Response.noContent().build();
-	}
+    @POST
+    @Path("test/{notificator}")
+    public Response testMessage(@PathParam("notificator") String notificator)
+            throws MessageException, InterruptedException {
+        Context.getNotificatorManager().getNotificator(notificator).sendSync(getUserId(), new Event("test", 0), null);
+        return Response.noContent().build();
+    }
 
 }

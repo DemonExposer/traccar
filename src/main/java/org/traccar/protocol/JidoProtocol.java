@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class JidoProtocol extends BaseProtocol {
 
-	public JidoProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new JidoProtocolDecoder(JidoProtocol.this));
-			}
-		});
-	}
+    public JidoProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new JidoProtocolDecoder(JidoProtocol.this));
+            }
+        });
+    }
 
 }

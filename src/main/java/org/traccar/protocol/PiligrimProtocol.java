@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class PiligrimProtocol extends BaseProtocol {
 
-	public PiligrimProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new HttpResponseEncoder());
-				pipeline.addLast(new HttpRequestDecoder());
-				pipeline.addLast(new HttpObjectAggregator(16384));
-				pipeline.addLast(new PiligrimProtocolDecoder(PiligrimProtocol.this));
-			}
-		});
-	}
+    public PiligrimProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new HttpResponseEncoder());
+                pipeline.addLast(new HttpRequestDecoder());
+                pipeline.addLast(new HttpObjectAggregator(16384));
+                pipeline.addLast(new PiligrimProtocolDecoder(PiligrimProtocol.this));
+            }
+        });
+    }
 
 }

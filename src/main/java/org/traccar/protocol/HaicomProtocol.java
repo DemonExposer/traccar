@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class HaicomProtocol extends BaseProtocol {
 
-	public HaicomProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '*'));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new HaicomProtocolDecoder(HaicomProtocol.this));
-			}
-		});
-	}
+    public HaicomProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '*'));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new HaicomProtocolDecoder(HaicomProtocol.this));
+            }
+        });
+    }
 
 }

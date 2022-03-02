@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class PluginProtocol extends BaseProtocol {
 
-	public PluginProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new PluginProtocolDecoder(PluginProtocol.this));
-			}
-		});
-	}
+    public PluginProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new PluginProtocolDecoder(PluginProtocol.this));
+            }
+        });
+    }
 
 }

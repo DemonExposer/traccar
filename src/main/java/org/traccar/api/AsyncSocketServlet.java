@@ -26,17 +26,17 @@ import java.time.Duration;
 
 public class AsyncSocketServlet extends JettyWebSocketServlet {
 
-	@Override
-	public void configure(JettyWebSocketServletFactory factory) {
-		factory.setIdleTimeout(Duration.ofMillis(Context.getConfig().getLong(Keys.WEB_TIMEOUT)));
-		factory.setCreator((req, resp) -> {
-			if (req.getSession() != null) {
-				long userId = (Long) ((HttpSession) req.getSession()).getAttribute(SessionResource.USER_ID_KEY);
-				return new AsyncSocket(userId);
-			} else {
-				return null;
-			}
-		});
-	}
+    @Override
+    public void configure(JettyWebSocketServletFactory factory) {
+        factory.setIdleTimeout(Duration.ofMillis(Context.getConfig().getLong(Keys.WEB_TIMEOUT)));
+        factory.setCreator((req, resp) -> {
+            if (req.getSession() != null) {
+                long userId = (Long) ((HttpSession) req.getSession()).getAttribute(SessionResource.USER_ID_KEY);
+                return new AsyncSocket(userId);
+            } else {
+                return null;
+            }
+        });
+    }
 
 }

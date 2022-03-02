@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class GotopProtocol extends BaseProtocol {
 
-	public GotopProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new GotopProtocolDecoder(GotopProtocol.this));
-			}
-		});
-	}
+    public GotopProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new GotopProtocolDecoder(GotopProtocol.this));
+            }
+        });
+    }
 
 }

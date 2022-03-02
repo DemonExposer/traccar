@@ -38,122 +38,123 @@ import java.util.regex.Pattern;
 
 public class TramigoProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_COMPACT = 0x0100;
-	public static final int MSG_FULL = 0x00FE;
-	private static final String[] DIRECTIONS = new String[]{"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+    public TramigoProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public TramigoProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public static final int MSG_COMPACT = 0x0100;
+    public static final int MSG_FULL = 0x00FE;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private static final String[] DIRECTIONS = new String[] {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		int protocol = buf.readUnsignedByte();
-		boolean legacy = protocol == 0x80;
+        ByteBuf buf = (ByteBuf) msg;
 
-		buf.readUnsignedByte(); // version id
-		int index = legacy ? buf.readUnsignedShort() : buf.readUnsignedShortLE();
-		int type = legacy ? buf.readUnsignedShort() : buf.readUnsignedShortLE();
-		buf.readUnsignedShort(); // length
-		buf.readUnsignedShort(); // mask
-		buf.readUnsignedShort(); // checksum
-		long id = legacy ? buf.readUnsignedInt() : buf.readUnsignedIntLE();
-		buf.readUnsignedInt(); // time
+        int protocol = buf.readUnsignedByte();
+        boolean legacy = protocol == 0x80;
 
-		Position position = new Position(getProtocolName());
-		position.set(Position.KEY_INDEX, index);
-		position.setValid(true);
+        buf.readUnsignedByte(); // version id
+        int index = legacy ? buf.readUnsignedShort() : buf.readUnsignedShortLE();
+        int type = legacy ? buf.readUnsignedShort() : buf.readUnsignedShortLE();
+        buf.readUnsignedShort(); // length
+        buf.readUnsignedShort(); // mask
+        buf.readUnsignedShort(); // checksum
+        long id = legacy ? buf.readUnsignedInt() : buf.readUnsignedIntLE();
+        buf.readUnsignedInt(); // time
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(id));
-		if (deviceSession == null) {
-			return null;
-		}
-		position.setDeviceId(deviceSession.getDeviceId());
+        Position position = new Position(getProtocolName());
+        position.set(Position.KEY_INDEX, index);
+        position.setValid(true);
 
-		if (protocol == 0x01 && (type == MSG_COMPACT || type == MSG_FULL)) {
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(id));
+        if (deviceSession == null) {
+            return null;
+        }
+        position.setDeviceId(deviceSession.getDeviceId());
 
-			// need to send ack?
+        if (protocol == 0x01 && (type == MSG_COMPACT || type == MSG_FULL)) {
 
-			buf.readUnsignedShortLE(); // report trigger
-			buf.readUnsignedShortLE(); // state flag
+            // need to send ack?
 
-			position.setLatitude(buf.readUnsignedIntLE() * 0.0000001);
-			position.setLongitude(buf.readUnsignedIntLE() * 0.0000001);
+            buf.readUnsignedShortLE(); // report trigger
+            buf.readUnsignedShortLE(); // state flag
 
-			position.set(Position.KEY_RSSI, buf.readUnsignedShortLE());
-			position.set(Position.KEY_SATELLITES, buf.readUnsignedShortLE());
-			position.set(Position.KEY_SATELLITES_VISIBLE, buf.readUnsignedShortLE());
-			position.set("gpsAntennaStatus", buf.readUnsignedShortLE());
+            position.setLatitude(buf.readUnsignedIntLE() * 0.0000001);
+            position.setLongitude(buf.readUnsignedIntLE() * 0.0000001);
 
-			position.setSpeed(buf.readUnsignedShortLE() * 0.194384);
-			position.setCourse(buf.readUnsignedShortLE());
+            position.set(Position.KEY_RSSI, buf.readUnsignedShortLE());
+            position.set(Position.KEY_SATELLITES, buf.readUnsignedShortLE());
+            position.set(Position.KEY_SATELLITES_VISIBLE, buf.readUnsignedShortLE());
+            position.set("gpsAntennaStatus", buf.readUnsignedShortLE());
 
-			position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
+            position.setSpeed(buf.readUnsignedShortLE() * 0.194384);
+            position.setCourse(buf.readUnsignedShortLE());
 
-			position.set(Position.KEY_BATTERY, buf.readUnsignedShortLE());
+            position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
 
-			position.set(Position.KEY_CHARGE, buf.readUnsignedShortLE());
+            position.set(Position.KEY_BATTERY, buf.readUnsignedShortLE());
 
-			position.setTime(new Date(buf.readUnsignedIntLE() * 1000));
+            position.set(Position.KEY_CHARGE, buf.readUnsignedShortLE());
 
-			// parse other data
+            position.setTime(new Date(buf.readUnsignedIntLE() * 1000));
 
-			return position;
+            // parse other data
 
-		} else if (legacy) {
+            return position;
 
-			if (channel != null) {
-				channel.writeAndFlush(new NetworkMessage(
-						Unpooled.copiedBuffer("gprs,ack," + index, StandardCharsets.US_ASCII), remoteAddress));
-			}
+        } else if (legacy) {
 
-			String sentence = buf.toString(StandardCharsets.US_ASCII);
+            if (channel != null) {
+                channel.writeAndFlush(new NetworkMessage(
+                        Unpooled.copiedBuffer("gprs,ack," + index, StandardCharsets.US_ASCII), remoteAddress));
+            }
 
-			Pattern pattern = Pattern.compile("(-?\\d+\\.\\d+), (-?\\d+\\.\\d+)");
-			Matcher matcher = pattern.matcher(sentence);
-			if (!matcher.find()) {
-				return null;
-			}
-			position.setLatitude(Double.parseDouble(matcher.group(1)));
-			position.setLongitude(Double.parseDouble(matcher.group(2)));
+            String sentence = buf.toString(StandardCharsets.US_ASCII);
 
-			pattern = Pattern.compile("([NSWE]{1,2}) with speed (\\d+) km/h");
-			matcher = pattern.matcher(sentence);
-			if (matcher.find()) {
-				for (int i = 0; i < DIRECTIONS.length; i++) {
-					if (matcher.group(1).equals(DIRECTIONS[i])) {
-						position.setCourse(i * 45.0);
-						break;
-					}
-				}
-				position.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(matcher.group(2))));
-			}
+            Pattern pattern = Pattern.compile("(-?\\d+\\.\\d+), (-?\\d+\\.\\d+)");
+            Matcher matcher = pattern.matcher(sentence);
+            if (!matcher.find()) {
+                return null;
+            }
+            position.setLatitude(Double.parseDouble(matcher.group(1)));
+            position.setLongitude(Double.parseDouble(matcher.group(2)));
 
-			pattern = Pattern.compile("(\\d{1,2}:\\d{2}(:\\d{2})? \\w{3} \\d{1,2})");
-			matcher = pattern.matcher(sentence);
-			if (!matcher.find()) {
-				return null;
-			}
-			DateFormat dateFormat = new SimpleDateFormat(
-					matcher.group(2) != null ? "HH:mm:ss MMM d yyyy" : "HH:mm MMM d yyyy", Locale.ENGLISH);
-			position.setTime(DateUtil.correctYear(
-					dateFormat.parse(matcher.group(1) + " " + Calendar.getInstance().get(Calendar.YEAR))));
+            pattern = Pattern.compile("([NSWE]{1,2}) with speed (\\d+) km/h");
+            matcher = pattern.matcher(sentence);
+            if (matcher.find()) {
+                for (int i = 0; i < DIRECTIONS.length; i++) {
+                    if (matcher.group(1).equals(DIRECTIONS[i])) {
+                        position.setCourse(i * 45.0);
+                        break;
+                    }
+                }
+                position.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(matcher.group(2))));
+            }
 
-			if (sentence.contains("Ignition on detected")) {
-				position.set(Position.KEY_IGNITION, true);
-			} else if (sentence.contains("Ignition off detected")) {
-				position.set(Position.KEY_IGNITION, false);
-			}
+            pattern = Pattern.compile("(\\d{1,2}:\\d{2}(:\\d{2})? \\w{3} \\d{1,2})");
+            matcher = pattern.matcher(sentence);
+            if (!matcher.find()) {
+                return null;
+            }
+            DateFormat dateFormat = new SimpleDateFormat(
+                    matcher.group(2) != null ? "HH:mm:ss MMM d yyyy" : "HH:mm MMM d yyyy", Locale.ENGLISH);
+            position.setTime(DateUtil.correctYear(
+                    dateFormat.parse(matcher.group(1) + " " + Calendar.getInstance().get(Calendar.YEAR))));
 
-			return position;
+            if (sentence.contains("Ignition on detected")) {
+                position.set(Position.KEY_IGNITION, true);
+            } else if (sentence.contains("Ignition off detected")) {
+                position.set(Position.KEY_IGNITION, false);
+            }
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

@@ -37,133 +37,135 @@ import java.util.List;
 
 public class At2000ProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_ACKNOWLEDGEMENT = 0x00;
-	public static final int MSG_DEVICE_ID = 0x01;
-	public static final int MSG_TRACK_REQUEST = 0x88;
-	public static final int MSG_TRACK_RESPONSE = 0x89;
-	public static final int MSG_SESSION_END = 0x0c;
-	private static final int BLOCK_LENGTH = 16;
-	private Cipher cipher;
+    private static final int BLOCK_LENGTH = 16;
 
-	public At2000ProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public At2000ProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private static void sendRequest(Channel channel) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer(BLOCK_LENGTH);
-			response.writeByte(MSG_TRACK_REQUEST);
-			response.writeMedium(0);
-			response.writerIndex(BLOCK_LENGTH);
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+    public static final int MSG_ACKNOWLEDGEMENT = 0x00;
+    public static final int MSG_DEVICE_ID = 0x01;
+    public static final int MSG_TRACK_REQUEST = 0x88;
+    public static final int MSG_TRACK_RESPONSE = 0x89;
+    public static final int MSG_SESSION_END = 0x0c;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private Cipher cipher;
 
-		ByteBuf buf = (ByteBuf) msg;
+    private static void sendRequest(Channel channel) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer(BLOCK_LENGTH);
+            response.writeByte(MSG_TRACK_REQUEST);
+            response.writeMedium(0);
+            response.writerIndex(BLOCK_LENGTH);
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-		if (buf.getUnsignedByte(buf.readerIndex()) == 0x01) {
-			buf.readUnsignedByte(); // codec id
-		}
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		int type = buf.readUnsignedByte();
-		buf.readUnsignedMediumLE(); // length
-		buf.skipBytes(BLOCK_LENGTH - 1 - 3);
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_DEVICE_ID) {
+        if (buf.getUnsignedByte(buf.readerIndex()) == 0x01) {
+            buf.readUnsignedByte(); // codec id
+        }
 
-			String imei = buf.readSlice(15).toString(StandardCharsets.US_ASCII);
-			if (getDeviceSession(channel, remoteAddress, imei) != null) {
+        int type = buf.readUnsignedByte();
+        buf.readUnsignedMediumLE(); // length
+        buf.skipBytes(BLOCK_LENGTH - 1 - 3);
 
-				byte[] iv = new byte[BLOCK_LENGTH];
-				buf.readBytes(iv);
-				IvParameterSpec ivSpec = new IvParameterSpec(iv);
+        if (type == MSG_DEVICE_ID) {
 
-				SecretKeySpec keySpec = new SecretKeySpec(
-						DataConverter.parseHex("000102030405060708090a0b0c0d0e0f"), "AES");
+            String imei = buf.readSlice(15).toString(StandardCharsets.US_ASCII);
+            if (getDeviceSession(channel, remoteAddress, imei) != null) {
 
-				cipher = Cipher.getInstance("AES/CBC/NoPadding");
-				cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+                byte[] iv = new byte[BLOCK_LENGTH];
+                buf.readBytes(iv);
+                IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
-				byte[] data = new byte[BLOCK_LENGTH];
-				buf.readBytes(data);
-				cipher.update(data);
+                SecretKeySpec keySpec = new SecretKeySpec(
+                        DataConverter.parseHex("000102030405060708090a0b0c0d0e0f"), "AES");
 
-			}
+                cipher = Cipher.getInstance("AES/CBC/NoPadding");
+                cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 
-		} else if (type == MSG_TRACK_RESPONSE) {
+                byte[] data = new byte[BLOCK_LENGTH];
+                buf.readBytes(data);
+                cipher.update(data);
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+            }
 
-			if (buf.capacity() <= BLOCK_LENGTH) {
-				return null; // empty message
-			}
+        } else if (type == MSG_TRACK_RESPONSE) {
 
-			List<Position> positions = new LinkedList<>();
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			byte[] data = new byte[buf.capacity() - BLOCK_LENGTH];
-			buf.readBytes(data);
-			buf = Unpooled.wrappedBuffer(cipher.update(data));
-			try {
-				while (buf.readableBytes() >= 63) {
+            if (buf.capacity() <= BLOCK_LENGTH) {
+                return null; // empty message
+            }
 
-					Position position = new Position(getProtocolName());
-					position.setDeviceId(deviceSession.getDeviceId());
+            List<Position> positions = new LinkedList<>();
 
-					buf.readUnsignedShortLE(); // index
-					buf.readUnsignedShortLE(); // reserved
+            byte[] data = new byte[buf.capacity() - BLOCK_LENGTH];
+            buf.readBytes(data);
+            buf = Unpooled.wrappedBuffer(cipher.update(data));
+            try {
+                while (buf.readableBytes() >= 63) {
 
-					position.setValid(true);
+                    Position position = new Position(getProtocolName());
+                    position.setDeviceId(deviceSession.getDeviceId());
 
-					position.setTime(new Date(buf.readLongLE() * 1000));
+                    buf.readUnsignedShortLE(); // index
+                    buf.readUnsignedShortLE(); // reserved
 
-					position.setLatitude(buf.readFloatLE());
-					position.setLongitude(buf.readFloatLE());
-					position.setAltitude(buf.readFloatLE());
-					position.setSpeed(UnitsConverter.knotsFromKph(buf.readFloatLE()));
-					position.setCourse(buf.readFloatLE());
+                    position.setValid(true);
 
-					buf.readUnsignedIntLE(); // geozone event
-					buf.readUnsignedIntLE(); // io events
-					buf.readUnsignedIntLE(); // geozone value
-					buf.readUnsignedIntLE(); // io values
-					buf.readUnsignedShortLE(); // operator
+                    position.setTime(new Date(buf.readLongLE() * 1000));
 
-					position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShortLE());
-					position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShortLE());
+                    position.setLatitude(buf.readFloatLE());
+                    position.setLongitude(buf.readFloatLE());
+                    position.setAltitude(buf.readFloatLE());
+                    position.setSpeed(UnitsConverter.knotsFromKph(buf.readFloatLE()));
+                    position.setCourse(buf.readFloatLE());
 
-					position.set(Position.KEY_POWER, buf.readUnsignedShortLE() * 0.001);
+                    buf.readUnsignedIntLE(); // geozone event
+                    buf.readUnsignedIntLE(); // io events
+                    buf.readUnsignedIntLE(); // geozone value
+                    buf.readUnsignedIntLE(); // io values
+                    buf.readUnsignedShortLE(); // operator
 
-					buf.readUnsignedShortLE(); // cid
-					position.set(Position.KEY_RSSI, buf.readUnsignedByte());
-					buf.readUnsignedByte(); // current profile
+                    position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShortLE());
+                    position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShortLE());
 
-					position.set(Position.KEY_BATTERY, buf.readUnsignedByte());
-					position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedByte());
-					position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
+                    position.set(Position.KEY_POWER, buf.readUnsignedShortLE() * 0.001);
 
-					positions.add(position);
+                    buf.readUnsignedShortLE(); // cid
+                    position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+                    buf.readUnsignedByte(); // current profile
 
-				}
-			} finally {
-				buf.release();
-			}
+                    position.set(Position.KEY_BATTERY, buf.readUnsignedByte());
+                    position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedByte());
+                    position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
 
-			return positions;
+                    positions.add(position);
 
-		}
+                }
+            } finally {
+                buf.release();
+            }
 
-		if (type == MSG_DEVICE_ID) {
-			sendRequest(channel);
-		}
+            return positions;
 
-		return null;
-	}
+        }
+
+        if (type == MSG_DEVICE_ID) {
+            sendRequest(channel);
+        }
+
+        return null;
+    }
 
 }

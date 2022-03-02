@@ -28,204 +28,206 @@ import java.util.regex.Pattern;
 
 public class TrakMateProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final Pattern PATTERN_SRT = new PatternBuilder()
-			.text("^TMSRT|")
-			.expression("([^ ]+)|")              // uid
-			.number("(d+.d+)|")                  // latitude
-			.number("(d+.d+)|")                  // longitude
-			.number("(dd)(dd)(dd)|")             // time (hhmmss)
-			.number("(dd)(dd)(dd)|")             // date (ddmmyy)
-			.number("(d+.d+)|")                  // software ver
-			.number("(d+.d+)|")                  // Hardware ver
-			.any()
-			.compile();
-	private static final Pattern PATTERN_PER = new PatternBuilder()
-			.text("^TM")
-			.expression("...|")                  // type
-			.expression("([^ ]+)|")              // uid
-			.number("(d+)|")                     // seq
-			.number("(d+.d+)|")                  // latitude
-			.number("(d+.d+)|")                  // longitude
-			.number("(dd)(dd)(dd)|")             // time (hhmmss)
-			.number("(dd)(dd)(dd)|")             // date (ddmmyy)
-			.number("(d+.d+)|")                  // speed
-			.number("(d+.d+)|")                  // heading
-			.number("(d+)|").optional()          // satellites
-			.number("([01])|")                   // ignition
-			.groupBegin()
-			.number("(d+)|")                     // dop1
-			.number("(d+)|")                     // dop2
-			.number("(d+.d+)|")                  // analog
-			.number("(d+.d+)|")                  // internal battery
-			.or()
-			.number("-?d+ -?d+ -?d+|")           // accelerometer
-			.number("([01])|")                   // movement
-			.groupEnd()
-			.number("(d+.d+)|")                  // vehicle battery
-			.number("(d+.d+)|")                  // gps odometer
-			.number("(d+.d+)|").optional()       // pulse odometer
-			.number("([01])|")                   // main power status
-			.number("([01])|")                   // gps data validity
-			.number("([01])|")                   // live or cache
-			.any()
-			.compile();
-	private static final Pattern PATTERN_ALT = new PatternBuilder()
-			.text("^TMALT|")
-			.expression("([^ ]+)|")              // uid
-			.number("(d+)|")                     // seq
-			.number("(d+)|")                     // Alert type
-			.number("(d+)|")                     // Alert status
-			.number("(d+.d+)|")                  // latitude
-			.number("(d+.d+)|")                  // longitude
-			.number("(dd)(dd)(dd)|")             // time (hhmmss)
-			.number("(dd)(dd)(dd)|")             // date (ddmmyy)
-			.number("(d+.d+)|")                  // speed
-			.number("(d+.d+)|")                  // heading
-			.any()
-			.compile();
+    public TrakMateProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public TrakMateProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private static final Pattern PATTERN_SRT = new PatternBuilder()
+            .text("^TMSRT|")
+            .expression("([^ ]+)|")              // uid
+            .number("(d+.d+)|")                  // latitude
+            .number("(d+.d+)|")                  // longitude
+            .number("(dd)(dd)(dd)|")             // time (hhmmss)
+            .number("(dd)(dd)(dd)|")             // date (ddmmyy)
+            .number("(d+.d+)|")                  // software ver
+            .number("(d+.d+)|")                  // Hardware ver
+            .any()
+            .compile();
 
-	private String decodeAlarm(int value) {
-		switch (value) {
-			case 1:
-				return Position.ALARM_SOS;
-			case 3:
-				return Position.ALARM_GEOFENCE;
-			case 4:
-				return Position.ALARM_POWER_CUT;
-			default:
-				return null;
-		}
-	}
+    private static final Pattern PATTERN_PER = new PatternBuilder()
+            .text("^TM")
+            .expression("...|")                  // type
+            .expression("([^ ]+)|")              // uid
+            .number("(d+)|")                     // seq
+            .number("(d+.d+)|")                  // latitude
+            .number("(d+.d+)|")                  // longitude
+            .number("(dd)(dd)(dd)|")             // time (hhmmss)
+            .number("(dd)(dd)(dd)|")             // date (ddmmyy)
+            .number("(d+.d+)|")                  // speed
+            .number("(d+.d+)|")                  // heading
+            .number("(d+)|").optional()          // satellites
+            .number("([01])|")                   // ignition
+            .groupBegin()
+            .number("(d+)|")                     // dop1
+            .number("(d+)|")                     // dop2
+            .number("(d+.d+)|")                  // analog
+            .number("(d+.d+)|")                  // internal battery
+            .or()
+            .number("-?d+ -?d+ -?d+|")           // accelerometer
+            .number("([01])|")                   // movement
+            .groupEnd()
+            .number("(d+.d+)|")                  // vehicle battery
+            .number("(d+.d+)|")                  // gps odometer
+            .number("(d+.d+)|").optional()       // pulse odometer
+            .number("([01])|")                   // main power status
+            .number("([01])|")                   // gps data validity
+            .number("([01])|")                   // live or cache
+            .any()
+            .compile();
 
-	private Object decodeSrt(Channel channel, SocketAddress remoteAddress, String sentence) {
+    private static final Pattern PATTERN_ALT = new PatternBuilder()
+            .text("^TMALT|")
+            .expression("([^ ]+)|")              // uid
+            .number("(d+)|")                     // seq
+            .number("(d+)|")                     // Alert type
+            .number("(d+)|")                     // Alert status
+            .number("(d+.d+)|")                  // latitude
+            .number("(d+.d+)|")                  // longitude
+            .number("(dd)(dd)(dd)|")             // time (hhmmss)
+            .number("(dd)(dd)(dd)|")             // date (ddmmyy)
+            .number("(d+.d+)|")                  // speed
+            .number("(d+.d+)|")                  // heading
+            .any()
+            .compile();
 
-		Parser parser = new Parser(PATTERN_SRT, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+    private String decodeAlarm(int value) {
+        switch (value) {
+            case 1:
+                return Position.ALARM_SOS;
+            case 3:
+                return Position.ALARM_GEOFENCE;
+            case 4:
+                return Position.ALARM_POWER_CUT;
+            default:
+                return null;
+        }
+    }
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
+    private Object decodeSrt(Channel channel, SocketAddress remoteAddress, String sentence) {
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Parser parser = new Parser(PATTERN_SRT, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		position.setLatitude(parser.nextDouble());
-		position.setLongitude(parser.nextDouble());
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
 
-		position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		position.set(Position.KEY_VERSION_FW, parser.next());
-		position.set(Position.KEY_VERSION_HW, parser.next());
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
 
-		return position;
-	}
+        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
 
-	private Object decodeAlt(Channel channel, SocketAddress remoteAddress, String sentence) {
+        position.set(Position.KEY_VERSION_FW, parser.next());
+        position.set(Position.KEY_VERSION_HW, parser.next());
 
-		Parser parser = new Parser(PATTERN_ALT, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+        return position;
+    }
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
+    private Object decodeAlt(Channel channel, SocketAddress remoteAddress, String sentence) {
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Parser parser = new Parser(PATTERN_ALT, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		parser.next(); // seq
-		position.set(Position.KEY_ALARM, decodeAlarm(parser.nextInt()));
-		parser.next(); // alert status or data
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
 
-		position.setLatitude(parser.nextDouble());
-		position.setLongitude(parser.nextDouble());
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
+        parser.next(); // seq
+        position.set(Position.KEY_ALARM, decodeAlarm(parser.nextInt()));
+        parser.next(); // alert status or data
 
-		position.setSpeed(parser.nextDouble());
-		position.setCourse(parser.nextDouble());
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
 
-		return position;
-	}
+        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
 
-	private Object decodePer(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-		Parser parser = new Parser(PATTERN_PER, (String) msg);
-		if (!parser.matches()) {
-			return null;
-		}
+        return position;
+    }
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
+    private Object decodePer(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Parser parser = new Parser(PATTERN_PER, (String) msg);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		parser.next(); // seq
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
 
-		position.setLatitude(parser.nextDouble());
-		position.setLongitude(parser.nextDouble());
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
+        parser.next(); // seq
 
-		position.setSpeed(parser.nextDouble());
-		position.setCourse(parser.nextDouble());
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
 
-		position.set(Position.KEY_SATELLITES, parser.nextInt());
-		position.set(Position.KEY_IGNITION, parser.nextInt() > 0);
+        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
 
-		if (parser.hasNext(4)) {
-			position.set("dop1", parser.nextInt());
-			position.set("dop2", parser.nextInt());
-			position.set(Position.PREFIX_ADC + 1, parser.nextDouble());
-			position.set(Position.KEY_BATTERY, parser.nextDouble());
-		}
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-		if (parser.hasNext()) {
-			position.set(Position.KEY_MOTION, parser.nextInt(0) > 0);
-		}
+        position.set(Position.KEY_SATELLITES, parser.nextInt());
+        position.set(Position.KEY_IGNITION, parser.nextInt() > 0);
 
-		position.set(Position.KEY_POWER, parser.nextDouble());
-		position.set(Position.KEY_ODOMETER, parser.nextDouble());
-		position.set("pulseOdometer", parser.nextDouble());
-		position.set(Position.KEY_STATUS, parser.nextInt());
+        if (parser.hasNext(4)) {
+            position.set("dop1", parser.nextInt());
+            position.set("dop2", parser.nextInt());
+            position.set(Position.PREFIX_ADC + 1, parser.nextDouble());
+            position.set(Position.KEY_BATTERY, parser.nextDouble());
+        }
 
-		position.setValid(parser.nextInt() > 0);
+        if (parser.hasNext()) {
+            position.set(Position.KEY_MOTION, parser.nextInt(0) > 0);
+        }
 
-		position.set(Position.KEY_ARCHIVE, parser.nextInt() > 0);
+        position.set(Position.KEY_POWER, parser.nextDouble());
+        position.set(Position.KEY_ODOMETER, parser.nextDouble());
+        position.set("pulseOdometer", parser.nextDouble());
+        position.set(Position.KEY_STATUS, parser.nextInt());
 
-		return position;
-	}
+        position.setValid(parser.nextInt() > 0);
 
-	@Override
-	protected Object decode(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+        position.set(Position.KEY_ARCHIVE, parser.nextInt() > 0);
 
-		String sentence = (String) msg;
-		int typeIndex = sentence.indexOf("^TM");
-		if (typeIndex < 0) {
-			return null;
-		}
+        return position;
+    }
 
-		String type = sentence.substring(typeIndex + 3, typeIndex + 6);
-		switch (type) {
-			case "ALT":
-				return decodeAlt(channel, remoteAddress, sentence);
-			case "SRT":
-				return decodeSrt(channel, remoteAddress, sentence);
-			default:
-				return decodePer(channel, remoteAddress, sentence);
-		}
-	}
+    @Override
+    protected Object decode(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+
+        String sentence = (String) msg;
+        int typeIndex = sentence.indexOf("^TM");
+        if (typeIndex < 0) {
+            return null;
+        }
+
+        String type = sentence.substring(typeIndex + 3, typeIndex + 6);
+        switch (type) {
+            case "ALT":
+                return decodeAlt(channel, remoteAddress, sentence);
+            case "SRT":
+                return decodeSrt(channel, remoteAddress, sentence);
+            default:
+                return decodePer(channel, remoteAddress, sentence);
+        }
+    }
 
 }

@@ -27,63 +27,63 @@ import java.nio.charset.StandardCharsets;
 
 public class Gt06ProtocolEncoder extends BaseProtocolEncoder {
 
-	public Gt06ProtocolEncoder(Protocol protocol) {
-		super(protocol);
-	}
+    public Gt06ProtocolEncoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private ByteBuf encodeContent(long deviceId, String content) {
+    private ByteBuf encodeContent(long deviceId, String content) {
 
-		boolean language = Context.getIdentityManager()
-				.lookupAttributeBoolean(deviceId, getProtocolName() + ".language", false, false, true);
+        boolean language = Context.getIdentityManager()
+            .lookupAttributeBoolean(deviceId, getProtocolName() + ".language", false, false, true);
 
-		ByteBuf buf = Unpooled.buffer();
+        ByteBuf buf = Unpooled.buffer();
 
-		buf.writeByte(0x78);
-		buf.writeByte(0x78);
+        buf.writeByte(0x78);
+        buf.writeByte(0x78);
 
-		buf.writeByte(1 + 1 + 4 + content.length() + 2 + 2 + (language ? 2 : 0)); // message length
+        buf.writeByte(1 + 1 + 4 + content.length() + 2 + 2 + (language ? 2 : 0)); // message length
 
-		buf.writeByte(0x80); // message type
+        buf.writeByte(0x80); // message type
 
-		buf.writeByte(4 + content.length()); // command length
-		buf.writeInt(0);
-		buf.writeBytes(content.getBytes(StandardCharsets.US_ASCII)); // command
+        buf.writeByte(4 + content.length()); // command length
+        buf.writeInt(0);
+        buf.writeBytes(content.getBytes(StandardCharsets.US_ASCII)); // command
 
-		if (language) {
-			buf.writeShort(2); // english language
-		}
+        if (language) {
+            buf.writeShort(2); // english language
+        }
 
-		buf.writeShort(0); // message index
+        buf.writeShort(0); // message index
 
-		buf.writeShort(Checksum.crc16(Checksum.CRC16_X25, buf.nioBuffer(2, buf.writerIndex() - 2)));
+        buf.writeShort(Checksum.crc16(Checksum.CRC16_X25, buf.nioBuffer(2, buf.writerIndex() - 2)));
 
-		buf.writeByte('\r');
-		buf.writeByte('\n');
+        buf.writeByte('\r');
+        buf.writeByte('\n');
 
-		return buf;
-	}
+        return buf;
+    }
 
-	@Override
-	protected Object encodeCommand(Command command) {
+    @Override
+    protected Object encodeCommand(Command command) {
 
-		boolean alternative = Context.getIdentityManager().lookupAttributeBoolean(
-				command.getDeviceId(), getProtocolName() + ".alternative", false, false, true);
+        boolean alternative = Context.getIdentityManager().lookupAttributeBoolean(
+                command.getDeviceId(), getProtocolName() + ".alternative", false, false, true);
 
-		String password = Context.getIdentityManager()
-				.getDevicePassword(command.getDeviceId(), getProtocolName(), "123456");
+        String password = Context.getIdentityManager()
+                .getDevicePassword(command.getDeviceId(), getProtocolName(), "123456");
 
-		switch (command.getType()) {
-			case Command.TYPE_ENGINE_STOP:
-				return encodeContent(command.getDeviceId(),
-						alternative ? "DYD," + password + "#" : "Relay,1#");
-			case Command.TYPE_ENGINE_RESUME:
-				return encodeContent(command.getDeviceId(),
-						alternative ? "HFYD," + password + "#" : "Relay,0#");
-			case Command.TYPE_CUSTOM:
-				return encodeContent(command.getDeviceId(), command.getString(Command.KEY_DATA));
-			default:
-				return null;
-		}
-	}
+        switch (command.getType()) {
+            case Command.TYPE_ENGINE_STOP:
+                return encodeContent(command.getDeviceId(),
+                    alternative ? "DYD," + password + "#" : "Relay,1#");
+            case Command.TYPE_ENGINE_RESUME:
+                return encodeContent(command.getDeviceId(),
+                    alternative ? "HFYD," + password + "#" : "Relay,0#");
+            case Command.TYPE_CUSTOM:
+                return encodeContent(command.getDeviceId(), command.getString(Command.KEY_DATA));
+            default:
+                return null;
+        }
+    }
 
 }

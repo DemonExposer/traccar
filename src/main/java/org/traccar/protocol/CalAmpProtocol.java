@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class CalAmpProtocol extends BaseProtocol {
 
-	public CalAmpProtocol() {
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CalAmpProtocolDecoder(CalAmpProtocol.this));
-			}
-		});
-	}
+    public CalAmpProtocol() {
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CalAmpProtocolDecoder(CalAmpProtocol.this));
+            }
+        });
+    }
 
 }

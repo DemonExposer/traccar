@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class LacakProtocol extends BaseProtocol {
 
-	public LacakProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new HttpResponseEncoder());
-				pipeline.addLast(new HttpRequestDecoder());
-				pipeline.addLast(new HttpObjectAggregator(16384));
-				pipeline.addLast(new LacakProtocolDecoder(LacakProtocol.this));
-			}
-		});
-	}
+    public LacakProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new HttpResponseEncoder());
+                pipeline.addLast(new HttpRequestDecoder());
+                pipeline.addLast(new HttpObjectAggregator(16384));
+                pipeline.addLast(new LacakProtocolDecoder(LacakProtocol.this));
+            }
+        });
+    }
 
 }

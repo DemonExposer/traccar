@@ -26,41 +26,41 @@ import org.traccar.reports.ReportUtils;
 
 public final class NotificationFormatter {
 
-	private NotificationFormatter() {
-	}
+    private NotificationFormatter() {
+    }
 
-	public static VelocityContext prepareContext(long userId, Event event, Position position) {
+    public static VelocityContext prepareContext(long userId, Event event, Position position) {
 
-		User user = Context.getPermissionsManager().getUser(userId);
-		Device device = Context.getIdentityManager().getById(event.getDeviceId());
+        User user = Context.getPermissionsManager().getUser(userId);
+        Device device = Context.getIdentityManager().getById(event.getDeviceId());
 
-		VelocityContext velocityContext = TextTemplateFormatter.prepareContext(user);
+        VelocityContext velocityContext = TextTemplateFormatter.prepareContext(user);
 
-		velocityContext.put("device", device);
-		velocityContext.put("event", event);
-		if (position != null) {
-			velocityContext.put("position", position);
-			velocityContext.put("speedUnit", ReportUtils.getSpeedUnit(userId));
-			velocityContext.put("distanceUnit", ReportUtils.getDistanceUnit(userId));
-			velocityContext.put("volumeUnit", ReportUtils.getVolumeUnit(userId));
-		}
-		if (event.getGeofenceId() != 0) {
-			velocityContext.put("geofence", Context.getGeofenceManager().getById(event.getGeofenceId()));
-		}
-		if (event.getMaintenanceId() != 0) {
-			velocityContext.put("maintenance", Context.getMaintenancesManager().getById(event.getMaintenanceId()));
-		}
-		String driverUniqueId = event.getString(Position.KEY_DRIVER_UNIQUE_ID);
-		if (driverUniqueId != null) {
-			velocityContext.put("driver", Context.getDriversManager().getDriverByUniqueId(driverUniqueId));
-		}
+        velocityContext.put("device", device);
+        velocityContext.put("event", event);
+        if (position != null) {
+            velocityContext.put("position", position);
+            velocityContext.put("speedUnit", ReportUtils.getSpeedUnit(userId));
+            velocityContext.put("distanceUnit", ReportUtils.getDistanceUnit(userId));
+            velocityContext.put("volumeUnit", ReportUtils.getVolumeUnit(userId));
+        }
+        if (event.getGeofenceId() != 0) {
+            velocityContext.put("geofence", Context.getGeofenceManager().getById(event.getGeofenceId()));
+        }
+        if (event.getMaintenanceId() != 0) {
+            velocityContext.put("maintenance", Context.getMaintenancesManager().getById(event.getMaintenanceId()));
+        }
+        String driverUniqueId = event.getString(Position.KEY_DRIVER_UNIQUE_ID);
+        if (driverUniqueId != null) {
+            velocityContext.put("driver", Context.getDriversManager().getDriverByUniqueId(driverUniqueId));
+        }
 
-		return velocityContext;
-	}
+        return velocityContext;
+    }
 
-	public static NotificationMessage formatMessage(long userId, Event event, Position position, String templatePath) {
-		VelocityContext velocityContext = prepareContext(userId, event, position);
-		return TextTemplateFormatter.formatMessage(velocityContext, event.getType(), templatePath);
-	}
+    public static NotificationMessage formatMessage(long userId, Event event, Position position, String templatePath) {
+        VelocityContext velocityContext = prepareContext(userId, event, position);
+        return TextTemplateFormatter.formatMessage(velocityContext, event.getType(), templatePath);
+    }
 
 }

@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class HuaShengProtocol extends BaseProtocol {
 
-	public HuaShengProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new HuaShengFrameDecoder());
-				pipeline.addLast(new HuaShengProtocolDecoder(HuaShengProtocol.this));
-			}
-		});
-	}
+    public HuaShengProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new HuaShengFrameDecoder());
+                pipeline.addLast(new HuaShengProtocolDecoder(HuaShengProtocol.this));
+            }
+        });
+    }
 
 }

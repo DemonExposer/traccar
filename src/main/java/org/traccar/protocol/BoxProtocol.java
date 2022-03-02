@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class BoxProtocol extends BaseProtocol {
 
-	public BoxProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\r'));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new BoxProtocolDecoder(BoxProtocol.this));
-			}
-		});
-	}
+    public BoxProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\r'));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new BoxProtocolDecoder(BoxProtocol.this));
+            }
+        });
+    }
 
 }

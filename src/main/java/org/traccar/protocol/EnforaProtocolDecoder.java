@@ -32,83 +32,84 @@ import java.util.regex.Pattern;
 
 public class EnforaProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int IMEI_LENGTH = 15;
-	private static final Pattern PATTERN = new PatternBuilder()
-			.text("GPRMC,")
-			.number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
-			.expression("([AV]),")               // validity
-			.number("(dd)(dd.d+),")              // latitude
-			.expression("([NS]),")
-			.number("(ddd)(dd.d+),")             // longitude
-			.expression("([EW]),")
-			.number("(d+.d+)?,")                 // speed
-			.number("(d+.d+)?,")                 // course
-			.number("(dd)(dd)(dd),")             // date (ddmmyy)
-			.any()
-			.compile();
+    public EnforaProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public EnforaProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private static final Pattern PATTERN = new PatternBuilder()
+            .text("GPRMC,")
+            .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
+            .expression("([AV]),")               // validity
+            .number("(dd)(dd.d+),")              // latitude
+            .expression("([NS]),")
+            .number("(ddd)(dd.d+),")             // longitude
+            .expression("([EW]),")
+            .number("(d+.d+)?,")                 // speed
+            .number("(d+.d+)?,")                 // course
+            .number("(dd)(dd)(dd),")             // date (ddmmyy)
+            .any()
+            .compile();
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    public static final int IMEI_LENGTH = 15;
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		// Find IMEI number
-		int index = -1;
-		for (int i = buf.readerIndex(); i < buf.writerIndex() - IMEI_LENGTH; i++) {
-			index = i;
-			for (int j = i; j < i + IMEI_LENGTH; j++) {
-				if (!Character.isDigit((char) buf.getByte(j))) {
-					index = -1;
-					break;
-				}
-			}
-			if (index > 0) {
-				break;
-			}
-		}
-		if (index == -1) {
-			return null;
-		}
+        ByteBuf buf = (ByteBuf) msg;
 
-		String imei = buf.toString(index, IMEI_LENGTH, StandardCharsets.US_ASCII);
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-		if (deviceSession == null) {
-			return null;
-		}
+        // Find IMEI number
+        int index = -1;
+        for (int i = buf.readerIndex(); i < buf.writerIndex() - IMEI_LENGTH; i++) {
+            index = i;
+            for (int j = i; j < i + IMEI_LENGTH; j++) {
+                if (!Character.isDigit((char) buf.getByte(j))) {
+                    index = -1;
+                    break;
+                }
+            }
+            if (index > 0) {
+                break;
+            }
+        }
+        if (index == -1) {
+            return null;
+        }
 
-		// Find NMEA sentence
-		int start = BufferUtil.indexOf("GPRMC", buf);
-		if (start == -1) {
-			return null;
-		}
+        String imei = buf.toString(index, IMEI_LENGTH, StandardCharsets.US_ASCII);
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+        if (deviceSession == null) {
+            return null;
+        }
 
-		String sentence = buf.toString(start, buf.readableBytes() - start, StandardCharsets.US_ASCII);
-		Parser parser = new Parser(PATTERN, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+        // Find NMEA sentence
+        int start = BufferUtil.indexOf("GPRMC", buf);
+        if (start == -1) {
+            return null;
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        String sentence = buf.toString(start, buf.readableBytes() - start, StandardCharsets.US_ASCII);
+        Parser parser = new Parser(PATTERN, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		DateBuilder dateBuilder = new DateBuilder()
-				.setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		position.setValid(parser.next().equals("A"));
-		position.setLatitude(parser.nextCoordinate());
-		position.setLongitude(parser.nextCoordinate());
-		position.setSpeed(parser.nextDouble(0));
-		position.setCourse(parser.nextDouble(0));
+        DateBuilder dateBuilder = new DateBuilder()
+                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
 
-		dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
-		position.setTime(dateBuilder.getDate());
+        position.setValid(parser.next().equals("A"));
+        position.setLatitude(parser.nextCoordinate());
+        position.setLongitude(parser.nextCoordinate());
+        position.setSpeed(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble(0));
 
-		return position;
-	}
+        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        position.setTime(dateBuilder.getDate());
+
+        return position;
+    }
 
 }

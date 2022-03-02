@@ -24,14 +24,14 @@ import java.nio.ByteOrder;
 
 public class DolphinProtocol extends BaseProtocol {
 
-	public DolphinProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 4096, 20, 4, 4, 0, true));
-				pipeline.addLast(new DolphinProtocolDecoder(DolphinProtocol.this));
-			}
-		});
-	}
+    public DolphinProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 4096, 20, 4, 4, 0, true));
+                pipeline.addLast(new DolphinProtocolDecoder(DolphinProtocol.this));
+            }
+        });
+    }
 
 }

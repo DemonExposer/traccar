@@ -17,35 +17,35 @@ package org.traccar.config;
 
 public interface LookupContext {
 
-	class Global implements LookupContext {
-	}
+    class Global implements LookupContext {
+    }
 
-	class User implements LookupContext {
+    class User implements LookupContext {
 
-		private final long userId;
+        private final long userId;
 
-		public User(long userId) {
-			this.userId = userId;
-		}
+        public long getUserId() {
+            return userId;
+        }
 
-		public long getUserId() {
-			return userId;
-		}
+        public User(long userId) {
+            this.userId = userId;
+        }
 
-	}
+    }
 
-	class Device implements LookupContext {
+    class Device implements LookupContext {
 
-		private final long deviceId;
+        private final long deviceId;
 
-		public Device(long deviceId) {
-			this.deviceId = deviceId;
-		}
+        public long getDeviceId() {
+            return deviceId;
+        }
 
-		public long getDeviceId() {
-			return deviceId;
-		}
+        public Device(long deviceId) {
+            this.deviceId = deviceId;
+        }
 
-	}
+    }
 
 }

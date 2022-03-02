@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class GpsMarkerProtocol extends BaseProtocol {
 
-	public GpsMarkerProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\r"));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new GpsMarkerProtocolDecoder(GpsMarkerProtocol.this));
-			}
-		});
-	}
+    public GpsMarkerProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\r"));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new GpsMarkerProtocolDecoder(GpsMarkerProtocol.this));
+            }
+        });
+    }
 
 }

@@ -18,14 +18,14 @@ package org.traccar.model;
 
 public class GroupedModel extends ExtendedModel {
 
-	private long groupId;
+    private long groupId;
 
-	public long getGroupId() {
-		return groupId;
-	}
+    public long getGroupId() {
+        return groupId;
+    }
 
-	public void setGroupId(long groupId) {
-		this.groupId = groupId;
-	}
+    public void setGroupId(long groupId) {
+        this.groupId = groupId;
+    }
 
 }

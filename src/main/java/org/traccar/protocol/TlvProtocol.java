@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class TlvProtocol extends BaseProtocol {
 
-	public TlvProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\0'));
-				pipeline.addLast(new TlvProtocolDecoder(TlvProtocol.this));
-			}
-		});
-	}
+    public TlvProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '\0'));
+                pipeline.addLast(new TlvProtocolDecoder(TlvProtocol.this));
+            }
+        });
+    }
 
 }

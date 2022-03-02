@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class BlueProtocol extends BaseProtocol {
 
-	public BlueProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 1, 2, -2, 0));
-				pipeline.addLast(new BlueProtocolDecoder(BlueProtocol.this));
-			}
-		});
-	}
+    public BlueProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 1, 2, -2, 0));
+                pipeline.addLast(new BlueProtocolDecoder(BlueProtocol.this));
+            }
+        });
+    }
 
 }

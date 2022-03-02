@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class FlexibleReportProtocol extends BaseProtocol {
 
-	public FlexibleReportProtocol() {
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new FlexibleReportProtocolDecoder(FlexibleReportProtocol.this));
-			}
-		});
-	}
+    public FlexibleReportProtocol() {
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new FlexibleReportProtocolDecoder(FlexibleReportProtocol.this));
+            }
+        });
+    }
 
 }

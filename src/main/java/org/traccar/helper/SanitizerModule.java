@@ -25,21 +25,21 @@ import java.io.IOException;
 
 public class SanitizerModule extends SimpleModule {
 
-	public SanitizerModule() {
-		addSerializer(new SanitizerSerializer());
-	}
+    public static class SanitizerSerializer extends StdSerializer<String> {
 
-	public static class SanitizerSerializer extends StdSerializer<String> {
+        protected SanitizerSerializer() {
+            super(String.class);
+        }
 
-		protected SanitizerSerializer() {
-			super(String.class);
-		}
+        @Override
+        public void serialize(String value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeString(Encode.forHtml(value));
+        }
 
-		@Override
-		public void serialize(String value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-			gen.writeString(Encode.forHtml(value));
-		}
+    }
 
-	}
+    public SanitizerModule() {
+        addSerializer(new SanitizerSerializer());
+    }
 
 }

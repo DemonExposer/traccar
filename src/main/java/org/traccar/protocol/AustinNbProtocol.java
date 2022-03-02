@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class AustinNbProtocol extends BaseProtocol {
 
-	public AustinNbProtocol() {
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new AustinNbProtocolDecoder(AustinNbProtocol.this));
-			}
-		});
-	}
+    public AustinNbProtocol() {
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new AustinNbProtocolDecoder(AustinNbProtocol.this));
+            }
+        });
+    }
 
 }

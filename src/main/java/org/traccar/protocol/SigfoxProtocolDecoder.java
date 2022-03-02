@@ -44,234 +44,234 @@ import java.util.Date;
 
 public class SigfoxProtocolDecoder extends BaseHttpProtocolDecoder {
 
-	public SigfoxProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public SigfoxProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private boolean jsonContains(JsonObject json, String key) {
-		if (json.containsKey(key)) {
-			JsonValue value = json.get(key);
-			if (value.getValueType() == JsonValue.ValueType.STRING) {
-				return !((JsonString) value).getString().equals("null");
+    private boolean jsonContains(JsonObject json, String key) {
+        if (json.containsKey(key)) {
+            JsonValue value = json.get(key);
+            if (value.getValueType() == JsonValue.ValueType.STRING) {
+                return !((JsonString) value).getString().equals("null");
 
-			} else {
-				return true;
-			}
-		}
-		return false;
-	}
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	private boolean getJsonBoolean(JsonObject json, String key) {
-		JsonValue value = json.get(key);
-		if (value != null) {
-			if (value.getValueType() == JsonValue.ValueType.STRING) {
-				return Boolean.parseBoolean(((JsonString) value).getString());
-			} else {
-				return value.getValueType() == JsonValue.ValueType.TRUE;
-			}
-		}
-		return false;
-	}
+    private boolean getJsonBoolean(JsonObject json, String key) {
+        JsonValue value = json.get(key);
+        if (value != null) {
+            if (value.getValueType() == JsonValue.ValueType.STRING) {
+                return Boolean.parseBoolean(((JsonString) value).getString());
+            } else {
+                return value.getValueType() == JsonValue.ValueType.TRUE;
+            }
+        }
+        return false;
+    }
 
-	private int getJsonInt(JsonObject json, String key) {
-		JsonValue value = json.get(key);
-		if (value != null) {
-			if (value.getValueType() == JsonValue.ValueType.NUMBER) {
-				return ((JsonNumber) value).intValue();
-			} else if (value.getValueType() == JsonValue.ValueType.STRING) {
-				return Integer.parseInt(((JsonString) value).getString());
-			}
-		}
-		return 0;
-	}
+    private int getJsonInt(JsonObject json, String key) {
+        JsonValue value = json.get(key);
+        if (value != null) {
+            if (value.getValueType() == JsonValue.ValueType.NUMBER) {
+                return ((JsonNumber) value).intValue();
+            } else if (value.getValueType() == JsonValue.ValueType.STRING) {
+                return Integer.parseInt(((JsonString) value).getString());
+            }
+        }
+        return 0;
+    }
 
-	private double getJsonDouble(JsonObject json, String key) {
-		JsonValue value = json.get(key);
-		if (value != null) {
-			if (value.getValueType() == JsonValue.ValueType.NUMBER) {
-				return ((JsonNumber) value).doubleValue();
-			} else if (value.getValueType() == JsonValue.ValueType.STRING) {
-				return Double.parseDouble(((JsonString) value).getString());
-			}
-		}
-		return 0;
-	}
+    private double getJsonDouble(JsonObject json, String key) {
+        JsonValue value = json.get(key);
+        if (value != null) {
+            if (value.getValueType() == JsonValue.ValueType.NUMBER) {
+                return ((JsonNumber) value).doubleValue();
+            } else if (value.getValueType() == JsonValue.ValueType.STRING) {
+                return Double.parseDouble(((JsonString) value).getString());
+            }
+        }
+        return 0;
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		FullHttpRequest request = (FullHttpRequest) msg;
-		String content = request.content().toString(StandardCharsets.UTF_8);
-		if (!content.startsWith("{")) {
-			content = URLDecoder.decode(content.split("=")[0], "UTF-8");
-		}
-		JsonObject json = Json.createReader(new StringReader(content)).readObject();
+        FullHttpRequest request = (FullHttpRequest) msg;
+        String content = request.content().toString(StandardCharsets.UTF_8);
+        if (!content.startsWith("{")) {
+            content = URLDecoder.decode(content.split("=")[0], "UTF-8");
+        }
+        JsonObject json = Json.createReader(new StringReader(content)).readObject();
 
-		String deviceId;
-		if (json.containsKey("device")) {
-			deviceId = json.getString("device");
-		} else {
-			deviceId = json.getString("deviceId");
-		}
+        String deviceId;
+        if (json.containsKey("device")) {
+            deviceId = json.getString("device");
+        } else {
+            deviceId = json.getString("deviceId");
+        }
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, deviceId);
-		if (deviceSession == null) {
-			sendResponse(channel, HttpResponseStatus.BAD_REQUEST);
-			return null;
-		}
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, deviceId);
+        if (deviceSession == null) {
+            sendResponse(channel, HttpResponseStatus.BAD_REQUEST);
+            return null;
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		if (jsonContains(json, "time")) {
-			position.setTime(new Date(getJsonInt(json, "time") * 1000L));
-		} else if (jsonContains(json, "positionTime")) {
-			position.setTime(new Date(getJsonInt(json, "positionTime") * 1000L));
-		} else {
-			position.setTime(new Date());
-		}
+        if (jsonContains(json, "time")) {
+            position.setTime(new Date(getJsonInt(json, "time") * 1000L));
+        } else if (jsonContains(json, "positionTime")) {
+            position.setTime(new Date(getJsonInt(json, "positionTime") * 1000L));
+        } else {
+            position.setTime(new Date());
+        }
 
-		if (jsonContains(json, "lastSeen")) {
-			position.setDeviceTime(new Date(getJsonInt(json, "lastSeen") * 1000L));
-		}
+        if (jsonContains(json, "lastSeen")) {
+            position.setDeviceTime(new Date(getJsonInt(json, "lastSeen") * 1000L));
+        }
 
-		if (jsonContains(json, "location")
-				|| jsonContains(json, "lat") && jsonContains(json, "lng") && !jsonContains(json, "data")
-				|| jsonContains(json, "latitude") && jsonContains(json, "longitude") && !jsonContains(json, "data")) {
+        if (jsonContains(json, "location")
+                || jsonContains(json, "lat") && jsonContains(json, "lng") && !jsonContains(json, "data")
+                || jsonContains(json, "latitude") && jsonContains(json, "longitude") && !jsonContains(json, "data")) {
 
-			JsonObject location;
-			if (jsonContains(json, "location")) {
-				location = json.getJsonObject("location");
-			} else {
-				location = json;
-			}
+            JsonObject location;
+            if (jsonContains(json, "location")) {
+                location = json.getJsonObject("location");
+            } else {
+                location = json;
+            }
 
-			position.setValid(true);
-			position.setLatitude(getJsonDouble(location, jsonContains(location, "lat") ? "lat" : "latitude"));
-			position.setLongitude(getJsonDouble(location, jsonContains(location, "lng") ? "lng" : "longitude"));
+            position.setValid(true);
+            position.setLatitude(getJsonDouble(location, jsonContains(location, "lat") ? "lat" : "latitude"));
+            position.setLongitude(getJsonDouble(location, jsonContains(location, "lng") ? "lng" : "longitude"));
 
-		} else if (jsonContains(json, "data")) {
+        } else if (jsonContains(json, "data")) {
 
-			ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(json.getString("data")));
-			try {
-				int event = buf.readUnsignedByte();
-				if (event == 0x0f || event == 0x1f) {
+            ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(json.getString("data")));
+            try {
+                int event = buf.readUnsignedByte();
+                if (event == 0x0f || event == 0x1f) {
 
-					position.setValid(event >> 4 > 0);
+                    position.setValid(event >> 4 > 0);
 
-					long value;
-					value = buf.readUnsignedInt();
-					position.setLatitude(BitUtil.to(value, 31) * 0.000001);
-					if (BitUtil.check(value, 31)) {
-						position.setLatitude(-position.getLatitude());
-					}
-					value = buf.readUnsignedInt();
-					position.setLongitude(BitUtil.to(value, 31) * 0.000001);
-					if (BitUtil.check(value, 31)) {
-						position.setLongitude(-position.getLongitude());
-					}
+                    long value;
+                    value = buf.readUnsignedInt();
+                    position.setLatitude(BitUtil.to(value, 31) * 0.000001);
+                    if (BitUtil.check(value, 31)) {
+                        position.setLatitude(-position.getLatitude());
+                    }
+                    value = buf.readUnsignedInt();
+                    position.setLongitude(BitUtil.to(value, 31) * 0.000001);
+                    if (BitUtil.check(value, 31)) {
+                        position.setLongitude(-position.getLongitude());
+                    }
 
-					position.set(Position.KEY_BATTERY, (int) buf.readUnsignedByte());
+                    position.set(Position.KEY_BATTERY, (int) buf.readUnsignedByte());
 
-				} else if (event >> 4 <= 3 && buf.writerIndex() == 12) {
+                } else if (event >> 4 <= 3 && buf.writerIndex() == 12) {
 
-					if (BitUtil.to(event, 4) == 0) {
-						position.setValid(true);
-						position.setLatitude(buf.readIntLE() * 0.0000001);
-						position.setLongitude(buf.readIntLE() * 0.0000001);
-						position.setCourse(buf.readUnsignedByte() * 2);
-						position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
+                    if (BitUtil.to(event, 4) == 0) {
+                        position.setValid(true);
+                        position.setLatitude(buf.readIntLE() * 0.0000001);
+                        position.setLongitude(buf.readIntLE() * 0.0000001);
+                        position.setCourse(buf.readUnsignedByte() * 2);
+                        position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
 
-						position.set(Position.KEY_BATTERY, buf.readUnsignedByte() * 0.025);
-					} else {
-						return null;
-					}
+                        position.set(Position.KEY_BATTERY, buf.readUnsignedByte() * 0.025);
+                    } else {
+                        return null;
+                    }
 
-				}
-			} finally {
-				buf.release();
-			}
+                }
+            } finally {
+                buf.release();
+            }
 
-		} else if (jsonContains(json, "payload")) {
+        } else if (jsonContains(json, "payload")) {
 
-			ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(json.getString("payload")));
-			try {
-				int event = buf.readUnsignedByte();
-				position.set(Position.KEY_EVENT, event);
-				if (event == 0x22 || event == 0x62) {
-					position.set(Position.KEY_ALARM, Position.ALARM_SOS);
-				}
+            ByteBuf buf = Unpooled.wrappedBuffer(DataConverter.parseHex(json.getString("payload")));
+            try {
+                int event = buf.readUnsignedByte();
+                position.set(Position.KEY_EVENT, event);
+                if (event == 0x22 || event == 0x62) {
+                    position.set(Position.KEY_ALARM, Position.ALARM_SOS);
+                }
 
-				while (buf.isReadable()) {
-					int type = buf.readUnsignedByte();
-					switch (type) {
-						case 0x01:
-							position.setValid(true);
-							position.setLatitude(buf.readMedium());
-							position.setLongitude(buf.readMedium());
-							break;
-						case 0x02:
-							position.setValid(true);
-							position.setLatitude(buf.readFloat());
-							position.setLongitude(buf.readFloat());
-							break;
-						case 0x03:
-							position.set(Position.PREFIX_TEMP + 1, buf.readByte() * 0.5);
-							break;
-						case 0x04:
-							position.set(Position.KEY_BATTERY, buf.readUnsignedByte() * 0.1);
-							break;
-						case 0x05:
-							position.set(Position.KEY_BATTERY_LEVEL, buf.readUnsignedByte());
-							break;
-						case 0x06:
-							String mac = ByteBufUtil.hexDump(buf.readSlice(6)).replaceAll("(..)", "$1:");
-							position.setNetwork(new Network(WifiAccessPoint.from(
-									mac.substring(0, mac.length() - 1), buf.readUnsignedByte())));
-							break;
-						case 0x07:
-							buf.skipBytes(10); // wifi extended
-							break;
-						case 0x08:
-							buf.skipBytes(6); // accelerometer
-							break;
-						case 0x09:
-							position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
-							break;
-						default:
-							buf.readUnsignedByte(); // fence number
-							break;
-					}
-				}
-			} finally {
-				buf.release();
-			}
+                while (buf.isReadable()) {
+                    int type = buf.readUnsignedByte();
+                    switch (type) {
+                        case 0x01:
+                            position.setValid(true);
+                            position.setLatitude(buf.readMedium());
+                            position.setLongitude(buf.readMedium());
+                            break;
+                        case 0x02:
+                            position.setValid(true);
+                            position.setLatitude(buf.readFloat());
+                            position.setLongitude(buf.readFloat());
+                            break;
+                        case 0x03:
+                            position.set(Position.PREFIX_TEMP + 1, buf.readByte() * 0.5);
+                            break;
+                        case 0x04:
+                            position.set(Position.KEY_BATTERY, buf.readUnsignedByte() * 0.1);
+                            break;
+                        case 0x05:
+                            position.set(Position.KEY_BATTERY_LEVEL, buf.readUnsignedByte());
+                            break;
+                        case 0x06:
+                            String mac = ByteBufUtil.hexDump(buf.readSlice(6)).replaceAll("(..)", "$1:");
+                            position.setNetwork(new Network(WifiAccessPoint.from(
+                                    mac.substring(0, mac.length() - 1), buf.readUnsignedByte())));
+                            break;
+                        case 0x07:
+                            buf.skipBytes(10); // wifi extended
+                            break;
+                        case 0x08:
+                            buf.skipBytes(6); // accelerometer
+                            break;
+                        case 0x09:
+                            position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
+                            break;
+                        default:
+                            buf.readUnsignedByte(); // fence number
+                            break;
+                    }
+                }
+            } finally {
+                buf.release();
+            }
 
-		}
+        }
 
-		if (position.getLatitude() == 0 && position.getLongitude() == 0) {
-			getLastLocation(position, position.getDeviceTime());
-		}
+        if (position.getLatitude() == 0 && position.getLongitude() == 0) {
+            getLastLocation(position, position.getDeviceTime());
+        }
 
-		if (jsonContains(json, "moving")) {
-			position.set(Position.KEY_MOTION, getJsonBoolean(json, "moving"));
-		}
-		if (jsonContains(json, "magStatus")) {
-			position.set(Position.KEY_BLOCKED, getJsonBoolean(json, "magStatus"));
-		}
-		if (jsonContains(json, "temperature")) {
-			position.set(Position.KEY_DEVICE_TEMP, getJsonDouble(json, "temperature"));
-		}
-		if (jsonContains(json, "rssi")) {
-			position.set(Position.KEY_RSSI, getJsonDouble(json, "rssi"));
-		}
-		if (jsonContains(json, "seqNumber")) {
-			position.set(Position.KEY_INDEX, getJsonInt(json, "seqNumber"));
-		}
+        if (jsonContains(json, "moving")) {
+            position.set(Position.KEY_MOTION, getJsonBoolean(json, "moving"));
+        }
+        if (jsonContains(json, "magStatus")) {
+            position.set(Position.KEY_BLOCKED, getJsonBoolean(json, "magStatus"));
+        }
+        if (jsonContains(json, "temperature")) {
+            position.set(Position.KEY_DEVICE_TEMP, getJsonDouble(json, "temperature"));
+        }
+        if (jsonContains(json, "rssi")) {
+            position.set(Position.KEY_RSSI, getJsonDouble(json, "rssi"));
+        }
+        if (jsonContains(json, "seqNumber")) {
+            position.set(Position.KEY_INDEX, getJsonInt(json, "seqNumber"));
+        }
 
-		sendResponse(channel, HttpResponseStatus.OK);
-		return position;
-	}
+        sendResponse(channel, HttpResponseStatus.OK);
+        return position;
+    }
 
 }

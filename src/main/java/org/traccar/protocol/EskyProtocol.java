@@ -23,24 +23,24 @@ import org.traccar.TrackerServer;
 
 public class EskyProtocol extends BaseProtocol {
 
-	public EskyProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new EskyFrameDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new EskyProtocolDecoder(EskyProtocol.this));
-			}
-		});
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new EskyProtocolDecoder(EskyProtocol.this));
-			}
-		});
-	}
+    public EskyProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new EskyFrameDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new EskyProtocolDecoder(EskyProtocol.this));
+            }
+        });
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new EskyProtocolDecoder(EskyProtocol.this));
+            }
+        });
+    }
 
 }

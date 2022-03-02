@@ -18,103 +18,113 @@ package org.traccar.reports.model;
 
 public class TripReport extends BaseReport {
 
-	private long startPositionId;
-	private long endPositionId;
-	private double startLat;
-	private double startLon;
-	private double endLat;
-	private double endLon;
-	private String startAddress;
-	private String endAddress;
-	private long duration;
-	private String driverUniqueId;
-	private String driverName;
+    private long startPositionId;
 
-	public long getStartPositionId() {
-		return startPositionId;
-	}
+    public long getStartPositionId() {
+        return startPositionId;
+    }
 
-	public void setStartPositionId(long startPositionId) {
-		this.startPositionId = startPositionId;
-	}
+    public void setStartPositionId(long startPositionId) {
+        this.startPositionId = startPositionId;
+    }
 
-	public long getEndPositionId() {
-		return endPositionId;
-	}
+    private long endPositionId;
 
-	public void setEndPositionId(long endPositionId) {
-		this.endPositionId = endPositionId;
-	}
+    public long getEndPositionId() {
+        return endPositionId;
+    }
 
-	public double getStartLat() {
-		return startLat;
-	}
+    public void setEndPositionId(long endPositionId) {
+        this.endPositionId = endPositionId;
+    }
 
-	public void setStartLat(double startLat) {
-		this.startLat = startLat;
-	}
+    private double startLat;
 
-	public double getStartLon() {
-		return startLon;
-	}
+    public double getStartLat() {
+        return startLat;
+    }
 
-	public void setStartLon(double startLon) {
-		this.startLon = startLon;
-	}
+    public void setStartLat(double startLat) {
+        this.startLat = startLat;
+    }
 
-	public double getEndLat() {
-		return endLat;
-	}
+    private double startLon;
 
-	public void setEndLat(double endLat) {
-		this.endLat = endLat;
-	}
+    public double getStartLon() {
+        return startLon;
+    }
 
-	public double getEndLon() {
-		return endLon;
-	}
+    public void setStartLon(double startLon) {
+        this.startLon = startLon;
+    }
 
-	public void setEndLon(double endLon) {
-		this.endLon = endLon;
-	}
+    private double endLat;
 
-	public String getStartAddress() {
-		return startAddress;
-	}
+    public double getEndLat() {
+        return endLat;
+    }
 
-	public void setStartAddress(String address) {
-		this.startAddress = address;
-	}
+    public void setEndLat(double endLat) {
+        this.endLat = endLat;
+    }
 
-	public String getEndAddress() {
-		return endAddress;
-	}
+    private double endLon;
 
-	public void setEndAddress(String address) {
-		this.endAddress = address;
-	}
+    public double getEndLon() {
+        return endLon;
+    }
 
-	public long getDuration() {
-		return duration;
-	}
+    public void setEndLon(double endLon) {
+        this.endLon = endLon;
+    }
 
-	public void setDuration(long duration) {
-		this.duration = duration;
-	}
+    private String startAddress;
 
-	public String getDriverUniqueId() {
-		return driverUniqueId;
-	}
+    public String getStartAddress() {
+        return startAddress;
+    }
 
-	public void setDriverUniqueId(String driverUniqueId) {
-		this.driverUniqueId = driverUniqueId;
-	}
+    public void setStartAddress(String address) {
+        this.startAddress = address;
+    }
 
-	public String getDriverName() {
-		return driverName;
-	}
+    private String endAddress;
 
-	public void setDriverName(String driverName) {
-		this.driverName = driverName;
-	}
+    public String getEndAddress() {
+        return endAddress;
+    }
+
+    public void setEndAddress(String address) {
+        this.endAddress = address;
+    }
+
+    private long duration;
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
+    private String driverUniqueId;
+
+    public String getDriverUniqueId() {
+        return driverUniqueId;
+    }
+
+    public void setDriverUniqueId(String driverUniqueId) {
+        this.driverUniqueId = driverUniqueId;
+    }
+
+    private String driverName;
+
+    public String getDriverName() {
+        return driverName;
+    }
+
+    public void setDriverName(String driverName) {
+        this.driverName = driverName;
+    }
 }

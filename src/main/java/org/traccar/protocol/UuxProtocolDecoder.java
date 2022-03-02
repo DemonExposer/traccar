@@ -32,117 +32,118 @@ import java.util.Calendar;
 
 public class UuxProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_GENERAL = 0x90;
-	public static final int MSG_IMMOBILIZER = 0x9E;
-	public static final int MSG_ACK = 0xD0;
-	public static final int MSG_NACK = 0xF0;
-	public static final int MSG_KEEPALIVE = 0xFF;
-	public UuxProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public UuxProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void sendResponse(Channel channel, int productCode, int protocolVersion, int type) {
-		if (channel != null && BitUtil.check(protocolVersion, 7)) {
-			ByteBuf response = Unpooled.buffer();
-			response.writeShort(productCode);
-			response.writeByte(BitUtil.to(protocolVersion, 7));
-			response.writeByte(1); // length
-			response.writeByte(type);
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+    public static final int MSG_GENERAL = 0x90;
+    public static final int MSG_IMMOBILIZER = 0x9E;
+    public static final int MSG_ACK = 0xD0;
+    public static final int MSG_NACK = 0xF0;
+    public static final int MSG_KEEPALIVE = 0xFF;
 
-	private int readInt(ByteBuf buf, int length) {
-		return Integer.parseInt(buf.readCharSequence(length, StandardCharsets.US_ASCII).toString());
-	}
+    private void sendResponse(Channel channel, int productCode, int protocolVersion, int type) {
+        if (channel != null && BitUtil.check(protocolVersion, 7)) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeShort(productCode);
+            response.writeByte(BitUtil.to(protocolVersion, 7));
+            response.writeByte(1); // length
+            response.writeByte(type);
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-	private double readDouble(ByteBuf buf, int length) {
-		return Double.parseDouble(buf.readCharSequence(length, StandardCharsets.US_ASCII).toString());
-	}
+    private int readInt(ByteBuf buf, int length) {
+        return Integer.parseInt(buf.readCharSequence(length, StandardCharsets.US_ASCII).toString());
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private double readDouble(ByteBuf buf, int length) {
+        return Double.parseDouble(buf.readCharSequence(length, StandardCharsets.US_ASCII).toString());
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		int productCode = buf.readUnsignedShort();
-		int protocolVersion = buf.readUnsignedByte();
-		buf.readUnsignedByte(); // length
-		int type = buf.readUnsignedByte();
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_KEEPALIVE) {
-			return null;
-		}
+        int productCode = buf.readUnsignedShort();
+        int protocolVersion = buf.readUnsignedByte();
+        buf.readUnsignedByte(); // length
+        int type = buf.readUnsignedByte();
 
-		String vehicleId = buf.readCharSequence(10, StandardCharsets.US_ASCII).toString();
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, vehicleId);
-		if (deviceSession == null) {
-			sendResponse(channel, productCode, protocolVersion, MSG_NACK);
-			return null;
-		}
+        if (type == MSG_KEEPALIVE) {
+            return null;
+        }
 
-		DateBuilder dateBuilder = new DateBuilder()
-				.setDate(Calendar.getInstance().get(Calendar.YEAR), buf.readUnsignedByte(), buf.readUnsignedByte())
-				.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+        String vehicleId = buf.readCharSequence(10, StandardCharsets.US_ASCII).toString();
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, vehicleId);
+        if (deviceSession == null) {
+            sendResponse(channel, productCode, protocolVersion, MSG_NACK);
+            return null;
+        }
 
-		if (type == MSG_GENERAL) {
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(Calendar.getInstance().get(Calendar.YEAR), buf.readUnsignedByte(), buf.readUnsignedByte())
+                .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+        if (type == MSG_GENERAL) {
 
-			position.setTime(dateBuilder.getDate());
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			buf.skipBytes(10); // reason
-			buf.readUnsignedShort(); // flags
+            position.setTime(dateBuilder.getDate());
 
-			buf.readUnsignedByte(); // position status
-			position.setValid(true);
+            buf.skipBytes(10); // reason
+            buf.readUnsignedShort(); // flags
 
-			position.set(Position.KEY_SATELLITES, readInt(buf, 2));
+            buf.readUnsignedByte(); // position status
+            position.setValid(true);
 
-			double latitude = readInt(buf, 2);
-			latitude += readDouble(buf, 7) / 60;
-			position.setLatitude(buf.readUnsignedByte() == 'S' ? -latitude : latitude);
+            position.set(Position.KEY_SATELLITES, readInt(buf, 2));
 
-			double longitude = readInt(buf, 3);
-			longitude += readDouble(buf, 7) / 60;
-			position.setLongitude(buf.readUnsignedByte() == 'W' ? -longitude : longitude);
+            double latitude = readInt(buf, 2);
+            latitude += readDouble(buf, 7) / 60;
+            position.setLatitude(buf.readUnsignedByte() == 'S' ? -latitude : latitude);
 
-			position.setSpeed(readInt(buf, 3));
-			position.setCourse(readInt(buf, 3));
-			readInt(buf, 3); // alternative speed
+            double longitude = readInt(buf, 3);
+            longitude += readDouble(buf, 7) / 60;
+            position.setLongitude(buf.readUnsignedByte() == 'W' ? -longitude : longitude);
 
-			position.set(Position.KEY_ODOMETER, buf.readUnsignedByte() * 10000 + buf.readUnsignedByte() * 256
-					+ buf.readUnsignedByte() + buf.readUnsignedByte() * 0.1);
-			position.set(Position.KEY_HOURS, buf.readUnsignedInt());
-			position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+            position.setSpeed(readInt(buf, 3));
+            position.setCourse(readInt(buf, 3));
+            readInt(buf, 3); // alternative speed
 
-			position.set("companyId", buf.readCharSequence(6, StandardCharsets.US_ASCII).toString());
+            position.set(Position.KEY_ODOMETER, buf.readUnsignedByte() * 10000 + buf.readUnsignedByte() * 256
+                    + buf.readUnsignedByte() + buf.readUnsignedByte() * 0.1);
+            position.set(Position.KEY_HOURS, buf.readUnsignedInt());
+            position.set(Position.KEY_RSSI, buf.readUnsignedByte());
 
-			buf.skipBytes(10); // reason data
+            position.set("companyId", buf.readCharSequence(6, StandardCharsets.US_ASCII).toString());
 
-			position.set("tripId", buf.readUnsignedShort());
+            buf.skipBytes(10); // reason data
 
-			return position;
+            position.set("tripId", buf.readUnsignedShort());
 
-		} else if (type == MSG_IMMOBILIZER) {
+            return position;
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+        } else if (type == MSG_IMMOBILIZER) {
 
-			getLastLocation(position, dateBuilder.getDate());
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			position.set("companyId", buf.readCharSequence(6, StandardCharsets.US_ASCII).toString());
-			position.set("tripId", buf.readUnsignedShort());
+            getLastLocation(position, dateBuilder.getDate());
 
-			return position;
+            position.set("companyId", buf.readCharSequence(6, StandardCharsets.US_ASCII).toString());
+            position.set("tripId", buf.readUnsignedShort());
 
-		}
+            return position;
 
-		sendResponse(channel, productCode, protocolVersion, MSG_ACK);
+        }
 
-		return null;
-	}
+        sendResponse(channel, productCode, protocolVersion, MSG_ACK);
+
+        return null;
+    }
 
 }

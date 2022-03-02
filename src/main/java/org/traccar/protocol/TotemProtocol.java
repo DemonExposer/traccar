@@ -24,26 +24,26 @@ import org.traccar.model.Command;
 
 public class TotemProtocol extends BaseProtocol {
 
-	public TotemProtocol() {
-		setSupportedDataCommands(
-				Command.TYPE_CUSTOM,
-				Command.TYPE_REBOOT_DEVICE,
-				Command.TYPE_FACTORY_RESET,
-				Command.TYPE_GET_VERSION,
-				Command.TYPE_POSITION_SINGLE,
-				Command.TYPE_ENGINE_RESUME,
-				Command.TYPE_ENGINE_STOP
-		);
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new TotemFrameDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new TotemProtocolEncoder(TotemProtocol.this));
-				pipeline.addLast(new TotemProtocolDecoder(TotemProtocol.this));
-			}
-		});
-	}
+    public TotemProtocol() {
+        setSupportedDataCommands(
+                Command.TYPE_CUSTOM,
+                Command.TYPE_REBOOT_DEVICE,
+                Command.TYPE_FACTORY_RESET,
+                Command.TYPE_GET_VERSION,
+                Command.TYPE_POSITION_SINGLE,
+                Command.TYPE_ENGINE_RESUME,
+                Command.TYPE_ENGINE_STOP
+        );
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new TotemFrameDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new TotemProtocolEncoder(TotemProtocol.this));
+                pipeline.addLast(new TotemProtocolDecoder(TotemProtocol.this));
+            }
+        });
+    }
 
 }

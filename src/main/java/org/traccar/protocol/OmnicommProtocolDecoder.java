@@ -37,121 +37,122 @@ import java.util.List;
 
 public class OmnicommProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_IDENTIFICATION = 0x80;
-	public static final int MSG_ARCHIVE_INQUIRY = 0x85;
-	public static final int MSG_ARCHIVE_DATA = 0x86;
-	public static final int MSG_REMOVE_ARCHIVE_INQUIRY = 0x87;
-	public OmnicommProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public OmnicommProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private OmnicommMessageOuterClass.OmnicommMessage parseProto(
-			ByteBuf buf, int length) throws InvalidProtocolBufferException {
+    public static final int MSG_IDENTIFICATION = 0x80;
+    public static final int MSG_ARCHIVE_INQUIRY = 0x85;
+    public static final int MSG_ARCHIVE_DATA = 0x86;
+    public static final int MSG_REMOVE_ARCHIVE_INQUIRY = 0x87;
 
-		final byte[] array;
-		final int offset;
-		if (buf.hasArray()) {
-			array = buf.array();
-			offset = buf.arrayOffset() + buf.readerIndex();
-		} else {
-			array = ByteBufUtil.getBytes(buf, buf.readerIndex(), length, false);
-			offset = 0;
-		}
-		buf.skipBytes(length);
+    private OmnicommMessageOuterClass.OmnicommMessage parseProto(
+            ByteBuf buf, int length) throws InvalidProtocolBufferException {
 
-		return OmnicommMessageOuterClass.OmnicommMessage
-				.getDefaultInstance().getParserForType().parseFrom(array, offset, length);
-	}
+        final byte[] array;
+        final int offset;
+        if (buf.hasArray()) {
+            array = buf.array();
+            offset = buf.arrayOffset() + buf.readerIndex();
+        } else {
+            array = ByteBufUtil.getBytes(buf, buf.readerIndex(), length, false);
+            offset = 0;
+        }
+        buf.skipBytes(length);
 
-	private void sendResponse(Channel channel, int type, long index) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer();
-			response.writeByte(0xC0);
-			response.writeByte(type);
-			response.writeShortLE(4);
-			response.writeIntLE((int) index);
-			response.writeShortLE(Checksum.crc16(Checksum.CRC16_CCITT_FALSE,
-					response.nioBuffer(1, response.writerIndex() - 1)));
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+        return OmnicommMessageOuterClass.OmnicommMessage
+                .getDefaultInstance().getParserForType().parseFrom(array, offset, length);
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private void sendResponse(Channel channel, int type, long index) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeByte(0xC0);
+            response.writeByte(type);
+            response.writeShortLE(4);
+            response.writeIntLE((int) index);
+            response.writeShortLE(Checksum.crc16(Checksum.CRC16_CCITT_FALSE,
+                    response.nioBuffer(1, response.writerIndex() - 1)));
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.readUnsignedByte(); // prefix
-		int type = buf.readUnsignedByte();
-		buf.readUnsignedShortLE(); // length
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_IDENTIFICATION) {
+        buf.readUnsignedByte(); // prefix
+        int type = buf.readUnsignedByte();
+        buf.readUnsignedShortLE(); // length
 
-			getDeviceSession(channel, remoteAddress, String.valueOf(buf.readUnsignedIntLE()));
-			sendResponse(channel, MSG_ARCHIVE_INQUIRY, 0);
+        if (type == MSG_IDENTIFICATION) {
 
-		} else if (type == MSG_ARCHIVE_DATA) {
+            getDeviceSession(channel, remoteAddress, String.valueOf(buf.readUnsignedIntLE()));
+            sendResponse(channel, MSG_ARCHIVE_INQUIRY, 0);
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+        } else if (type == MSG_ARCHIVE_DATA) {
 
-			long index = buf.readUnsignedIntLE();
-			buf.readUnsignedIntLE(); // time
-			buf.readUnsignedByte(); // priority
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			List<Position> positions = new LinkedList<>();
+            long index = buf.readUnsignedIntLE();
+            buf.readUnsignedIntLE(); // time
+            buf.readUnsignedByte(); // priority
 
-			while (buf.readableBytes() > 2) {
+            List<Position> positions = new LinkedList<>();
 
-				OmnicommMessageOuterClass.OmnicommMessage message = parseProto(buf, buf.readUnsignedShortLE());
+            while (buf.readableBytes() > 2) {
 
-				Position position = new Position(getProtocolName());
-				position.setDeviceId(deviceSession.getDeviceId());
+                OmnicommMessageOuterClass.OmnicommMessage message = parseProto(buf, buf.readUnsignedShortLE());
 
-				if (message.hasGeneral()) {
-					OmnicommMessageOuterClass.OmnicommMessage.General data = message.getGeneral();
-					position.set(Position.KEY_POWER, data.getUboard() * 0.1);
-					position.set(Position.KEY_BATTERY_LEVEL, data.getBatLife());
-					position.set(Position.KEY_IGNITION, BitUtil.check(data.getFLG(), 0));
-					position.set(Position.KEY_RPM, data.getTImp());
-				}
+                Position position = new Position(getProtocolName());
+                position.setDeviceId(deviceSession.getDeviceId());
 
-				if (message.hasNAV()) {
-					OmnicommMessageOuterClass.OmnicommMessage.NAV data = message.getNAV();
-					position.setValid(true);
-					position.setTime(new Date((data.getGPSTime() + 1230768000) * 1000L)); // from 2009-01-01 12:00
-					position.setLatitude(data.getLAT() * 0.0000001);
-					position.setLongitude(data.getLON() * 0.0000001);
-					position.setSpeed(UnitsConverter.knotsFromKph(data.getGPSVel() * 0.1));
-					position.setCourse(data.getGPSDir());
-					position.setAltitude(data.getGPSAlt() * 0.1);
-					position.set(Position.KEY_SATELLITES, data.getGPSNSat());
-				}
+                if (message.hasGeneral()) {
+                    OmnicommMessageOuterClass.OmnicommMessage.General data = message.getGeneral();
+                    position.set(Position.KEY_POWER, data.getUboard() * 0.1);
+                    position.set(Position.KEY_BATTERY_LEVEL, data.getBatLife());
+                    position.set(Position.KEY_IGNITION, BitUtil.check(data.getFLG(), 0));
+                    position.set(Position.KEY_RPM, data.getTImp());
+                }
 
-				if (message.hasLLSDt()) {
-					OmnicommMessageOuterClass.OmnicommMessage.LLSDt data = message.getLLSDt();
-					position.set("fuel1Temp", data.getTLLS1());
-					position.set("fuel1", data.getCLLS1());
-					position.set("fuel1State", data.getFLLS1());
-				}
+                if (message.hasNAV()) {
+                    OmnicommMessageOuterClass.OmnicommMessage.NAV data = message.getNAV();
+                    position.setValid(true);
+                    position.setTime(new Date((data.getGPSTime() + 1230768000) * 1000L)); // from 2009-01-01 12:00
+                    position.setLatitude(data.getLAT() * 0.0000001);
+                    position.setLongitude(data.getLON() * 0.0000001);
+                    position.setSpeed(UnitsConverter.knotsFromKph(data.getGPSVel() * 0.1));
+                    position.setCourse(data.getGPSDir());
+                    position.setAltitude(data.getGPSAlt() * 0.1);
+                    position.set(Position.KEY_SATELLITES, data.getGPSNSat());
+                }
 
-				if (position.getFixTime() != null) {
-					positions.add(position);
-				}
-			}
+                if (message.hasLLSDt()) {
+                    OmnicommMessageOuterClass.OmnicommMessage.LLSDt data = message.getLLSDt();
+                    position.set("fuel1Temp", data.getTLLS1());
+                    position.set("fuel1", data.getCLLS1());
+                    position.set("fuel1State", data.getFLLS1());
+                }
 
-			if (positions.isEmpty()) {
-				sendResponse(channel, MSG_REMOVE_ARCHIVE_INQUIRY, index + 1);
-				return null;
-			} else {
-				return positions;
-			}
-		}
+                if (position.getFixTime() != null) {
+                    positions.add(position);
+                }
+            }
 
-		return null;
-	}
+            if (positions.isEmpty()) {
+                sendResponse(channel, MSG_REMOVE_ARCHIVE_INQUIRY, index + 1);
+                return null;
+            } else {
+                return positions;
+            }
+        }
+
+        return null;
+    }
 
 }

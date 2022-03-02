@@ -22,16 +22,16 @@ import org.traccar.model.Command;
 
 public class TopinProtocol extends BaseProtocol {
 
-	public TopinProtocol() {
-		setSupportedDataCommands(
-				Command.TYPE_SOS_NUMBER);
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new TopinProtocolEncoder(TopinProtocol.this));
-				pipeline.addLast(new TopinProtocolDecoder(TopinProtocol.this));
-			}
-		});
-	}
+    public TopinProtocol() {
+        setSupportedDataCommands(
+                Command.TYPE_SOS_NUMBER);
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new TopinProtocolEncoder(TopinProtocol.this));
+                pipeline.addLast(new TopinProtocolDecoder(TopinProtocol.this));
+            }
+        });
+    }
 
 }

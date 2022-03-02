@@ -27,125 +27,125 @@ import java.util.Set;
 
 public class GroupTree {
 
-	private final Map<Long, TreeNode> groupMap = new HashMap<>();
+    private static class TreeNode {
 
-	public GroupTree(Collection<Group> groups, Collection<Device> devices) {
+        private Group group;
+        private Device device;
+        private Collection<TreeNode> children = new HashSet<>();
 
-		for (Group group : groups) {
-			groupMap.put(group.getId(), new TreeNode(group));
-		}
+        TreeNode(Group group) {
+            this.group = group;
+        }
 
-		for (TreeNode node : groupMap.values()) {
-			if (node.getGroup().getGroupId() != 0) {
-				node.setParent(groupMap.get(node.getGroup().getGroupId()));
-			}
-		}
+        TreeNode(Device device) {
+            this.device = device;
+        }
 
-		Map<Long, TreeNode> deviceMap = new HashMap<>();
+        @Override
+        public int hashCode() {
+            if (group != null) {
+                return (int) group.getId();
+            } else {
+                return (int) device.getId();
+            }
+        }
 
-		for (Device device : devices) {
-			deviceMap.put(device.getId(), new TreeNode(device));
-		}
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof TreeNode)) {
+                return false;
+            }
+            TreeNode other = (TreeNode) obj;
+            if (other == this) {
+                return true;
+            }
+            if (group != null && other.group != null) {
+                return group.getId() == other.group.getId();
+            } else if (device != null && other.device != null) {
+                return device.getId() == other.device.getId();
+            }
+            return false;
+        }
 
-		for (TreeNode node : deviceMap.values()) {
-			if (node.getDevice().getGroupId() != 0) {
-				node.setParent(groupMap.get(node.getDevice().getGroupId()));
-			}
-		}
+        public Group getGroup() {
+            return group;
+        }
 
-	}
+        public Device getDevice() {
+            return device;
+        }
 
-	public Collection<Group> getGroups(long groupId) {
-		Set<TreeNode> results = new HashSet<>();
-		getNodes(results, groupMap.get(groupId));
-		Collection<Group> groups = new ArrayList<>();
-		for (TreeNode node : results) {
-			if (node.getGroup() != null) {
-				groups.add(node.getGroup());
-			}
-		}
-		return groups;
-	}
+        public void setParent(TreeNode parent) {
+            if (parent != null) {
+                parent.children.add(this);
+            }
+        }
 
-	public Collection<Device> getDevices(long groupId) {
-		Set<TreeNode> results = new HashSet<>();
-		getNodes(results, groupMap.get(groupId));
-		Collection<Device> devices = new ArrayList<>();
-		for (TreeNode node : results) {
-			if (node.getDevice() != null) {
-				devices.add(node.getDevice());
-			}
-		}
-		return devices;
-	}
+        public Collection<TreeNode> getChildren() {
+            return children;
+        }
 
-	private void getNodes(Set<TreeNode> results, TreeNode node) {
-		if (node != null) {
-			for (TreeNode child : node.getChildren()) {
-				results.add(child);
-				getNodes(results, child);
-			}
-		}
-	}
+    }
 
-	private static class TreeNode {
+    private final Map<Long, TreeNode> groupMap = new HashMap<>();
 
-		private Group group;
-		private Device device;
-		private Collection<TreeNode> children = new HashSet<>();
+    public GroupTree(Collection<Group> groups, Collection<Device> devices) {
 
-		TreeNode(Group group) {
-			this.group = group;
-		}
+        for (Group group : groups) {
+            groupMap.put(group.getId(), new TreeNode(group));
+        }
 
-		TreeNode(Device device) {
-			this.device = device;
-		}
+        for (TreeNode node : groupMap.values()) {
+            if (node.getGroup().getGroupId() != 0) {
+                node.setParent(groupMap.get(node.getGroup().getGroupId()));
+            }
+        }
 
-		@Override
-		public int hashCode() {
-			if (group != null) {
-				return (int) group.getId();
-			} else {
-				return (int) device.getId();
-			}
-		}
+        Map<Long, TreeNode> deviceMap = new HashMap<>();
 
-		@Override
-		public boolean equals(Object obj) {
-			if (!(obj instanceof TreeNode)) {
-				return false;
-			}
-			TreeNode other = (TreeNode) obj;
-			if (other == this) {
-				return true;
-			}
-			if (group != null && other.group != null) {
-				return group.getId() == other.group.getId();
-			} else if (device != null && other.device != null) {
-				return device.getId() == other.device.getId();
-			}
-			return false;
-		}
+        for (Device device : devices) {
+            deviceMap.put(device.getId(), new TreeNode(device));
+        }
 
-		public Group getGroup() {
-			return group;
-		}
+        for (TreeNode node : deviceMap.values()) {
+            if (node.getDevice().getGroupId() != 0) {
+                node.setParent(groupMap.get(node.getDevice().getGroupId()));
+            }
+        }
 
-		public Device getDevice() {
-			return device;
-		}
+    }
 
-		public void setParent(TreeNode parent) {
-			if (parent != null) {
-				parent.children.add(this);
-			}
-		}
+    public Collection<Group> getGroups(long groupId) {
+        Set<TreeNode> results = new HashSet<>();
+        getNodes(results, groupMap.get(groupId));
+        Collection<Group> groups = new ArrayList<>();
+        for (TreeNode node : results) {
+            if (node.getGroup() != null) {
+                groups.add(node.getGroup());
+            }
+        }
+        return groups;
+    }
 
-		public Collection<TreeNode> getChildren() {
-			return children;
-		}
+    public Collection<Device> getDevices(long groupId) {
+        Set<TreeNode> results = new HashSet<>();
+        getNodes(results, groupMap.get(groupId));
+        Collection<Device> devices = new ArrayList<>();
+        for (TreeNode node : results) {
+            if (node.getDevice() != null) {
+                devices.add(node.getDevice());
+            }
+        }
+        return devices;
+    }
 
-	}
+    private void getNodes(Set<TreeNode> results, TreeNode node) {
+        if (node != null) {
+            for (TreeNode child : node.getChildren()) {
+                results.add(child);
+                getNodes(results, child);
+            }
+        }
+    }
 
 }

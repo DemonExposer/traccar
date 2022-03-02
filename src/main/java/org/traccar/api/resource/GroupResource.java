@@ -28,8 +28,8 @@ import javax.ws.rs.core.MediaType;
 @Consumes(MediaType.APPLICATION_JSON)
 public class GroupResource extends SimpleObjectResource<Group> {
 
-	public GroupResource() {
-		super(Group.class);
-	}
+    public GroupResource() {
+        super(Group.class);
+    }
 
 }

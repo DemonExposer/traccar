@@ -30,105 +30,105 @@ import java.util.Date;
 
 public class WliProtocolDecoder extends BaseProtocolDecoder {
 
-	public WliProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public WliProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		ByteBuf buf = (ByteBuf) msg;
+        ByteBuf buf = (ByteBuf) msg;
 
-		buf.readUnsignedByte(); // header
-		int type = buf.readUnsignedByte();
+        buf.readUnsignedByte(); // header
+        int type = buf.readUnsignedByte();
 
-		if (type == '1') {
+        if (type == '1') {
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			position.set(Position.KEY_INDEX, buf.readUnsignedShort());
+            position.set(Position.KEY_INDEX, buf.readUnsignedShort());
 
-			buf.readUnsignedShort(); // length
-			buf.readUnsignedShort(); // checksum
-			buf.readUnsignedByte(); // application message type
-			buf.readUnsignedByte(); // delimiter
+            buf.readUnsignedShort(); // length
+            buf.readUnsignedShort(); // checksum
+            buf.readUnsignedByte(); // application message type
+            buf.readUnsignedByte(); // delimiter
 
-			while (buf.readableBytes() > 1) {
+            while (buf.readableBytes() > 1) {
 
-				int fieldNumber = buf.readUnsignedByte();
+                int fieldNumber = buf.readUnsignedByte();
 
-				buf.readUnsignedByte(); // delimiter
+                buf.readUnsignedByte(); // delimiter
 
-				if (buf.getUnsignedByte(buf.readerIndex()) == 0xFF) {
+                if (buf.getUnsignedByte(buf.readerIndex()) == 0xFF) {
 
-					buf.readUnsignedByte(); // binary type indication
-					int endIndex = buf.readUnsignedShort() + buf.readerIndex();
+                    buf.readUnsignedByte(); // binary type indication
+                    int endIndex = buf.readUnsignedShort() + buf.readerIndex();
 
-					if (fieldNumber == 52) {
-						position.setValid(true);
-						buf.readUnsignedByte(); // reason
-						buf.readUnsignedByte(); // century
-						DateBuilder dateBuilder = new DateBuilder()
-								.setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
-								.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-						position.setFixTime(dateBuilder.getDate());
-						position.setLatitude(buf.readInt() / 600000.0);
-						position.setLongitude(buf.readInt() / 600000.0);
-						position.setSpeed(buf.readUnsignedShort());
-						position.setCourse(buf.readUnsignedShort() * 0.1);
-						position.set(Position.KEY_ODOMETER, UnitsConverter.metersFromFeet(buf.readUnsignedInt()));
-						position.setAltitude(buf.readInt() * 0.1);
-					}
+                    if (fieldNumber == 52) {
+                        position.setValid(true);
+                        buf.readUnsignedByte(); // reason
+                        buf.readUnsignedByte(); // century
+                        DateBuilder dateBuilder = new DateBuilder()
+                                .setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
+                                .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+                        position.setFixTime(dateBuilder.getDate());
+                        position.setLatitude(buf.readInt() / 600000.0);
+                        position.setLongitude(buf.readInt() / 600000.0);
+                        position.setSpeed(buf.readUnsignedShort());
+                        position.setCourse(buf.readUnsignedShort() * 0.1);
+                        position.set(Position.KEY_ODOMETER, UnitsConverter.metersFromFeet(buf.readUnsignedInt()));
+                        position.setAltitude(buf.readInt() * 0.1);
+                    }
 
-					buf.readerIndex(endIndex);
+                    buf.readerIndex(endIndex);
 
-				} else {
+                } else {
 
-					int endIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) 0);
-					String value = buf.readCharSequence(
-							endIndex - buf.readerIndex(), StandardCharsets.US_ASCII).toString();
+                    int endIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) 0);
+                    String value = buf.readCharSequence(
+                            endIndex - buf.readerIndex(), StandardCharsets.US_ASCII).toString();
 
-					switch (fieldNumber) {
-						case 246:
-							String[] values = value.split(",");
-							position.set(Position.KEY_POWER, Integer.parseInt(values[2]) * 0.01);
-							position.set(Position.KEY_BATTERY, Integer.parseInt(values[3]) * 0.01);
-							break;
-						case 255:
-							position.setDeviceTime(new Date(Long.parseLong(value) * 1000));
-							break;
-						default:
-							break;
-					}
+                    switch (fieldNumber) {
+                        case 246:
+                            String[] values = value.split(",");
+                            position.set(Position.KEY_POWER, Integer.parseInt(values[2]) * 0.01);
+                            position.set(Position.KEY_BATTERY, Integer.parseInt(values[3]) * 0.01);
+                            break;
+                        case 255:
+                            position.setDeviceTime(new Date(Long.parseLong(value) * 1000));
+                            break;
+                        default:
+                            break;
+                    }
 
-				}
+                }
 
-				buf.readUnsignedByte(); // delimiter
+                buf.readUnsignedByte(); // delimiter
 
-			}
+            }
 
-			if (!position.getValid()) {
-				getLastLocation(position, position.getDeviceTime());
-			}
+            if (!position.getValid()) {
+                getLastLocation(position, position.getDeviceTime());
+            }
 
-			return position;
+            return position;
 
-		} else if (type == '2') {
+        } else if (type == '2') {
 
-			String id = buf.toString(buf.readerIndex(), buf.readableBytes() - 1, StandardCharsets.US_ASCII);
-			getDeviceSession(channel, remoteAddress, id.substring("wli:".length()));
-			return null;
+            String id = buf.toString(buf.readerIndex(), buf.readableBytes() - 1, StandardCharsets.US_ASCII);
+            getDeviceSession(channel, remoteAddress, id.substring("wli:".length()));
+            return null;
 
-		}
+        }
 
-		return null;
-	}
+        return null;
+    }
 
 }

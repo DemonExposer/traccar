@@ -31,84 +31,85 @@ import java.util.List;
 
 public class OrionProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_USERLOG = 0;
-	public static final int MSG_SYSLOG = 3;
-	public OrionProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public OrionProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private static void sendResponse(Channel channel, ByteBuf buf) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer(4);
-			response.writeByte('*');
-			response.writeShort(buf.getUnsignedShort(buf.writerIndex() - 2));
-			response.writeByte(buf.getUnsignedByte(buf.writerIndex() - 3));
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+    public static final int MSG_USERLOG = 0;
+    public static final int MSG_SYSLOG = 3;
 
-	private static double convertCoordinate(int raw) {
-		int degrees = raw / 1000000;
-		double minutes = (raw % 1000000) / 10000.0;
-		return degrees + minutes / 60;
-	}
+    private static void sendResponse(Channel channel, ByteBuf buf) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer(4);
+            response.writeByte('*');
+            response.writeShort(buf.getUnsignedShort(buf.writerIndex() - 2));
+            response.writeByte(buf.getUnsignedByte(buf.writerIndex() - 3));
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private static double convertCoordinate(int raw) {
+        int degrees = raw / 1000000;
+        double minutes = (raw % 1000000) / 10000.0;
+        return degrees + minutes / 60;
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		int type = buf.readUnsignedByte() & 0x0f;
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_USERLOG) {
+        buf.skipBytes(2); // header
+        int type = buf.readUnsignedByte() & 0x0f;
 
-			int header = buf.readUnsignedByte();
+        if (type == MSG_USERLOG) {
 
-			if ((header & 0x40) != 0) {
-				sendResponse(channel, buf);
-			}
+            int header = buf.readUnsignedByte();
 
-			DeviceSession deviceSession = getDeviceSession(
-					channel, remoteAddress, String.valueOf(buf.readUnsignedInt()));
-			if (deviceSession == null) {
-				return null;
-			}
+            if ((header & 0x40) != 0) {
+                sendResponse(channel, buf);
+            }
 
-			List<Position> positions = new LinkedList<>();
+            DeviceSession deviceSession = getDeviceSession(
+                    channel, remoteAddress, String.valueOf(buf.readUnsignedInt()));
+            if (deviceSession == null) {
+                return null;
+            }
 
-			for (int i = 0; i < (header & 0x0f); i++) {
+            List<Position> positions = new LinkedList<>();
 
-				Position position = new Position(getProtocolName());
-				position.setDeviceId(deviceSession.getDeviceId());
+            for (int i = 0; i < (header & 0x0f); i++) {
 
-				position.set(Position.KEY_EVENT, buf.readUnsignedByte());
-				buf.readUnsignedByte(); // length
-				position.set(Position.KEY_FLAGS, buf.readUnsignedShortLE());
+                Position position = new Position(getProtocolName());
+                position.setDeviceId(deviceSession.getDeviceId());
 
-				position.setLatitude(convertCoordinate(buf.readIntLE()));
-				position.setLongitude(convertCoordinate(buf.readIntLE()));
-				position.setAltitude(buf.readShortLE() / 10.0);
-				position.setCourse(buf.readUnsignedShortLE());
-				position.setSpeed(buf.readUnsignedShortLE() * 0.0539957);
+                position.set(Position.KEY_EVENT, buf.readUnsignedByte());
+                buf.readUnsignedByte(); // length
+                position.set(Position.KEY_FLAGS, buf.readUnsignedShortLE());
 
-				DateBuilder dateBuilder = new DateBuilder()
-						.setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
-						.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-				position.setTime(dateBuilder.getDate());
+                position.setLatitude(convertCoordinate(buf.readIntLE()));
+                position.setLongitude(convertCoordinate(buf.readIntLE()));
+                position.setAltitude(buf.readShortLE() / 10.0);
+                position.setCourse(buf.readUnsignedShortLE());
+                position.setSpeed(buf.readUnsignedShortLE() * 0.0539957);
 
-				int satellites = buf.readUnsignedByte();
-				position.setValid(satellites >= 3);
-				position.set(Position.KEY_SATELLITES, satellites);
+                DateBuilder dateBuilder = new DateBuilder()
+                        .setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
+                        .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+                position.setTime(dateBuilder.getDate());
 
-				positions.add(position);
-			}
+                int satellites = buf.readUnsignedByte();
+                position.setValid(satellites >= 3);
+                position.set(Position.KEY_SATELLITES, satellites);
 
-			return positions;
-		}
+                positions.add(position);
+            }
 
-		return null;
-	}
+            return positions;
+        }
+
+        return null;
+    }
 
 }

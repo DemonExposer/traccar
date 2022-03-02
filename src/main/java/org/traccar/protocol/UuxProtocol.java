@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class UuxProtocol extends BaseProtocol {
 
-	public UuxProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 1));
-				pipeline.addLast(new UuxProtocolDecoder(UuxProtocol.this));
-			}
-		});
-	}
+    public UuxProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 3, 1));
+                pipeline.addLast(new UuxProtocolDecoder(UuxProtocol.this));
+            }
+        });
+    }
 
 }

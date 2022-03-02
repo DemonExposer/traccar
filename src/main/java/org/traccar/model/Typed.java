@@ -20,33 +20,33 @@ import java.util.Objects;
 
 public class Typed {
 
-	private String type;
+    private String type;
 
-	public Typed(String type) {
-		this.type = type;
-	}
+    public Typed(String type) {
+        this.type = type;
+    }
 
-	public String getType() {
-		return type;
-	}
+    public String getType() {
+        return type;
+    }
 
-	public void setType(String type) {
-		this.type = type;
-	}
+    public void setType(String type) {
+        this.type = type;
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		return Objects.equals(type, ((Typed) o).type);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        return Objects.equals(type, ((Typed) o).type);
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(type);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(type);
+    }
 }

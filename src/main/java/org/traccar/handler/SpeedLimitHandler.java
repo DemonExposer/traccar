@@ -26,35 +26,35 @@ import org.traccar.speedlimit.SpeedLimitProvider;
 @ChannelHandler.Sharable
 public class SpeedLimitHandler extends ChannelInboundHandlerAdapter {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SpeedLimitHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpeedLimitHandler.class);
 
-	private final SpeedLimitProvider speedLimitProvider;
+    private final SpeedLimitProvider speedLimitProvider;
 
-	public SpeedLimitHandler(SpeedLimitProvider speedLimitProvider) {
-		this.speedLimitProvider = speedLimitProvider;
-	}
+    public SpeedLimitHandler(SpeedLimitProvider speedLimitProvider) {
+        this.speedLimitProvider = speedLimitProvider;
+    }
 
-	@Override
-	public void channelRead(final ChannelHandlerContext ctx, Object message) {
-		if (message instanceof Position) {
-			final Position position = (Position) message;
-			speedLimitProvider.getSpeedLimit(position.getLatitude(), position.getLongitude(),
-					new SpeedLimitProvider.SpeedLimitProviderCallback() {
-						@Override
-						public void onSuccess(double speedLimit) {
-							position.set(Position.KEY_SPEED_LIMIT, speedLimit);
-							ctx.fireChannelRead(position);
-						}
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, Object message) {
+        if (message instanceof Position) {
+            final Position position = (Position) message;
+            speedLimitProvider.getSpeedLimit(position.getLatitude(), position.getLongitude(),
+                    new SpeedLimitProvider.SpeedLimitProviderCallback() {
+                @Override
+                public void onSuccess(double speedLimit) {
+                    position.set(Position.KEY_SPEED_LIMIT, speedLimit);
+                    ctx.fireChannelRead(position);
+                }
 
-						@Override
-						public void onFailure(Throwable e) {
-							LOGGER.warn("Speed limit provider failed", e);
-							ctx.fireChannelRead(position);
-						}
-					});
-		} else {
-			ctx.fireChannelRead(message);
-		}
-	}
+                @Override
+                public void onFailure(Throwable e) {
+                    LOGGER.warn("Speed limit provider failed", e);
+                    ctx.fireChannelRead(position);
+                }
+            });
+        } else {
+            ctx.fireChannelRead(message);
+        }
+    }
 
 }

@@ -29,8 +29,8 @@ import org.traccar.model.Maintenance;
 @Consumes(MediaType.APPLICATION_JSON)
 public class MaintenanceResource extends ExtendedObjectResource<Maintenance> {
 
-	public MaintenanceResource() {
-		super(Maintenance.class);
-	}
+    public MaintenanceResource() {
+        super(Maintenance.class);
+    }
 
 }

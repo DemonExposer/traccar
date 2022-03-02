@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class NavtelecomProtocol extends BaseProtocol {
 
-	public NavtelecomProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new NavtelecomFrameDecoder());
-				pipeline.addLast(new NavtelecomProtocolDecoder(NavtelecomProtocol.this));
-			}
-		});
-	}
+    public NavtelecomProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new NavtelecomFrameDecoder());
+                pipeline.addLast(new NavtelecomProtocolDecoder(NavtelecomProtocol.this));
+            }
+        });
+    }
 
 }

@@ -24,19 +24,19 @@ import org.traccar.notification.MessageException;
 
 public abstract class Notificator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Notificator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Notificator.class);
 
-	public void sendAsync(final long userId, final Event event, final Position position) {
-		new Thread(() -> {
-			try {
-				sendSync(userId, event, position);
-			} catch (MessageException | InterruptedException error) {
-				LOGGER.warn("Event send error", error);
-			}
-		}).start();
-	}
+    public void sendAsync(final long userId, final Event event, final Position position) {
+        new Thread(() -> {
+            try {
+                sendSync(userId, event, position);
+            } catch (MessageException | InterruptedException error) {
+                LOGGER.warn("Event send error", error);
+            }
+        }).start();
+    }
 
-	public abstract void sendSync(long userId, Event event, Position position)
-			throws MessageException, InterruptedException;
+    public abstract void sendSync(long userId, Event event, Position position)
+        throws MessageException, InterruptedException;
 
 }

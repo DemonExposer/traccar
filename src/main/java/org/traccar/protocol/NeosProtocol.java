@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class NeosProtocol extends BaseProtocol {
 
-	public NeosProtocol() {
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new NeosProtocolDecoder(NeosProtocol.this));
-			}
-		});
-	}
+    public NeosProtocol() {
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new NeosProtocolDecoder(NeosProtocol.this));
+            }
+        });
+    }
 
 }

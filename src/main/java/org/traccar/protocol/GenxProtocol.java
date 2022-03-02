@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class GenxProtocol extends BaseProtocol {
 
-	public GenxProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new GenxProtocolDecoder(GenxProtocol.this));
-			}
-		});
-	}
+    public GenxProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new GenxProtocolDecoder(GenxProtocol.this));
+            }
+        });
+    }
 
 }

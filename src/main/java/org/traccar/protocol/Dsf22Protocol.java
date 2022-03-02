@@ -21,20 +21,20 @@ import org.traccar.TrackerServer;
 
 public class Dsf22Protocol extends BaseProtocol {
 
-	public Dsf22Protocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new Dsf22FrameDecoder());
-				pipeline.addLast(new Dsf22ProtocolDecoder(Dsf22Protocol.this));
-			}
-		});
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new Dsf22ProtocolDecoder(Dsf22Protocol.this));
-			}
-		});
-	}
+    public Dsf22Protocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new Dsf22FrameDecoder());
+                pipeline.addLast(new Dsf22ProtocolDecoder(Dsf22Protocol.this));
+            }
+        });
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new Dsf22ProtocolDecoder(Dsf22Protocol.this));
+            }
+        });
+    }
 
 }

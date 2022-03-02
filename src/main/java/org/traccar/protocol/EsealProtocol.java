@@ -25,21 +25,21 @@ import org.traccar.model.Command;
 
 public class EsealProtocol extends BaseProtocol {
 
-	public EsealProtocol() {
-		setSupportedDataCommands(
-				Command.TYPE_CUSTOM,
-				Command.TYPE_ALARM_ARM,
-				Command.TYPE_ALARM_DISARM);
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new EsealProtocolEncoder(EsealProtocol.this));
-				pipeline.addLast(new EsealProtocolDecoder(EsealProtocol.this));
-			}
-		});
-	}
+    public EsealProtocol() {
+        setSupportedDataCommands(
+                Command.TYPE_CUSTOM,
+                Command.TYPE_ALARM_ARM,
+                Command.TYPE_ALARM_DISARM);
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new EsealProtocolEncoder(EsealProtocol.this));
+                pipeline.addLast(new EsealProtocolDecoder(EsealProtocol.this));
+            }
+        });
+    }
 
 }

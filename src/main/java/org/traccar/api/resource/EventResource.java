@@ -38,21 +38,21 @@ import org.traccar.model.Maintenance;
 
 public class EventResource extends BaseResource {
 
-	@Path("{id}")
-	@GET
-	public Event get(@PathParam("id") long id) throws SQLException {
-		Event event = Context.getDataManager().getObject(Event.class, id);
-		if (event == null) {
-			throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
-		}
-		Context.getPermissionsManager().checkDevice(getUserId(), event.getDeviceId());
-		if (event.getGeofenceId() != 0) {
-			Context.getPermissionsManager().checkPermission(Geofence.class, getUserId(), event.getGeofenceId());
-		}
-		if (event.getMaintenanceId() != 0) {
-			Context.getPermissionsManager().checkPermission(Maintenance.class, getUserId(), event.getMaintenanceId());
-		}
-		return event;
-	}
+    @Path("{id}")
+    @GET
+    public Event get(@PathParam("id") long id) throws SQLException {
+        Event event = Context.getDataManager().getObject(Event.class, id);
+        if (event == null) {
+            throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
+        }
+        Context.getPermissionsManager().checkDevice(getUserId(), event.getDeviceId());
+        if (event.getGeofenceId() != 0) {
+            Context.getPermissionsManager().checkPermission(Geofence.class, getUserId(), event.getGeofenceId());
+        }
+        if (event.getMaintenanceId() != 0) {
+            Context.getPermissionsManager().checkPermission(Maintenance.class, getUserId(), event.getMaintenanceId());
+        }
+        return event;
+    }
 
 }

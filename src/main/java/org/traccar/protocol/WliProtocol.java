@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class WliProtocol extends BaseProtocol {
 
-	public WliProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new WliFrameDecoder());
-				pipeline.addLast(new WliProtocolDecoder(WliProtocol.this));
-			}
-		});
-	}
+    public WliProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new WliFrameDecoder());
+                pipeline.addLast(new WliProtocolDecoder(WliProtocol.this));
+            }
+        });
+    }
 
 }

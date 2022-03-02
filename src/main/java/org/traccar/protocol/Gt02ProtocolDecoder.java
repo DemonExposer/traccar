@@ -33,92 +33,93 @@ import java.nio.charset.StandardCharsets;
 
 public class Gt02ProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_DATA = 0x10;
-	public static final int MSG_HEARTBEAT = 0x1A;
-	public static final int MSG_RESPONSE = 0x1C;
-	public Gt02ProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public Gt02ProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    public static final int MSG_DATA = 0x10;
+    public static final int MSG_HEARTBEAT = 0x1A;
+    public static final int MSG_RESPONSE = 0x1C;
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		buf.readByte(); // size
+        ByteBuf buf = (ByteBuf) msg;
 
-		Position position = new Position(getProtocolName());
+        buf.skipBytes(2); // header
+        buf.readByte(); // size
 
-		// Zero for location messages
-		int power = buf.readUnsignedByte();
-		int gsm = buf.readUnsignedByte();
+        Position position = new Position(getProtocolName());
 
-		String imei = ByteBufUtil.hexDump(buf.readSlice(8)).substring(1);
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-		if (deviceSession == null) {
-			return null;
-		}
-		position.setDeviceId(deviceSession.getDeviceId());
+        // Zero for location messages
+        int power = buf.readUnsignedByte();
+        int gsm = buf.readUnsignedByte();
 
-		position.set(Position.KEY_INDEX, buf.readUnsignedShort());
+        String imei = ByteBufUtil.hexDump(buf.readSlice(8)).substring(1);
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+        if (deviceSession == null) {
+            return null;
+        }
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		int type = buf.readUnsignedByte();
+        position.set(Position.KEY_INDEX, buf.readUnsignedShort());
 
-		if (type == MSG_HEARTBEAT) {
+        int type = buf.readUnsignedByte();
 
-			getLastLocation(position, null);
+        if (type == MSG_HEARTBEAT) {
 
-			position.set(Position.KEY_POWER, power);
-			position.set(Position.KEY_RSSI, gsm);
+            getLastLocation(position, null);
 
-			if (channel != null) {
-				byte[] response = {0x54, 0x68, 0x1A, 0x0D, 0x0A};
-				channel.writeAndFlush(new NetworkMessage(Unpooled.wrappedBuffer(response), remoteAddress));
-			}
+            position.set(Position.KEY_POWER, power);
+            position.set(Position.KEY_RSSI, gsm);
 
-		} else if (type == MSG_DATA) {
+            if (channel != null) {
+                byte[] response = {0x54, 0x68, 0x1A, 0x0D, 0x0A};
+                channel.writeAndFlush(new NetworkMessage(Unpooled.wrappedBuffer(response), remoteAddress));
+            }
 
-			DateBuilder dateBuilder = new DateBuilder()
-					.setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
-					.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-			position.setTime(dateBuilder.getDate());
+        } else if (type == MSG_DATA) {
 
-			double latitude = buf.readUnsignedInt() / (60.0 * 30000.0);
-			double longitude = buf.readUnsignedInt() / (60.0 * 30000.0);
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
+                    .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+            position.setTime(dateBuilder.getDate());
 
-			position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
-			position.setCourse(buf.readUnsignedShort());
+            double latitude = buf.readUnsignedInt() / (60.0 * 30000.0);
+            double longitude = buf.readUnsignedInt() / (60.0 * 30000.0);
 
-			buf.skipBytes(3); // reserved
+            position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
+            position.setCourse(buf.readUnsignedShort());
 
-			long flags = buf.readUnsignedInt();
-			position.setValid(BitUtil.check(flags, 0));
-			if (!BitUtil.check(flags, 1)) {
-				latitude = -latitude;
-			}
-			if (!BitUtil.check(flags, 2)) {
-				longitude = -longitude;
-			}
+            buf.skipBytes(3); // reserved
 
-			position.setLatitude(latitude);
-			position.setLongitude(longitude);
+            long flags = buf.readUnsignedInt();
+            position.setValid(BitUtil.check(flags, 0));
+            if (!BitUtil.check(flags, 1)) {
+                latitude = -latitude;
+            }
+            if (!BitUtil.check(flags, 2)) {
+                longitude = -longitude;
+            }
 
-		} else if (type == MSG_RESPONSE) {
+            position.setLatitude(latitude);
+            position.setLongitude(longitude);
 
-			getLastLocation(position, null);
+        } else if (type == MSG_RESPONSE) {
 
-			position.set(Position.KEY_RESULT,
-					buf.readSlice(buf.readUnsignedByte()).toString(StandardCharsets.US_ASCII));
+            getLastLocation(position, null);
 
-		} else {
+            position.set(Position.KEY_RESULT,
+                    buf.readSlice(buf.readUnsignedByte()).toString(StandardCharsets.US_ASCII));
 
-			return null;
+        } else {
 
-		}
+            return null;
 
-		return position;
-	}
+        }
+
+        return position;
+    }
 
 }

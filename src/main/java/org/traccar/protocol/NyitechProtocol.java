@@ -24,14 +24,14 @@ import java.nio.ByteOrder;
 
 public class NyitechProtocol extends BaseProtocol {
 
-	public NyitechProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 2, 2, -4, 0, true));
-				pipeline.addLast(new NyitechProtocolDecoder(NyitechProtocol.this));
-			}
-		});
-	}
+    public NyitechProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 2, 2, -4, 0, true));
+                pipeline.addLast(new NyitechProtocolDecoder(NyitechProtocol.this));
+            }
+        });
+    }
 
 }

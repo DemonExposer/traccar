@@ -32,117 +32,118 @@ import java.util.Date;
 
 public class PstProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_ACK = 0x00;
-	public static final int MSG_STATUS = 0x05;
-	public static final int MSG_COMMAND = 0x06;
-	public PstProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public PstProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private Date readDate(ByteBuf buf) {
-		long value = buf.readUnsignedInt();
-		return new DateBuilder()
-				.setYear((int) BitUtil.between(value, 26, 32))
-				.setMonth((int) BitUtil.between(value, 22, 26))
-				.setDay((int) BitUtil.between(value, 17, 22))
-				.setHour((int) BitUtil.between(value, 12, 17))
-				.setMinute((int) BitUtil.between(value, 6, 12))
-				.setSecond((int) BitUtil.between(value, 0, 6)).getDate();
-	}
+    public static final int MSG_ACK = 0x00;
+    public static final int MSG_STATUS = 0x05;
+    public static final int MSG_COMMAND = 0x06;
 
-	private double readCoordinate(ByteBuf buf) {
-		long value = buf.readUnsignedInt();
-		int sign = BitUtil.check(value, 31) ? -1 : 1;
-		value = BitUtil.to(value, 31);
-		return sign * (BitUtil.from(value, 16) + BitUtil.to(value, 16) / 10000.0) / 60;
-	}
+    private Date readDate(ByteBuf buf) {
+        long value = buf.readUnsignedInt();
+        return new DateBuilder()
+                .setYear((int) BitUtil.between(value, 26, 32))
+                .setMonth((int) BitUtil.between(value, 22, 26))
+                .setDay((int) BitUtil.between(value, 17, 22))
+                .setHour((int) BitUtil.between(value, 12, 17))
+                .setMinute((int) BitUtil.between(value, 6, 12))
+                .setSecond((int) BitUtil.between(value, 0, 6)).getDate();
+    }
 
-	private void sendResponse(
-			Channel channel, SocketAddress remoteAddress, long id, int version, long index, int type) {
-		if (channel != null) {
+    private double readCoordinate(ByteBuf buf) {
+        long value = buf.readUnsignedInt();
+        int sign = BitUtil.check(value, 31) ? -1 : 1;
+        value = BitUtil.to(value, 31);
+        return sign * (BitUtil.from(value, 16) + BitUtil.to(value, 16) / 10000.0) / 60;
+    }
 
-			ByteBuf response = Unpooled.buffer();
-			response.writeInt((int) id);
-			response.writeByte(version);
-			response.writeInt((int) index);
-			response.writeByte(MSG_ACK);
-			response.writeByte(type);
-			response.writeShort(Checksum.crc16(Checksum.CRC16_XMODEM, response.nioBuffer()));
+    private void sendResponse(
+            Channel channel, SocketAddress remoteAddress, long id, int version, long index, int type) {
+        if (channel != null) {
 
-			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+            ByteBuf response = Unpooled.buffer();
+            response.writeInt((int) id);
+            response.writeByte(version);
+            response.writeInt((int) index);
+            response.writeByte(MSG_ACK);
+            response.writeByte(type);
+            response.writeShort(Checksum.crc16(Checksum.CRC16_XMODEM, response.nioBuffer()));
 
-		}
-	}
+            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		long id = buf.readUnsignedInt();
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(id));
-		if (deviceSession == null) {
-			return null;
-		}
+        ByteBuf buf = (ByteBuf) msg;
 
-		int version = buf.readUnsignedByte();
-		long index = buf.readUnsignedInt();
+        long id = buf.readUnsignedInt();
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(id));
+        if (deviceSession == null) {
+            return null;
+        }
 
-		int type = buf.readUnsignedByte();
+        int version = buf.readUnsignedByte();
+        long index = buf.readUnsignedInt();
 
-		sendResponse(channel, remoteAddress, id, version, index, type);
+        int type = buf.readUnsignedByte();
 
-		if (type == MSG_STATUS) {
+        sendResponse(channel, remoteAddress, id, version, index, type);
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+        if (type == MSG_STATUS) {
 
-			position.setDeviceTime(readDate(buf));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			int status = buf.readUnsignedByte();
-			position.set(Position.KEY_BLOCKED, BitUtil.check(status, 4));
-			position.set(Position.KEY_IGNITION, BitUtil.check(status, 7));
-			position.set(Position.KEY_STATUS, status);
+            position.setDeviceTime(readDate(buf));
 
-			int count = buf.readUnsignedByte();
-			for (int i = 0; i < count; i++) {
+            int status = buf.readUnsignedByte();
+            position.set(Position.KEY_BLOCKED, BitUtil.check(status, 4));
+            position.set(Position.KEY_IGNITION, BitUtil.check(status, 7));
+            position.set(Position.KEY_STATUS, status);
 
-				int tag = buf.readUnsignedByte();
-				int length = buf.readUnsignedByte();
+            int count = buf.readUnsignedByte();
+            for (int i = 0; i < count; i++) {
 
-				switch (tag) {
-					case 0x09:
-						buf.readUnsignedByte(); // sensor count
-						buf.readUnsignedByte(); // sensor logic
-						buf.readUnsignedByte(); // sensor status
-						break;
-					case 0x0D:
-						int battery = buf.readUnsignedByte();
-						if (battery <= 20) {
-							position.set(Position.KEY_BATTERY_LEVEL, battery * 5);
-						}
-						break;
-					case 0x10:
-						position.setValid(true);
-						position.setFixTime(readDate(buf));
-						position.setLatitude(readCoordinate(buf));
-						position.setLongitude(readCoordinate(buf));
-						position.setSpeed(buf.readUnsignedByte());
-						position.setCourse(buf.readUnsignedByte() * 2);
-						position.setAltitude(buf.readShort());
-						buf.readUnsignedInt(); // gps condition
-						break;
-					default:
-						buf.skipBytes(length);
-						break;
-				}
-			}
+                int tag = buf.readUnsignedByte();
+                int length = buf.readUnsignedByte();
 
-			return position.getFixTime() != null ? position : null;
-		}
+                switch (tag) {
+                    case 0x09:
+                        buf.readUnsignedByte(); // sensor count
+                        buf.readUnsignedByte(); // sensor logic
+                        buf.readUnsignedByte(); // sensor status
+                        break;
+                    case 0x0D:
+                        int battery = buf.readUnsignedByte();
+                        if (battery <= 20) {
+                            position.set(Position.KEY_BATTERY_LEVEL, battery * 5);
+                        }
+                        break;
+                    case 0x10:
+                        position.setValid(true);
+                        position.setFixTime(readDate(buf));
+                        position.setLatitude(readCoordinate(buf));
+                        position.setLongitude(readCoordinate(buf));
+                        position.setSpeed(buf.readUnsignedByte());
+                        position.setCourse(buf.readUnsignedByte() * 2);
+                        position.setAltitude(buf.readShort());
+                        buf.readUnsignedInt(); // gps condition
+                        break;
+                    default:
+                        buf.skipBytes(length);
+                        break;
+                }
+            }
 
-		return null;
-	}
+            return position.getFixTime() != null ? position : null;
+        }
+
+        return null;
+    }
 
 }

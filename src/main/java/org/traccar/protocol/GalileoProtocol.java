@@ -22,18 +22,18 @@ import org.traccar.model.Command;
 
 public class GalileoProtocol extends BaseProtocol {
 
-	public GalileoProtocol() {
-		setSupportedDataCommands(
-				Command.TYPE_CUSTOM,
-				Command.TYPE_OUTPUT_CONTROL);
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new GalileoFrameDecoder());
-				pipeline.addLast(new GalileoProtocolEncoder(GalileoProtocol.this));
-				pipeline.addLast(new GalileoProtocolDecoder(GalileoProtocol.this));
-			}
-		});
-	}
+    public GalileoProtocol() {
+        setSupportedDataCommands(
+                Command.TYPE_CUSTOM,
+                Command.TYPE_OUTPUT_CONTROL);
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new GalileoFrameDecoder());
+                pipeline.addLast(new GalileoProtocolEncoder(GalileoProtocol.this));
+                pipeline.addLast(new GalileoProtocolDecoder(GalileoProtocol.this));
+            }
+        });
+    }
 
 }

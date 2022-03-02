@@ -29,68 +29,68 @@ import java.util.regex.Pattern;
 
 public class SwiftechProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final Pattern PATTERN = new PatternBuilder()
-			.text("@@")
-			.number("(d+),")                     // imei
-			.expression("[^,]*,")
-			.expression("[^,]*,")
-			.number("(dd)(dd)(dd),")             // time (hhmmss)
-			.number("(dd)(dd.d+),")              // latitude
-			.expression("([NS]),")
-			.number("(d{2,3})(dd.d+),")          // longitude
-			.expression("([EW]),")
-			.number("(d+.d+),")                  // speed
-			.number("(dd)(dd)(dd),")             // date (ddmmyy)
-			.expression("([AV]),")               // validity
-			.number("(d{4}),")                   // status
-			.number("([01]),")                   // charge
-			.number("d+,")                       // reserved
-			.number("(d+),")                     // adc1
-			.number("(d+),")                     // adc2
-			.any()
-			.compile();
+    public SwiftechProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public SwiftechProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private static final Pattern PATTERN = new PatternBuilder()
+            .text("@@")
+            .number("(d+),")                     // imei
+            .expression("[^,]*,")
+            .expression("[^,]*,")
+            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dd)(dd.d+),")              // latitude
+            .expression("([NS]),")
+            .number("(d{2,3})(dd.d+),")          // longitude
+            .expression("([EW]),")
+            .number("(d+.d+),")                  // speed
+            .number("(dd)(dd)(dd),")             // date (ddmmyy)
+            .expression("([AV]),")               // validity
+            .number("(d{4}),")                   // status
+            .number("([01]),")                   // charge
+            .number("d+,")                       // reserved
+            .number("(d+),")                     // adc1
+            .number("(d+),")                     // adc2
+            .any()
+            .compile();
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		Parser parser = new Parser(PATTERN, (String) msg);
-		if (!parser.matches()) {
-			return null;
-		}
+        Parser parser = new Parser(PATTERN, (String) msg);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		DateBuilder dateBuilder = new DateBuilder()
-				.setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
-		position.setLatitude(parser.nextCoordinate());
-		position.setLongitude(parser.nextCoordinate());
-		position.setSpeed(parser.nextDouble());
+        position.setLatitude(parser.nextCoordinate());
+        position.setLongitude(parser.nextCoordinate());
+        position.setSpeed(parser.nextDouble());
 
-		dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
-		position.setTime(dateBuilder.getDate());
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
-		position.setValid(parser.next().equals("A"));
+        position.setValid(parser.next().equals("A"));
 
-		position.set(Position.KEY_STATUS, parser.nextInt());
+        position.set(Position.KEY_STATUS, parser.nextInt());
 
-		position.set(Position.KEY_CHARGE, parser.nextInt() > 0);
+        position.set(Position.KEY_CHARGE, parser.nextInt() > 0);
 
-		position.set(Position.PREFIX_ADC + 1, parser.nextInt() * 0.001);
-		position.set(Position.PREFIX_ADC + 2, parser.nextInt() * 0.001);
+        position.set(Position.PREFIX_ADC + 1, parser.nextInt() * 0.001);
+        position.set(Position.PREFIX_ADC + 2, parser.nextInt() * 0.001);
 
-		return position;
-	}
+        return position;
+    }
 
 }

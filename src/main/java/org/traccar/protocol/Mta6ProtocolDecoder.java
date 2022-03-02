@@ -42,278 +42,278 @@ import java.util.List;
 
 public class Mta6ProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Mta6ProtocolDecoder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Mta6ProtocolDecoder.class);
 
-	private final boolean simple;
+    private final boolean simple;
 
-	public Mta6ProtocolDecoder(Protocol protocol, boolean simple) {
-		super(protocol);
-		this.simple = simple;
-	}
+    public Mta6ProtocolDecoder(Protocol protocol, boolean simple) {
+        super(protocol);
+        this.simple = simple;
+    }
 
-	private void sendContinue(Channel channel) {
-		FullHttpResponse response = new DefaultFullHttpResponse(
-				HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE);
-		channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-	}
+    private void sendContinue(Channel channel) {
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE);
+        channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+    }
 
-	private void sendResponse(Channel channel, short packetId, short packetCount) {
-		ByteBuf begin = Unpooled.copiedBuffer("#ACK#", StandardCharsets.US_ASCII);
-		ByteBuf end = Unpooled.buffer(3);
-		end.writeByte(packetId);
-		end.writeByte(packetCount);
-		end.writeByte(0);
+    private void sendResponse(Channel channel, short packetId, short packetCount) {
+        ByteBuf begin = Unpooled.copiedBuffer("#ACK#", StandardCharsets.US_ASCII);
+        ByteBuf end = Unpooled.buffer(3);
+        end.writeByte(packetId);
+        end.writeByte(packetCount);
+        end.writeByte(0);
 
-		FullHttpResponse response = new DefaultFullHttpResponse(
-				HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(begin, end));
-		channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-	}
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(begin, end));
+        channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+    }
 
-	private List<Position> parseFormatA(DeviceSession deviceSession, ByteBuf buf) {
-		List<Position> positions = new LinkedList<>();
+    private static class FloatReader {
 
-		FloatReader latitudeReader = new FloatReader();
-		FloatReader longitudeReader = new FloatReader();
-		TimeReader timeReader = new TimeReader();
+        private int previousFloat;
 
-		try {
-			while (buf.isReadable()) {
-				Position position = new Position(getProtocolName());
-				position.setDeviceId(deviceSession.getDeviceId());
+        public float readFloat(ByteBuf buf) {
+            switch (buf.getUnsignedByte(buf.readerIndex()) >> 6) {
+                case 0:
+                    previousFloat = buf.readInt() << 2;
+                    break;
+                case 1:
+                    previousFloat = (previousFloat & 0xffffff00) + ((buf.readUnsignedByte() & 0x3f) << 2);
+                    break;
+                case 2:
+                    previousFloat = (previousFloat & 0xffff0000) + ((buf.readUnsignedShort() & 0x3fff) << 2);
+                    break;
+                case 3:
+                    previousFloat = (previousFloat & 0xff000000) + ((buf.readUnsignedMedium() & 0x3fffff) << 2);
+                    break;
+                default:
+                    LOGGER.warn("MTA6 float decoding error", new IllegalArgumentException());
+                    break;
+            }
+            return Float.intBitsToFloat(previousFloat);
+        }
 
-				short flags = buf.readUnsignedByte();
+    }
 
-				short event = buf.readUnsignedByte();
-				if (BitUtil.check(event, 7)) {
-					if (BitUtil.check(event, 6)) {
-						buf.skipBytes(8);
-					} else {
-						while (BitUtil.check(event, 7)) {
-							event = buf.readUnsignedByte();
-						}
-					}
-				}
+    private static class TimeReader extends FloatReader {
 
-				position.setLatitude(latitudeReader.readFloat(buf) / Math.PI * 180);
-				position.setLongitude(longitudeReader.readFloat(buf) / Math.PI * 180);
-				position.setTime(timeReader.readTime(buf));
+        private long weekNumber;
 
-				if (BitUtil.check(flags, 0)) {
-					buf.readUnsignedByte(); // status
-				}
+        public Date readTime(ByteBuf buf) {
+            long weekTime = (long) (readFloat(buf) * 1000);
+            if (weekNumber == 0) {
+                weekNumber = buf.readUnsignedShort();
+            }
 
-				if (BitUtil.check(flags, 1)) {
-					position.setAltitude(buf.readUnsignedShort());
-				}
+            DateBuilder dateBuilder = new DateBuilder().setDate(1980, 1, 6);
+            dateBuilder.addMillis(weekNumber * 7 * 24 * 60 * 60 * 1000 + weekTime);
 
-				if (BitUtil.check(flags, 2)) {
-					position.setSpeed(buf.readUnsignedShort() & 0x03ff);
-					position.setCourse(buf.readUnsignedByte());
-				}
+            return dateBuilder.getDate();
+        }
 
-				if (BitUtil.check(flags, 3)) {
-					position.set(Position.KEY_ODOMETER, buf.readUnsignedShort() * 1000);
-				}
+    }
 
-				if (BitUtil.check(flags, 4)) {
-					position.set(Position.KEY_FUEL_CONSUMPTION + "Accumulator1", buf.readUnsignedInt());
-					position.set(Position.KEY_FUEL_CONSUMPTION + "Accumulator2", buf.readUnsignedInt());
-					position.set("hours1", buf.readUnsignedShort());
-					position.set("hours2", buf.readUnsignedShort());
-				}
+    private List<Position> parseFormatA(DeviceSession deviceSession, ByteBuf buf) {
+        List<Position> positions = new LinkedList<>();
 
-				if (BitUtil.check(flags, 5)) {
-					position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShort() & 0x03ff);
-					position.set(Position.PREFIX_ADC + 2, buf.readUnsignedShort() & 0x03ff);
-					position.set(Position.PREFIX_ADC + 3, buf.readUnsignedShort() & 0x03ff);
-					position.set(Position.PREFIX_ADC + 4, buf.readUnsignedShort() & 0x03ff);
-				}
+        FloatReader latitudeReader = new FloatReader();
+        FloatReader longitudeReader = new FloatReader();
+        TimeReader timeReader = new TimeReader();
 
-				if (BitUtil.check(flags, 6)) {
-					position.set(Position.PREFIX_TEMP + 1, buf.readByte());
-					buf.getUnsignedByte(buf.readerIndex()); // control (>> 4)
-					position.set(Position.KEY_INPUT, buf.readUnsignedShort() & 0x0fff);
-					buf.readUnsignedShort(); // old sensor state (& 0x0fff)
-				}
+        try {
+            while (buf.isReadable()) {
+                Position position = new Position(getProtocolName());
+                position.setDeviceId(deviceSession.getDeviceId());
 
-				if (BitUtil.check(flags, 7)) {
-					position.set(Position.KEY_BATTERY, buf.getUnsignedByte(buf.readerIndex()) >> 2);
-					position.set(Position.KEY_POWER, buf.readUnsignedShort() & 0x03ff);
-					position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
+                short flags = buf.readUnsignedByte();
 
-					position.set(Position.KEY_RSSI, (buf.getUnsignedByte(buf.readerIndex()) >> 4) & 0x07);
+                short event = buf.readUnsignedByte();
+                if (BitUtil.check(event, 7)) {
+                    if (BitUtil.check(event, 6)) {
+                        buf.skipBytes(8);
+                    } else {
+                        while (BitUtil.check(event, 7)) {
+                            event = buf.readUnsignedByte();
+                        }
+                    }
+                }
 
-					int satellites = buf.readUnsignedByte() & 0x0f;
-					position.setValid(satellites >= 3);
-					position.set(Position.KEY_SATELLITES, satellites);
-				}
-				positions.add(position);
-			}
-		} catch (IndexOutOfBoundsException error) {
-			LOGGER.warn("MTA6 parsing error", error);
-		}
+                position.setLatitude(latitudeReader.readFloat(buf) / Math.PI * 180);
+                position.setLongitude(longitudeReader.readFloat(buf) / Math.PI * 180);
+                position.setTime(timeReader.readTime(buf));
 
-		return positions;
-	}
+                if (BitUtil.check(flags, 0)) {
+                    buf.readUnsignedByte(); // status
+                }
 
-	private Position parseFormatA1(DeviceSession deviceSession, ByteBuf buf) {
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+                if (BitUtil.check(flags, 1)) {
+                    position.setAltitude(buf.readUnsignedShort());
+                }
 
-		short flags = buf.readUnsignedByte();
+                if (BitUtil.check(flags, 2)) {
+                    position.setSpeed(buf.readUnsignedShort() & 0x03ff);
+                    position.setCourse(buf.readUnsignedByte());
+                }
 
-		// Skip events
-		short event = buf.readUnsignedByte();
-		if (BitUtil.check(event, 7)) {
-			if (BitUtil.check(event, 6)) {
-				buf.skipBytes(8);
-			} else {
-				while (BitUtil.check(event, 7)) {
-					event = buf.readUnsignedByte();
-				}
-			}
-		}
+                if (BitUtil.check(flags, 3)) {
+                    position.set(Position.KEY_ODOMETER, buf.readUnsignedShort() * 1000);
+                }
 
-		position.setLatitude(new FloatReader().readFloat(buf) / Math.PI * 180);
-		position.setLongitude(new FloatReader().readFloat(buf) / Math.PI * 180);
-		position.setTime(new TimeReader().readTime(buf));
+                if (BitUtil.check(flags, 4)) {
+                    position.set(Position.KEY_FUEL_CONSUMPTION + "Accumulator1", buf.readUnsignedInt());
+                    position.set(Position.KEY_FUEL_CONSUMPTION + "Accumulator2", buf.readUnsignedInt());
+                    position.set("hours1", buf.readUnsignedShort());
+                    position.set("hours2", buf.readUnsignedShort());
+                }
 
-		position.set(Position.KEY_STATUS, buf.readUnsignedByte());
+                if (BitUtil.check(flags, 5)) {
+                    position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShort() & 0x03ff);
+                    position.set(Position.PREFIX_ADC + 2, buf.readUnsignedShort() & 0x03ff);
+                    position.set(Position.PREFIX_ADC + 3, buf.readUnsignedShort() & 0x03ff);
+                    position.set(Position.PREFIX_ADC + 4, buf.readUnsignedShort() & 0x03ff);
+                }
 
-		if (BitUtil.check(flags, 0)) {
-			position.setAltitude(buf.readUnsignedShort());
-			position.setSpeed(buf.readUnsignedByte());
-			position.setCourse(buf.readByte());
-			position.set(Position.KEY_ODOMETER, new FloatReader().readFloat(buf));
-		}
+                if (BitUtil.check(flags, 6)) {
+                    position.set(Position.PREFIX_TEMP + 1, buf.readByte());
+                    buf.getUnsignedByte(buf.readerIndex()); // control (>> 4)
+                    position.set(Position.KEY_INPUT, buf.readUnsignedShort() & 0x0fff);
+                    buf.readUnsignedShort(); // old sensor state (& 0x0fff)
+                }
 
-		if (BitUtil.check(flags, 1)) {
-			position.set(Position.KEY_FUEL_CONSUMPTION, new FloatReader().readFloat(buf));
-			position.set(Position.KEY_HOURS, UnitsConverter.msFromHours(new FloatReader().readFloat(buf)));
-			position.set("tank", buf.readUnsignedByte() * 0.4);
-		}
+                if (BitUtil.check(flags, 7)) {
+                    position.set(Position.KEY_BATTERY, buf.getUnsignedByte(buf.readerIndex()) >> 2);
+                    position.set(Position.KEY_POWER, buf.readUnsignedShort() & 0x03ff);
+                    position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
 
-		if (BitUtil.check(flags, 2)) {
-			position.set("engine", buf.readUnsignedShort() * 0.125);
-			position.set("pedals", buf.readUnsignedByte());
-			position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedByte() - 40);
-			position.set(Position.KEY_ODOMETER_SERVICE, buf.readUnsignedShort());
-		}
+                    position.set(Position.KEY_RSSI, (buf.getUnsignedByte(buf.readerIndex()) >> 4) & 0x07);
 
-		if (BitUtil.check(flags, 3)) {
-			position.set(Position.KEY_FUEL_LEVEL, buf.readUnsignedShort());
-			position.set(Position.PREFIX_ADC + 2, buf.readUnsignedShort());
-			position.set(Position.PREFIX_ADC + 3, buf.readUnsignedShort());
-			position.set(Position.PREFIX_ADC + 4, buf.readUnsignedShort());
-		}
+                    int satellites = buf.readUnsignedByte() & 0x0f;
+                    position.setValid(satellites >= 3);
+                    position.set(Position.KEY_SATELLITES, satellites);
+                }
+                positions.add(position);
+            }
+        } catch (IndexOutOfBoundsException error) {
+            LOGGER.warn("MTA6 parsing error", error);
+        }
 
-		if (BitUtil.check(flags, 4)) {
-			position.set(Position.PREFIX_TEMP + 1, buf.readByte());
-			buf.getUnsignedByte(buf.readerIndex()); // control (>> 4)
-			position.set(Position.KEY_INPUT, buf.readUnsignedShort() & 0x0fff);
-			buf.readUnsignedShort(); // old sensor state (& 0x0fff)
-		}
+        return positions;
+    }
 
-		if (BitUtil.check(flags, 5)) {
-			position.set(Position.KEY_BATTERY, buf.getUnsignedByte(buf.readerIndex()) >> 2);
-			position.set(Position.KEY_POWER, buf.readUnsignedShort() & 0x03ff);
-			position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
+    private Position parseFormatA1(DeviceSession deviceSession, ByteBuf buf) {
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-			position.set(Position.KEY_RSSI, buf.getUnsignedByte(buf.readerIndex()) >> 5);
+        short flags = buf.readUnsignedByte();
 
-			int satellites = buf.readUnsignedByte() & 0x1f;
-			position.setValid(satellites >= 3);
-			position.set(Position.KEY_SATELLITES, satellites);
-		}
+        // Skip events
+        short event = buf.readUnsignedByte();
+        if (BitUtil.check(event, 7)) {
+            if (BitUtil.check(event, 6)) {
+                buf.skipBytes(8);
+            } else {
+                while (BitUtil.check(event, 7)) {
+                    event = buf.readUnsignedByte();
+                }
+            }
+        }
 
-		// other data
+        position.setLatitude(new FloatReader().readFloat(buf) / Math.PI * 180);
+        position.setLongitude(new FloatReader().readFloat(buf) / Math.PI * 180);
+        position.setTime(new TimeReader().readTime(buf));
 
-		return position;
-	}
+        position.set(Position.KEY_STATUS, buf.readUnsignedByte());
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+        if (BitUtil.check(flags, 0)) {
+            position.setAltitude(buf.readUnsignedShort());
+            position.setSpeed(buf.readUnsignedByte());
+            position.setCourse(buf.readByte());
+            position.set(Position.KEY_ODOMETER, new FloatReader().readFloat(buf));
+        }
 
-		FullHttpRequest request = (FullHttpRequest) msg;
-		ByteBuf buf = request.content();
+        if (BitUtil.check(flags, 1)) {
+            position.set(Position.KEY_FUEL_CONSUMPTION, new FloatReader().readFloat(buf));
+            position.set(Position.KEY_HOURS, UnitsConverter.msFromHours(new FloatReader().readFloat(buf)));
+            position.set("tank", buf.readUnsignedByte() * 0.4);
+        }
 
-		buf.skipBytes("id=".length());
-		int index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '&');
-		String uniqueId = buf.toString(buf.readerIndex(), index - buf.readerIndex(), StandardCharsets.US_ASCII);
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, uniqueId);
-		if (deviceSession == null) {
-			return null;
-		}
-		buf.skipBytes(uniqueId.length());
-		buf.skipBytes("&bin=".length());
+        if (BitUtil.check(flags, 2)) {
+            position.set("engine", buf.readUnsignedShort() * 0.125);
+            position.set("pedals", buf.readUnsignedByte());
+            position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedByte() - 40);
+            position.set(Position.KEY_ODOMETER_SERVICE, buf.readUnsignedShort());
+        }
 
-		short packetId = buf.readUnsignedByte();
-		short offset = buf.readUnsignedByte(); // dataOffset
-		short packetCount = buf.readUnsignedByte();
-		buf.readUnsignedByte(); // reserved
-		buf.readUnsignedByte(); // timezone
-		buf.skipBytes(offset - 5);
+        if (BitUtil.check(flags, 3)) {
+            position.set(Position.KEY_FUEL_LEVEL, buf.readUnsignedShort());
+            position.set(Position.PREFIX_ADC + 2, buf.readUnsignedShort());
+            position.set(Position.PREFIX_ADC + 3, buf.readUnsignedShort());
+            position.set(Position.PREFIX_ADC + 4, buf.readUnsignedShort());
+        }
 
-		if (channel != null) {
-			sendContinue(channel);
-			sendResponse(channel, packetId, packetCount);
-		}
+        if (BitUtil.check(flags, 4)) {
+            position.set(Position.PREFIX_TEMP + 1, buf.readByte());
+            buf.getUnsignedByte(buf.readerIndex()); // control (>> 4)
+            position.set(Position.KEY_INPUT, buf.readUnsignedShort() & 0x0fff);
+            buf.readUnsignedShort(); // old sensor state (& 0x0fff)
+        }
 
-		if (packetId == 0x31 || packetId == 0x32 || packetId == 0x36) {
-			if (simple) {
-				return parseFormatA1(deviceSession, buf);
-			} else {
-				return parseFormatA(deviceSession, buf);
-			}
-		} // else if (0x34 0x38 0x4F 0x59)
+        if (BitUtil.check(flags, 5)) {
+            position.set(Position.KEY_BATTERY, buf.getUnsignedByte(buf.readerIndex()) >> 2);
+            position.set(Position.KEY_POWER, buf.readUnsignedShort() & 0x03ff);
+            position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
 
-		return null;
-	}
+            position.set(Position.KEY_RSSI, buf.getUnsignedByte(buf.readerIndex()) >> 5);
 
-	private static class FloatReader {
+            int satellites = buf.readUnsignedByte() & 0x1f;
+            position.setValid(satellites >= 3);
+            position.set(Position.KEY_SATELLITES, satellites);
+        }
 
-		private int previousFloat;
+        // other data
 
-		public float readFloat(ByteBuf buf) {
-			switch (buf.getUnsignedByte(buf.readerIndex()) >> 6) {
-				case 0:
-					previousFloat = buf.readInt() << 2;
-					break;
-				case 1:
-					previousFloat = (previousFloat & 0xffffff00) + ((buf.readUnsignedByte() & 0x3f) << 2);
-					break;
-				case 2:
-					previousFloat = (previousFloat & 0xffff0000) + ((buf.readUnsignedShort() & 0x3fff) << 2);
-					break;
-				case 3:
-					previousFloat = (previousFloat & 0xff000000) + ((buf.readUnsignedMedium() & 0x3fffff) << 2);
-					break;
-				default:
-					LOGGER.warn("MTA6 float decoding error", new IllegalArgumentException());
-					break;
-			}
-			return Float.intBitsToFloat(previousFloat);
-		}
+        return position;
+    }
 
-	}
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-	private static class TimeReader extends FloatReader {
+        FullHttpRequest request = (FullHttpRequest) msg;
+        ByteBuf buf = request.content();
 
-		private long weekNumber;
+        buf.skipBytes("id=".length());
+        int index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '&');
+        String uniqueId = buf.toString(buf.readerIndex(), index - buf.readerIndex(), StandardCharsets.US_ASCII);
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, uniqueId);
+        if (deviceSession == null) {
+            return null;
+        }
+        buf.skipBytes(uniqueId.length());
+        buf.skipBytes("&bin=".length());
 
-		public Date readTime(ByteBuf buf) {
-			long weekTime = (long) (readFloat(buf) * 1000);
-			if (weekNumber == 0) {
-				weekNumber = buf.readUnsignedShort();
-			}
+        short packetId = buf.readUnsignedByte();
+        short offset = buf.readUnsignedByte(); // dataOffset
+        short packetCount = buf.readUnsignedByte();
+        buf.readUnsignedByte(); // reserved
+        buf.readUnsignedByte(); // timezone
+        buf.skipBytes(offset - 5);
 
-			DateBuilder dateBuilder = new DateBuilder().setDate(1980, 1, 6);
-			dateBuilder.addMillis(weekNumber * 7 * 24 * 60 * 60 * 1000 + weekTime);
+        if (channel != null) {
+            sendContinue(channel);
+            sendResponse(channel, packetId, packetCount);
+        }
 
-			return dateBuilder.getDate();
-		}
+        if (packetId == 0x31 || packetId == 0x32 || packetId == 0x36) {
+            if (simple) {
+                return parseFormatA1(deviceSession, buf);
+            } else {
+                return parseFormatA(deviceSession, buf);
+            }
+        } // else if (0x34 0x38 0x4F 0x59)
 
-	}
+        return null;
+    }
 
 }

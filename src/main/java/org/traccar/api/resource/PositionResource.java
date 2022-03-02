@@ -37,29 +37,29 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 public class PositionResource extends BaseResource {
 
-	@GET
-	public Collection<Position> getJson(
-			@QueryParam("deviceId") long deviceId, @QueryParam("id") List<Long> positionIds,
-			@QueryParam("from") Date from, @QueryParam("to") Date to)
-			throws SQLException {
-		if (!positionIds.isEmpty()) {
-			ArrayList<Position> positions = new ArrayList<>();
-			for (Long positionId : positionIds) {
-				Position position = Context.getDataManager().getObject(Position.class, positionId);
-				Context.getPermissionsManager().checkDevice(getUserId(), position.getDeviceId());
-				positions.add(position);
-			}
-			return positions;
-		} else if (deviceId == 0) {
-			return Context.getDeviceManager().getInitialState(getUserId());
-		} else {
-			Context.getPermissionsManager().checkDevice(getUserId(), deviceId);
-			if (from != null && to != null) {
-				return Context.getDataManager().getPositions(deviceId, from, to);
-			} else {
-				return Collections.singleton(Context.getDeviceManager().getLastPosition(deviceId));
-			}
-		}
-	}
+    @GET
+    public Collection<Position> getJson(
+            @QueryParam("deviceId") long deviceId, @QueryParam("id") List<Long> positionIds,
+            @QueryParam("from") Date from, @QueryParam("to") Date to)
+            throws SQLException {
+        if (!positionIds.isEmpty()) {
+            ArrayList<Position> positions = new ArrayList<>();
+            for (Long positionId : positionIds) {
+                Position position = Context.getDataManager().getObject(Position.class, positionId);
+                Context.getPermissionsManager().checkDevice(getUserId(), position.getDeviceId());
+                positions.add(position);
+            }
+            return positions;
+        } else if (deviceId == 0) {
+            return Context.getDeviceManager().getInitialState(getUserId());
+        } else {
+            Context.getPermissionsManager().checkDevice(getUserId(), deviceId);
+            if (from != null && to != null) {
+                return Context.getDataManager().getPositions(deviceId, from, to);
+            } else {
+                return Collections.singleton(Context.getDeviceManager().getLastPosition(deviceId));
+            }
+        }
+    }
 
 }

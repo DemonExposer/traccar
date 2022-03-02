@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class RstProtocol extends BaseProtocol {
 
-	public RstProtocol() {
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new RstProtocolDecoder(RstProtocol.this));
-			}
-		});
-	}
+    public RstProtocol() {
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new RstProtocolDecoder(RstProtocol.this));
+            }
+        });
+    }
 
 }

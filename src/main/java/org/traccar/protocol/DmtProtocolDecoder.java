@@ -35,272 +35,273 @@ import java.util.List;
 
 public class DmtProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_HELLO = 0x00;
-	public static final int MSG_HELLO_RESPONSE = 0x01;
-	public static final int MSG_DATA_RECORD = 0x04;
-	public static final int MSG_COMMIT = 0x05;
-	public static final int MSG_COMMIT_RESPONSE = 0x06;
-	public static final int MSG_DATA_RECORD_64 = 0x10;
-	public static final int MSG_CANNED_REQUEST_1 = 0x14;
-	public static final int MSG_CANNED_RESPONSE_1 = 0x15;
-	public static final int MSG_CANNED_REQUEST_2 = 0x22;
-	public static final int MSG_CANNED_RESPONSE_2 = 0x23;
-	public DmtProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public DmtProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void sendResponse(Channel channel, int type, ByteBuf content) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer();
-			response.writeByte(0x02);
-			response.writeByte(0x55); // header
-			response.writeByte(type);
-			response.writeShortLE(content != null ? content.readableBytes() : 0);
-			if (content != null) {
-				response.writeBytes(content);
-				content.release();
-			}
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+    public static final int MSG_HELLO = 0x00;
+    public static final int MSG_HELLO_RESPONSE = 0x01;
+    public static final int MSG_DATA_RECORD = 0x04;
+    public static final int MSG_COMMIT = 0x05;
+    public static final int MSG_COMMIT_RESPONSE = 0x06;
+    public static final int MSG_DATA_RECORD_64 = 0x10;
 
-	private List<Position> decodeFixed64(Channel channel, SocketAddress remoteAddress, ByteBuf buf) {
+    public static final int MSG_CANNED_REQUEST_1 = 0x14;
+    public static final int MSG_CANNED_RESPONSE_1 = 0x15;
+    public static final int MSG_CANNED_REQUEST_2 = 0x22;
+    public static final int MSG_CANNED_RESPONSE_2 = 0x23;
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-		if (deviceSession == null) {
-			return null;
-		}
+    private void sendResponse(Channel channel, int type, ByteBuf content) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeByte(0x02); response.writeByte(0x55); // header
+            response.writeByte(type);
+            response.writeShortLE(content != null ? content.readableBytes() : 0);
+            if (content != null) {
+                response.writeBytes(content);
+                content.release();
+            }
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-		List<Position> positions = new LinkedList<>();
+    private List<Position> decodeFixed64(Channel channel, SocketAddress remoteAddress, ByteBuf buf) {
 
-		while (buf.readableBytes() >= 64) {
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+        if (deviceSession == null) {
+            return null;
+        }
 
-			buf.readByte(); // type
+        List<Position> positions = new LinkedList<>();
 
-			position.set(Position.KEY_INDEX, buf.readUnsignedIntLE());
+        while (buf.readableBytes() >= 64) {
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			long time = buf.readUnsignedIntLE();
-			position.setTime(new DateBuilder()
-					.setYear((int) (2000 + (time & 0x3F)))
-					.setMonth((int) (time >> 6) & 0xF)
-					.setDay((int) (time >> 10) & 0x1F)
-					.setHour((int) (time >> 15) & 0x1F)
-					.setMinute((int) (time >> 20) & 0x3F)
-					.setSecond((int) (time >> 26) & 0x3F)
-					.getDate());
+            buf.readByte(); // type
 
-			position.setLongitude(buf.readIntLE() * 0.0000001);
-			position.setLatitude(buf.readIntLE() * 0.0000001);
-			position.setSpeed(UnitsConverter.knotsFromCps(buf.readUnsignedShortLE()));
-			position.setCourse(buf.readUnsignedByte() * 2);
-			position.setAltitude(buf.readShortLE());
+            position.set(Position.KEY_INDEX, buf.readUnsignedIntLE());
 
-			buf.readUnsignedShortLE(); // position accuracy
-			buf.readUnsignedByte(); // speed accuracy
+            long time = buf.readUnsignedIntLE();
+            position.setTime(new DateBuilder()
+                    .setYear((int) (2000 + (time & 0x3F)))
+                    .setMonth((int) (time >> 6) & 0xF)
+                    .setDay((int) (time >> 10) & 0x1F)
+                    .setHour((int) (time >> 15) & 0x1F)
+                    .setMinute((int) (time >> 20) & 0x3F)
+                    .setSecond((int) (time >> 26) & 0x3F)
+                    .getDate());
 
-			position.set(Position.KEY_EVENT, buf.readUnsignedByte());
+            position.setLongitude(buf.readIntLE() * 0.0000001);
+            position.setLatitude(buf.readIntLE() * 0.0000001);
+            position.setSpeed(UnitsConverter.knotsFromCps(buf.readUnsignedShortLE()));
+            position.setCourse(buf.readUnsignedByte() * 2);
+            position.setAltitude(buf.readShortLE());
 
-			position.setValid(BitUtil.check(buf.readByte(), 0));
+            buf.readUnsignedShortLE(); // position accuracy
+            buf.readUnsignedByte(); // speed accuracy
 
-			position.set(Position.KEY_INPUT, buf.readUnsignedIntLE());
-			position.set(Position.KEY_OUTPUT, buf.readUnsignedShortLE());
+            position.set(Position.KEY_EVENT, buf.readUnsignedByte());
 
-			for (int i = 1; i <= 5; i++) {
-				position.set(Position.PREFIX_ADC + i, buf.readShortLE());
-			}
+            position.setValid(BitUtil.check(buf.readByte(), 0));
 
-			position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
+            position.set(Position.KEY_INPUT, buf.readUnsignedIntLE());
+            position.set(Position.KEY_OUTPUT, buf.readUnsignedShortLE());
 
-			buf.readShortLE(); // accelerometer x
-			buf.readShortLE(); // accelerometer y
-			buf.readShortLE(); // accelerometer z
-
-			buf.skipBytes(8); // device id
-
-			position.set(Position.KEY_PDOP, buf.readUnsignedShortLE() * 0.01);
-
-			buf.skipBytes(2); // reserved
+            for (int i = 1; i <= 5; i++) {
+                position.set(Position.PREFIX_ADC + i, buf.readShortLE());
+            }
 
-			buf.readUnsignedShortLE(); // checksum
+            position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
 
-			positions.add(position);
-		}
+            buf.readShortLE(); // accelerometer x
+            buf.readShortLE(); // accelerometer y
+            buf.readShortLE(); // accelerometer z
 
-		return positions;
-	}
+            buf.skipBytes(8); // device id
 
-	private List<Position> decodeStandard(Channel channel, SocketAddress remoteAddress, ByteBuf buf) {
+            position.set(Position.KEY_PDOP, buf.readUnsignedShortLE() * 0.01);
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-		if (deviceSession == null) {
-			return null;
-		}
+            buf.skipBytes(2); // reserved
 
-		List<Position> positions = new LinkedList<>();
+            buf.readUnsignedShortLE(); // checksum
 
-		while (buf.isReadable()) {
-			int recordEnd = buf.readerIndex() + buf.readUnsignedShortLE();
+            positions.add(position);
+        }
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+        return positions;
+    }
 
-			position.set(Position.KEY_INDEX, buf.readUnsignedIntLE());
+    private List<Position> decodeStandard(Channel channel, SocketAddress remoteAddress, ByteBuf buf) {
 
-			position.setDeviceTime(new Date(1356998400000L + buf.readUnsignedIntLE() * 1000)); // since 1 Jan 2013
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+        if (deviceSession == null) {
+            return null;
+        }
 
-			position.set(Position.KEY_EVENT, buf.readUnsignedByte());
+        List<Position> positions = new LinkedList<>();
 
-			while (buf.readerIndex() < recordEnd) {
+        while (buf.isReadable()) {
+            int recordEnd = buf.readerIndex() + buf.readUnsignedShortLE();
 
-				int fieldId = buf.readUnsignedByte();
-				int fieldLength = buf.readUnsignedByte();
-				int fieldEnd = buf.readerIndex() + (fieldLength == 255 ? buf.readUnsignedShortLE() : fieldLength);
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-				if (fieldId == 0) {
+            position.set(Position.KEY_INDEX, buf.readUnsignedIntLE());
 
-					position.setFixTime(new Date(1356998400000L + buf.readUnsignedIntLE() * 1000));
-					position.setLatitude(buf.readIntLE() * 0.0000001);
-					position.setLongitude(buf.readIntLE() * 0.0000001);
-					position.setAltitude(buf.readShortLE());
-					position.setSpeed(UnitsConverter.knotsFromCps(buf.readUnsignedShortLE()));
+            position.setDeviceTime(new Date(1356998400000L + buf.readUnsignedIntLE() * 1000)); // since 1 Jan 2013
 
-					buf.readUnsignedByte(); // speed accuracy
+            position.set(Position.KEY_EVENT, buf.readUnsignedByte());
 
-					position.setCourse(buf.readUnsignedByte() * 2);
+            while (buf.readerIndex() < recordEnd) {
 
-					position.set(Position.KEY_PDOP, buf.readUnsignedByte() * 0.1);
+                int fieldId = buf.readUnsignedByte();
+                int fieldLength = buf.readUnsignedByte();
+                int fieldEnd = buf.readerIndex() + (fieldLength == 255 ? buf.readUnsignedShortLE() : fieldLength);
 
-					position.setAccuracy(buf.readUnsignedByte());
-					position.setValid(buf.readUnsignedByte() != 0);
+                if (fieldId == 0) {
 
-				} else if (fieldId == 2) {
+                    position.setFixTime(new Date(1356998400000L + buf.readUnsignedIntLE() * 1000));
+                    position.setLatitude(buf.readIntLE() * 0.0000001);
+                    position.setLongitude(buf.readIntLE() * 0.0000001);
+                    position.setAltitude(buf.readShortLE());
+                    position.setSpeed(UnitsConverter.knotsFromCps(buf.readUnsignedShortLE()));
 
-					int input = buf.readIntLE();
-					int output = buf.readUnsignedShortLE();
-					int status = buf.readUnsignedShortLE();
+                    buf.readUnsignedByte(); // speed accuracy
 
-					position.set(Position.KEY_IGNITION, BitUtil.check(input, 0));
+                    position.setCourse(buf.readUnsignedByte() * 2);
 
-					if (!BitUtil.check(input, 1)) {
-						position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
-					} else if (BitUtil.check(input, 6)) {
-						position.set(Position.KEY_ALARM, Position.ALARM_TAMPERING);
-					}
+                    position.set(Position.KEY_PDOP, buf.readUnsignedByte() * 0.1);
 
-					position.set(Position.KEY_INPUT, input);
-					position.set(Position.KEY_OUTPUT, output);
-					position.set(Position.KEY_STATUS, status);
+                    position.setAccuracy(buf.readUnsignedByte());
+                    position.setValid(buf.readUnsignedByte() != 0);
 
-				} else if (fieldId == 6) {
+                } else if (fieldId == 2) {
 
-					while (buf.readerIndex() < fieldEnd) {
-						int number = buf.readUnsignedByte();
-						switch (number) {
-							case 1:
-								position.set(Position.KEY_BATTERY, buf.readUnsignedShortLE() * 0.001);
-								break;
-							case 2:
-								position.set(Position.KEY_POWER, buf.readUnsignedShortLE() * 0.01);
-								break;
-							case 3:
-								position.set(Position.KEY_DEVICE_TEMP, buf.readShortLE() * 0.01);
-								break;
-							case 4:
-								position.set(Position.KEY_RSSI, buf.readUnsignedShortLE());
-								break;
-							case 5:
-								position.set("solarPower", buf.readUnsignedShortLE() * 0.001);
-								break;
-							default:
-								position.set(Position.PREFIX_IO + number, buf.readUnsignedShortLE());
-								break;
-						}
-					}
+                    int input = buf.readIntLE();
+                    int output = buf.readUnsignedShortLE();
+                    int status = buf.readUnsignedShortLE();
 
-				} else if (fieldId == 26) {
+                    position.set(Position.KEY_IGNITION, BitUtil.check(input, 0));
 
-					position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedIntLE());
-					position.set("tripHours", buf.readUnsignedIntLE() * 1000);
+                    if (!BitUtil.check(input, 1)) {
+                        position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+                    } else if (BitUtil.check(input, 6)) {
+                        position.set(Position.KEY_ALARM, Position.ALARM_TAMPERING);
+                    }
 
-				} else if (fieldId == 27) {
+                    position.set(Position.KEY_INPUT, input);
+                    position.set(Position.KEY_OUTPUT, output);
+                    position.set(Position.KEY_STATUS, status);
 
-					position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
-					position.set(Position.KEY_HOURS, buf.readUnsignedIntLE() * 1000);
+                } else if (fieldId == 6) {
 
-				}
+                    while (buf.readerIndex() < fieldEnd) {
+                        int number = buf.readUnsignedByte();
+                        switch (number) {
+                            case 1:
+                                position.set(Position.KEY_BATTERY, buf.readUnsignedShortLE() * 0.001);
+                                break;
+                            case 2:
+                                position.set(Position.KEY_POWER, buf.readUnsignedShortLE() * 0.01);
+                                break;
+                            case 3:
+                                position.set(Position.KEY_DEVICE_TEMP, buf.readShortLE() * 0.01);
+                                break;
+                            case 4:
+                                position.set(Position.KEY_RSSI, buf.readUnsignedShortLE());
+                                break;
+                            case 5:
+                                position.set("solarPower", buf.readUnsignedShortLE() * 0.001);
+                                break;
+                            default:
+                                position.set(Position.PREFIX_IO + number, buf.readUnsignedShortLE());
+                                break;
+                        }
+                    }
 
-				buf.readerIndex(fieldEnd);
+                } else if (fieldId == 26) {
 
-			}
+                    position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedIntLE());
+                    position.set("tripHours", buf.readUnsignedIntLE() * 1000);
 
-			if (position.getFixTime() == null) {
-				getLastLocation(position, position.getDeviceTime());
-			}
+                } else if (fieldId == 27) {
 
-			positions.add(position);
-		}
+                    position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
+                    position.set(Position.KEY_HOURS, buf.readUnsignedIntLE() * 1000);
 
-		return positions;
-	}
+                }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+                buf.readerIndex(fieldEnd);
 
-		ByteBuf buf = (ByteBuf) msg;
+            }
 
-		buf.skipBytes(2); // header
+            if (position.getFixTime() == null) {
+                getLastLocation(position, position.getDeviceTime());
+            }
 
-		int type = buf.readUnsignedByte();
-		int length = buf.readUnsignedShortLE();
+            positions.add(position);
+        }
 
-		if (type == MSG_HELLO) {
+        return positions;
+    }
 
-			buf.readUnsignedIntLE(); // device serial number
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-			DeviceSession deviceSession = getDeviceSession(
-					channel, remoteAddress, buf.readSlice(15).toString(StandardCharsets.US_ASCII));
+        ByteBuf buf = (ByteBuf) msg;
 
-			ByteBuf response = Unpooled.buffer();
-			if (length == 51) {
-				response.writeByte(0); // reserved
-				response.writeIntLE(0); // reserved
-			} else {
-				response.writeIntLE((int) ((System.currentTimeMillis() - 1356998400000L) / 1000));
-				response.writeIntLE(deviceSession != null ? 0 : 1); // flags
-			}
+        buf.skipBytes(2); // header
 
-			sendResponse(channel, MSG_HELLO_RESPONSE, response);
+        int type = buf.readUnsignedByte();
+        int length = buf.readUnsignedShortLE();
 
-		} else if (type == MSG_COMMIT) {
+        if (type == MSG_HELLO) {
 
-			ByteBuf response = Unpooled.buffer(0);
-			response.writeByte(1); // flags (success)
-			sendResponse(channel, MSG_COMMIT_RESPONSE, response);
+            buf.readUnsignedIntLE(); // device serial number
 
-		} else if (type == MSG_CANNED_REQUEST_1) {
+            DeviceSession deviceSession = getDeviceSession(
+                    channel, remoteAddress, buf.readSlice(15).toString(StandardCharsets.US_ASCII));
 
-			ByteBuf response = Unpooled.buffer(0);
-			response.writeBytes(new byte[12]);
-			sendResponse(channel, MSG_CANNED_RESPONSE_1, response);
+            ByteBuf response = Unpooled.buffer();
+            if (length == 51) {
+                response.writeByte(0); // reserved
+                response.writeIntLE(0); // reserved
+            } else {
+                response.writeIntLE((int) ((System.currentTimeMillis() - 1356998400000L) / 1000));
+                response.writeIntLE(deviceSession != null ? 0 : 1); // flags
+            }
 
-		} else if (type == MSG_CANNED_REQUEST_2) {
+            sendResponse(channel, MSG_HELLO_RESPONSE, response);
 
-			sendResponse(channel, MSG_CANNED_RESPONSE_2, null);
+        } else if (type == MSG_COMMIT) {
 
-		} else if (type == MSG_DATA_RECORD_64) {
+            ByteBuf response = Unpooled.buffer(0);
+            response.writeByte(1); // flags (success)
+            sendResponse(channel, MSG_COMMIT_RESPONSE, response);
 
-			return decodeFixed64(channel, remoteAddress, buf);
+        } else if (type == MSG_CANNED_REQUEST_1) {
 
-		} else if (type == MSG_DATA_RECORD) {
+            ByteBuf response = Unpooled.buffer(0);
+            response.writeBytes(new byte[12]);
+            sendResponse(channel, MSG_CANNED_RESPONSE_1, response);
 
-			return decodeStandard(channel, remoteAddress, buf);
+        } else if (type == MSG_CANNED_REQUEST_2) {
 
-		}
+            sendResponse(channel, MSG_CANNED_RESPONSE_2, null);
 
-		return null;
-	}
+        } else if (type == MSG_DATA_RECORD_64) {
+
+            return decodeFixed64(channel, remoteAddress, buf);
+
+        } else if (type == MSG_DATA_RECORD) {
+
+            return decodeStandard(channel, remoteAddress, buf);
+
+        }
+
+        return null;
+    }
 
 }

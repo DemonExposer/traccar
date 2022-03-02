@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class AutoFonProtocol extends BaseProtocol {
 
-	public AutoFonProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new AutoFonFrameDecoder());
-				pipeline.addLast(new AutoFonProtocolDecoder(AutoFonProtocol.this));
-			}
-		});
-	}
+    public AutoFonProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new AutoFonFrameDecoder());
+                pipeline.addLast(new AutoFonProtocolDecoder(AutoFonProtocol.this));
+            }
+        });
+    }
 
 }

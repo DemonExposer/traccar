@@ -34,190 +34,191 @@ import java.util.regex.Pattern;
 
 public class WialonProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final Pattern PATTERN_ANY = new PatternBuilder()
-			.expression("([^#]*)?")              // imei
-			.text("#")                           // start byte
-			.expression("([^#]+)")               // type
-			.text("#")                           // separator
-			.expression("(.*)")                  // message
-			.compile();
-	private static final Pattern PATTERN = new PatternBuilder()
-			.number("(dd)(dd)(dd);")             // date (ddmmyy)
-			.number("(dd)(dd)(dd);")             // time (hhmmss)
-			.number("(?:NA|(dd)(dd.d+));")       // latitude
-			.expression("(?:NA|([NS]));")
-			.number("(?:NA|(ddd)(dd.d+));")      // longitude
-			.expression("(?:NA|([EW]));")
-			.number("(d+.?d*)?;")                // speed
-			.number("(?:NA|(d+.?d*))?;")         // course
-			.number("(?:NA|(-?d+.?d*));")        // altitude
-			.number("(?:NA|(d+))")               // satellites
-			.groupBegin().text(";")
-			.number("(?:NA|(d+.?d*));")          // hdop
-			.number("(?:NA|(d+));")              // inputs
-			.number("(?:NA|(d+));")              // outputs
-			.expression("(?:NA|([^;]*));")       // adc
-			.expression("(?:NA|([^;]*));")       // ibutton
-			.expression("(?:NA|(.*))")           // params
-			.groupEnd("?")
-			.compile();
+    public WialonProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public WialonProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private static final Pattern PATTERN_ANY = new PatternBuilder()
+            .expression("([^#]*)?")              // imei
+            .text("#")                           // start byte
+            .expression("([^#]+)")               // type
+            .text("#")                           // separator
+            .expression("(.*)")                  // message
+            .compile();
 
-	private void sendResponse(Channel channel, SocketAddress remoteAddress, String type, Integer number) {
-		if (channel != null) {
-			StringBuilder response = new StringBuilder("#A");
-			response.append(type);
-			response.append("#");
-			if (number != null) {
-				response.append(number);
-			}
-			response.append("\r\n");
-			channel.writeAndFlush(new NetworkMessage(response.toString(), remoteAddress));
-		}
-	}
+    private static final Pattern PATTERN = new PatternBuilder()
+            .number("(dd)(dd)(dd);")             // date (ddmmyy)
+            .number("(dd)(dd)(dd);")             // time (hhmmss)
+            .number("(?:NA|(dd)(dd.d+));")       // latitude
+            .expression("(?:NA|([NS]));")
+            .number("(?:NA|(ddd)(dd.d+));")      // longitude
+            .expression("(?:NA|([EW]));")
+            .number("(d+.?d*)?;")                // speed
+            .number("(?:NA|(d+.?d*))?;")         // course
+            .number("(?:NA|(-?d+.?d*));")        // altitude
+            .number("(?:NA|(d+))")               // satellites
+            .groupBegin().text(";")
+            .number("(?:NA|(d+.?d*));")          // hdop
+            .number("(?:NA|(d+));")              // inputs
+            .number("(?:NA|(d+));")              // outputs
+            .expression("(?:NA|([^;]*));")       // adc
+            .expression("(?:NA|([^;]*));")       // ibutton
+            .expression("(?:NA|(.*))")           // params
+            .groupEnd("?")
+            .compile();
 
-	private Position decodePosition(Channel channel, SocketAddress remoteAddress, String id, String substring) {
+    private void sendResponse(Channel channel, SocketAddress remoteAddress, String type, Integer number) {
+        if (channel != null) {
+            StringBuilder response = new StringBuilder("#A");
+            response.append(type);
+            response.append("#");
+            if (number != null) {
+                response.append(number);
+            }
+            response.append("\r\n");
+            channel.writeAndFlush(new NetworkMessage(response.toString(), remoteAddress));
+        }
+    }
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
-		if (deviceSession == null) {
-			return null;
-		}
+    private Position decodePosition(Channel channel, SocketAddress remoteAddress, String id, String substring) {
 
-		Parser parser = new Parser(PATTERN, substring);
-		if (!parser.matches()) {
-			return null;
-		}
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
+        if (deviceSession == null) {
+            return null;
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Parser parser = new Parser(PATTERN, substring);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		position.setTime(parser.nextDateTime(Parser.DateTimeFormat.DMY_HMS));
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		if (parser.hasNext(9)) {
-			position.setLatitude(parser.nextCoordinate());
-			position.setLongitude(parser.nextCoordinate());
-			position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble(0)));
-			position.setCourse(parser.nextDouble(0));
-			position.setAltitude(parser.nextDouble(0));
-		} else {
-			getLastLocation(position, position.getDeviceTime());
-		}
+        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.DMY_HMS));
 
-		if (parser.hasNext()) {
-			int satellites = parser.nextInt(0);
-			position.setValid(satellites >= 3);
-			position.set(Position.KEY_SATELLITES, satellites);
-		}
+        if (parser.hasNext(9)) {
+            position.setLatitude(parser.nextCoordinate());
+            position.setLongitude(parser.nextCoordinate());
+            position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble(0)));
+            position.setCourse(parser.nextDouble(0));
+            position.setAltitude(parser.nextDouble(0));
+        } else {
+            getLastLocation(position, position.getDeviceTime());
+        }
 
-		position.set(Position.KEY_HDOP, parser.nextDouble());
-		position.set(Position.KEY_INPUT, parser.next());
-		position.set(Position.KEY_OUTPUT, parser.next());
+        if (parser.hasNext()) {
+            int satellites = parser.nextInt(0);
+            position.setValid(satellites >= 3);
+            position.set(Position.KEY_SATELLITES, satellites);
+        }
 
-		if (parser.hasNext()) {
-			String[] values = parser.next().split(",");
-			for (int i = 0; i < values.length; i++) {
-				position.set(Position.PREFIX_ADC + (i + 1), values[i]);
-			}
-		}
+        position.set(Position.KEY_HDOP, parser.nextDouble());
+        position.set(Position.KEY_INPUT, parser.next());
+        position.set(Position.KEY_OUTPUT, parser.next());
 
-		position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
+        if (parser.hasNext()) {
+            String[] values = parser.next().split(",");
+            for (int i = 0; i < values.length; i++) {
+                position.set(Position.PREFIX_ADC + (i + 1), values[i]);
+            }
+        }
 
-		if (parser.hasNext()) {
-			String[] values = parser.next().split(",");
-			for (String param : values) {
-				Matcher paramParser = Pattern.compile("(.*):[1-3]:(.*)").matcher(param);
-				if (paramParser.matches()) {
-					try {
-						position.set(paramParser.group(1).toLowerCase(), Double.parseDouble(paramParser.group(2)));
-					} catch (NumberFormatException e) {
-						position.set(paramParser.group(1).toLowerCase(), paramParser.group(2));
-					}
-				}
-			}
-		}
+        position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
 
-		return position;
-	}
+        if (parser.hasNext()) {
+            String[] values = parser.next().split(",");
+            for (String param : values) {
+                Matcher paramParser = Pattern.compile("(.*):[1-3]:(.*)").matcher(param);
+                if (paramParser.matches()) {
+                    try {
+                        position.set(paramParser.group(1).toLowerCase(), Double.parseDouble(paramParser.group(2)));
+                    } catch (NumberFormatException e) {
+                        position.set(paramParser.group(1).toLowerCase(), paramParser.group(2));
+                    }
+                }
+            }
+        }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+        return position;
+    }
 
-		String sentence = (String) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		Parser parser = new Parser(PATTERN_ANY, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+        String sentence = (String) msg;
 
-		String id = parser.next();
-		String type = parser.next();
-		String data = parser.next();
+        Parser parser = new Parser(PATTERN_ANY, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		switch (type) {
+        String id = parser.next();
+        String type = parser.next();
+        String data = parser.next();
 
-			case "L":
-				String[] values = data.split(";");
-				String imei = values[0].indexOf('.') >= 0 ? values[1] : values[0];
-				DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-				if (deviceSession != null) {
-					sendResponse(channel, remoteAddress, type, 1);
-				}
-				break;
+        switch (type) {
 
-			case "P":
-				sendResponse(channel, remoteAddress, type, null); // heartbeat
-				break;
+            case "L":
+                String[] values = data.split(";");
+                String imei = values[0].indexOf('.') >= 0 ? values[1] : values[0];
+                DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+                if (deviceSession != null) {
+                    sendResponse(channel, remoteAddress, type, 1);
+                }
+                break;
 
-			case "D":
-			case "SD":
-				Position position = decodePosition(channel, remoteAddress, id, data);
-				if (position != null) {
-					sendResponse(channel, remoteAddress, "D", 1);
-					return position;
-				}
-				break;
+            case "P":
+                sendResponse(channel, remoteAddress, type, null); // heartbeat
+                break;
 
-			case "B":
-				String[] messages = data.split("\\|");
-				List<Position> positions = new LinkedList<>();
+            case "D":
+            case "SD":
+                Position position = decodePosition(channel, remoteAddress, id, data);
+                if (position != null) {
+                    sendResponse(channel, remoteAddress, "D", 1);
+                    return position;
+                }
+                break;
 
-				for (String message : messages) {
-					position = decodePosition(channel, remoteAddress, id, message);
-					if (position != null) {
-						position.set(Position.KEY_ARCHIVE, true);
-						positions.add(position);
-					}
-				}
+            case "B":
+                String[] messages = data.split("\\|");
+                List<Position> positions = new LinkedList<>();
 
-				sendResponse(channel, remoteAddress, type, messages.length);
-				if (!positions.isEmpty()) {
-					return positions;
-				}
-				break;
+                for (String message : messages) {
+                    position = decodePosition(channel, remoteAddress, id, message);
+                    if (position != null) {
+                        position.set(Position.KEY_ARCHIVE, true);
+                        positions.add(position);
+                    }
+                }
 
-			case "M":
-				deviceSession = getDeviceSession(channel, remoteAddress, id);
-				if (deviceSession != null) {
-					position = new Position(getProtocolName());
-					position.setDeviceId(deviceSession.getDeviceId());
-					getLastLocation(position, new Date());
-					position.setValid(false);
-					position.set(Position.KEY_RESULT, data);
-					sendResponse(channel, remoteAddress, type, 1);
-					return position;
-				}
-				break;
+                sendResponse(channel, remoteAddress, type, messages.length);
+                if (!positions.isEmpty()) {
+                    return positions;
+                }
+                break;
 
-			default:
-				break;
+            case "M":
+                deviceSession = getDeviceSession(channel, remoteAddress, id);
+                if (deviceSession != null) {
+                    position = new Position(getProtocolName());
+                    position.setDeviceId(deviceSession.getDeviceId());
+                    getLastLocation(position, new Date());
+                    position.setValid(false);
+                    position.set(Position.KEY_RESULT, data);
+                    sendResponse(channel, remoteAddress, type, 1);
+                    return position;
+                }
+                break;
 
-		}
+            default:
+                break;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

@@ -21,28 +21,28 @@ import org.traccar.CharacterDelimiterFrameDecoder;
 
 public class Stl060FrameDecoder extends CharacterDelimiterFrameDecoder {
 
-	public Stl060FrameDecoder(int maxFrameLength) {
-		super(maxFrameLength, '#');
-	}
+    public Stl060FrameDecoder(int maxFrameLength) {
+        super(maxFrameLength, '#');
+    }
 
-	@Override
-	protected Object decode(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
 
-		ByteBuf result = (ByteBuf) super.decode(ctx, buf);
+        ByteBuf result = (ByteBuf) super.decode(ctx, buf);
 
-		if (result != null) {
+        if (result != null) {
 
-			int index = result.indexOf(result.readerIndex(), result.writerIndex(), (byte) '$');
-			if (index == -1) {
-				return result;
-			} else {
-				result.skipBytes(index);
-				return result.readRetainedSlice(result.readableBytes());
-			}
+            int index = result.indexOf(result.readerIndex(), result.writerIndex(), (byte) '$');
+            if (index == -1) {
+                return result;
+            } else {
+                result.skipBytes(index);
+                return result.readRetainedSlice(result.readableBytes());
+            }
 
-		}
+        }
 
-		return null;
-	}
+        return null;
+    }
 
 }

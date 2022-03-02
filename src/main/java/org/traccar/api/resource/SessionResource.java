@@ -47,83 +47,83 @@ import java.sql.SQLException;
 @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 public class SessionResource extends BaseResource {
 
-	public static final String USER_ID_KEY = "userId";
-	public static final String USER_COOKIE_KEY = "user";
-	public static final String PASS_COOKIE_KEY = "password";
+    public static final String USER_ID_KEY = "userId";
+    public static final String USER_COOKIE_KEY = "user";
+    public static final String PASS_COOKIE_KEY = "password";
 
-	@javax.ws.rs.core.Context
-	private HttpServletRequest request;
+    @javax.ws.rs.core.Context
+    private HttpServletRequest request;
 
-	@PermitAll
-	@GET
-	public User get(@QueryParam("token") String token) throws SQLException, UnsupportedEncodingException {
+    @PermitAll
+    @GET
+    public User get(@QueryParam("token") String token) throws SQLException, UnsupportedEncodingException {
 
-		if (token != null) {
-			User user = Context.getUsersManager().getUserByToken(token);
-			if (user != null) {
-				Context.getPermissionsManager().checkUserEnabled(user.getId());
-				request.getSession().setAttribute(USER_ID_KEY, user.getId());
-				return user;
-			}
-		}
+        if (token != null) {
+            User user = Context.getUsersManager().getUserByToken(token);
+            if (user != null) {
+                Context.getPermissionsManager().checkUserEnabled(user.getId());
+                request.getSession().setAttribute(USER_ID_KEY, user.getId());
+                return user;
+            }
+        }
 
-		Long userId = (Long) request.getSession().getAttribute(USER_ID_KEY);
-		if (userId == null) {
+        Long userId = (Long) request.getSession().getAttribute(USER_ID_KEY);
+        if (userId == null) {
 
-			Cookie[] cookies = request.getCookies();
-			String email = null, password = null;
-			if (cookies != null) {
-				for (Cookie cookie : cookies) {
-					if (cookie.getName().equals(USER_COOKIE_KEY)) {
-						byte[] emailBytes = DataConverter.parseBase64(
-								URLDecoder.decode(cookie.getValue(), StandardCharsets.US_ASCII.name()));
-						email = new String(emailBytes, StandardCharsets.UTF_8);
-					} else if (cookie.getName().equals(PASS_COOKIE_KEY)) {
-						byte[] passwordBytes = DataConverter.parseBase64(
-								URLDecoder.decode(cookie.getValue(), StandardCharsets.US_ASCII.name()));
-						password = new String(passwordBytes, StandardCharsets.UTF_8);
-					}
-				}
-			}
-			if (email != null && password != null) {
-				User user = Context.getPermissionsManager().login(email, password);
-				if (user != null) {
-					Context.getPermissionsManager().checkUserEnabled(user.getId());
-					request.getSession().setAttribute(USER_ID_KEY, user.getId());
-					return user;
-				}
-			}
+            Cookie[] cookies = request.getCookies();
+            String email = null, password = null;
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if (cookie.getName().equals(USER_COOKIE_KEY)) {
+                        byte[] emailBytes = DataConverter.parseBase64(
+                                URLDecoder.decode(cookie.getValue(), StandardCharsets.US_ASCII.name()));
+                        email = new String(emailBytes, StandardCharsets.UTF_8);
+                    } else if (cookie.getName().equals(PASS_COOKIE_KEY)) {
+                        byte[] passwordBytes = DataConverter.parseBase64(
+                                URLDecoder.decode(cookie.getValue(), StandardCharsets.US_ASCII.name()));
+                        password = new String(passwordBytes, StandardCharsets.UTF_8);
+                    }
+                }
+            }
+            if (email != null && password != null) {
+                User user = Context.getPermissionsManager().login(email, password);
+                if (user != null) {
+                    Context.getPermissionsManager().checkUserEnabled(user.getId());
+                    request.getSession().setAttribute(USER_ID_KEY, user.getId());
+                    return user;
+                }
+            }
 
-		} else {
+        } else {
 
-			Context.getPermissionsManager().checkUserEnabled(userId);
-			return Context.getPermissionsManager().getUser(userId);
+            Context.getPermissionsManager().checkUserEnabled(userId);
+            return Context.getPermissionsManager().getUser(userId);
 
-		}
+        }
 
-		throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
-	}
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
+    }
 
-	@PermitAll
-	@POST
-	public User add(
-			@FormParam("email") String email, @FormParam("password") String password) throws SQLException {
-		User user = Context.getPermissionsManager().login(email, password);
-		if (user != null) {
-			request.getSession().setAttribute(USER_ID_KEY, user.getId());
-			LogAction.login(user.getId());
-			return user;
-		} else {
-			LogAction.failedLogin(ServletHelper.retrieveRemoteAddress(request));
-			throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
-		}
-	}
+    @PermitAll
+    @POST
+    public User add(
+            @FormParam("email") String email, @FormParam("password") String password) throws SQLException {
+        User user = Context.getPermissionsManager().login(email, password);
+        if (user != null) {
+            request.getSession().setAttribute(USER_ID_KEY, user.getId());
+            LogAction.login(user.getId());
+            return user;
+        } else {
+            LogAction.failedLogin(ServletHelper.retrieveRemoteAddress(request));
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
+        }
+    }
 
-	@DELETE
-	public Response remove() {
-		LogAction.logout(getUserId());
-		request.getSession().removeAttribute(USER_ID_KEY);
-		return Response.noContent().build();
-	}
+    @DELETE
+    public Response remove() {
+        LogAction.logout(getUserId());
+        request.getSession().removeAttribute(USER_ID_KEY);
+        return Response.noContent().build();
+    }
 
 }

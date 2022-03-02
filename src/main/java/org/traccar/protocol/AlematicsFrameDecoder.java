@@ -22,29 +22,29 @@ import org.traccar.NetworkMessage;
 
 public class AlematicsFrameDecoder extends LineBasedFrameDecoder {
 
-	private static final int MESSAGE_MINIMUM_LENGTH = 2;
+    private static final int MESSAGE_MINIMUM_LENGTH = 2;
 
-	public AlematicsFrameDecoder(int maxFrameLength) {
-		super(maxFrameLength);
-	}
+    public AlematicsFrameDecoder(int maxFrameLength) {
+        super(maxFrameLength);
+    }
 
-	// example of heartbeat: FA F8 00 07 00 03 15 AD 4E 78 3A D2
+    // example of heartbeat: FA F8 00 07 00 03 15 AD 4E 78 3A D2
 
-	@Override
-	protected Object decode(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
 
-		if (buf.readableBytes() < MESSAGE_MINIMUM_LENGTH) {
-			return null;
-		}
+        if (buf.readableBytes() < MESSAGE_MINIMUM_LENGTH) {
+            return null;
+        }
 
-		if (buf.getUnsignedShort(buf.readerIndex()) == 0xFAF8) {
-			ByteBuf heartbeat = buf.readRetainedSlice(12);
-			if (ctx != null && ctx.channel() != null) {
-				ctx.channel().writeAndFlush(new NetworkMessage(heartbeat, ctx.channel().remoteAddress()));
-			}
-		}
+        if (buf.getUnsignedShort(buf.readerIndex()) == 0xFAF8) {
+            ByteBuf heartbeat = buf.readRetainedSlice(12);
+            if (ctx != null && ctx.channel() != null) {
+                ctx.channel().writeAndFlush(new NetworkMessage(heartbeat, ctx.channel().remoteAddress()));
+            }
+        }
 
-		return super.decode(ctx, buf);
-	}
+        return super.decode(ctx, buf);
+    }
 
 }

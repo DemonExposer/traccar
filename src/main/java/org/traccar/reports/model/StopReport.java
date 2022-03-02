@@ -16,60 +16,65 @@
  */
 package org.traccar.reports.model;
 
-public class StopReport extends BaseReport {
+public class StopReport extends BaseReport  {
 
-	private long positionId;
-	private double latitude;
-	private double longitude;
-	private String address;
-	private long duration;
-	private long engineHours; // milliseconds
+    private long positionId;
 
-	public long getPositionId() {
-		return positionId;
-	}
+    public long getPositionId() {
+        return positionId;
+    }
 
-	public void setPositionId(long positionId) {
-		this.positionId = positionId;
-	}
+    public void setPositionId(long positionId) {
+        this.positionId = positionId;
+    }
 
-	public double getLatitude() {
-		return latitude;
-	}
+    private double latitude;
 
-	public void setLatitude(double latitude) {
-		this.latitude = latitude;
-	}
+    public double getLatitude() {
+        return latitude;
+    }
 
-	public double getLongitude() {
-		return longitude;
-	}
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
 
-	public void setLongitude(double longitude) {
-		this.longitude = longitude;
-	}
+    private double longitude;
 
-	public String getAddress() {
-		return address;
-	}
+    public double getLongitude() {
+        return longitude;
+    }
 
-	public void setAddress(String address) {
-		this.address = address;
-	}
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
 
-	public long getDuration() {
-		return duration;
-	}
+    private String address;
 
-	public void setDuration(long duration) {
-		this.duration = duration;
-	}
+    public String getAddress() {
+        return address;
+    }
 
-	public long getEngineHours() {
-		return engineHours;
-	}
+    public void setAddress(String address) {
+        this.address = address;
+    }
 
-	public void setEngineHours(long engineHours) {
-		this.engineHours = engineHours;
-	}
+    private long duration;
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
+    private long engineHours; // milliseconds
+
+    public long getEngineHours() {
+        return engineHours;
+    }
+
+    public void setEngineHours(long engineHours) {
+        this.engineHours = engineHours;
+    }
 }

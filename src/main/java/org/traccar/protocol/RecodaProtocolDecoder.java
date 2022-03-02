@@ -30,80 +30,81 @@ import java.util.Date;
 
 public class RecodaProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_HEARTBEAT = 0x00001001;
-	public static final int MSG_REQUEST_RESPONSE = 0x20000001;
-	public static final int MSG_SIGNAL_LINK_REGISTRATION = 0x20001001;
-	public static final int MSG_EVENT_NOTICE = 0x20002001;
-	public static final int MSG_GPS_DATA = 0x20001011;
-	public RecodaProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public RecodaProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    public static final int MSG_HEARTBEAT = 0x00001001;
+    public static final int MSG_REQUEST_RESPONSE = 0x20000001;
+    public static final int MSG_SIGNAL_LINK_REGISTRATION = 0x20001001;
+    public static final int MSG_EVENT_NOTICE = 0x20002001;
+    public static final int MSG_GPS_DATA = 0x20001011;
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		int type = buf.readIntLE();
-		buf.readUnsignedIntLE(); // length
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type != MSG_HEARTBEAT) {
-			buf.readUnsignedShortLE(); // version
-			buf.readUnsignedShortLE(); // index
-		}
+        int type = buf.readIntLE();
+        buf.readUnsignedIntLE(); // length
 
-		if (type == MSG_SIGNAL_LINK_REGISTRATION) {
+        if (type != MSG_HEARTBEAT) {
+            buf.readUnsignedShortLE(); // version
+            buf.readUnsignedShortLE(); // index
+        }
 
-			getDeviceSession(channel, remoteAddress, buf.readSlice(12).toString(StandardCharsets.US_ASCII));
+        if (type == MSG_SIGNAL_LINK_REGISTRATION) {
 
-		} else if (type == MSG_GPS_DATA) {
+            getDeviceSession(channel, remoteAddress, buf.readSlice(12).toString(StandardCharsets.US_ASCII));
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+        } else if (type == MSG_GPS_DATA) {
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			position.setTime(new Date(buf.readLongLE()));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			int flags = buf.readUnsignedByte();
+            position.setTime(new Date(buf.readLongLE()));
 
-			if (BitUtil.check(flags, 0)) {
+            int flags = buf.readUnsignedByte();
 
-				buf.readUnsignedShortLE(); // declination
+            if (BitUtil.check(flags, 0)) {
 
-				position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShortLE()));
+                buf.readUnsignedShortLE(); // declination
 
-				position.setLongitude(buf.readUnsignedByte() + buf.readUnsignedByte() / 60.0);
-				position.setLatitude(buf.readUnsignedByte() + buf.readUnsignedByte() / 60.0);
+                position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShortLE()));
 
-				position.setLongitude(position.getLongitude() + buf.readUnsignedIntLE() / 3600.0);
-				position.setLatitude(position.getLatitude() + buf.readUnsignedIntLE() / 3600.0);
+                position.setLongitude(buf.readUnsignedByte() + buf.readUnsignedByte() / 60.0);
+                position.setLatitude(buf.readUnsignedByte() + buf.readUnsignedByte() / 60.0);
 
-				int status = buf.readUnsignedByte();
+                position.setLongitude(position.getLongitude() + buf.readUnsignedIntLE() / 3600.0);
+                position.setLatitude(position.getLatitude() + buf.readUnsignedIntLE() / 3600.0);
 
-				position.setValid(BitUtil.check(status, 0));
-				if (BitUtil.check(status, 1)) {
-					position.setLongitude(-position.getLongitude());
-				}
-				if (!BitUtil.check(status, 2)) {
-					position.setLatitude(-position.getLatitude());
-				}
+                int status = buf.readUnsignedByte();
 
-			} else {
+                position.setValid(BitUtil.check(status, 0));
+                if (BitUtil.check(status, 1)) {
+                    position.setLongitude(-position.getLongitude());
+                }
+                if (!BitUtil.check(status, 2)) {
+                    position.setLatitude(-position.getLatitude());
+                }
 
-				getLastLocation(position, position.getDeviceTime());
+            } else {
 
-			}
+                getLastLocation(position, position.getDeviceTime());
 
-			return position;
+            }
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

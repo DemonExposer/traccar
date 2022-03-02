@@ -21,17 +21,16 @@ import org.traccar.PipelineBuilder;
 import org.traccar.TrackerServer;
 
 import java.nio.ByteOrder;
-
 public class RitiProtocol extends BaseProtocol {
 
-	public RitiProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 105, 2, 3, 0, true));
-				pipeline.addLast(new RitiProtocolDecoder(RitiProtocol.this));
-			}
-		});
-	}
+    public RitiProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 105, 2, 3, 0, true));
+                pipeline.addLast(new RitiProtocolDecoder(RitiProtocol.this));
+            }
+        });
+    }
 
 }

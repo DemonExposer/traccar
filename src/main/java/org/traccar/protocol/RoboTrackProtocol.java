@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class RoboTrackProtocol extends BaseProtocol {
 
-	public RoboTrackProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new RoboTrackFrameDecoder());
-				pipeline.addLast(new RoboTrackProtocolDecoder(RoboTrackProtocol.this));
-			}
-		});
-	}
+    public RoboTrackProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new RoboTrackFrameDecoder());
+                pipeline.addLast(new RoboTrackProtocolDecoder(RoboTrackProtocol.this));
+            }
+        });
+    }
 
 }

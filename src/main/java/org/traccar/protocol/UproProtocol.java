@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class UproProtocol extends BaseProtocol {
 
-	public UproProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new UproProtocolDecoder(UproProtocol.this));
-			}
-		});
-	}
+    public UproProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '#'));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new UproProtocolDecoder(UproProtocol.this));
+            }
+        });
+    }
 
 }

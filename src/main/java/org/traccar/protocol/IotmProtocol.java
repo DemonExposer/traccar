@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class IotmProtocol extends BaseProtocol {
 
-	public IotmProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(MqttEncoder.INSTANCE);
-				pipeline.addLast(new MqttDecoder());
-				pipeline.addLast(new IotmProtocolDecoder(IotmProtocol.this));
-			}
-		});
-	}
+    public IotmProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(MqttEncoder.INSTANCE);
+                pipeline.addLast(new MqttDecoder());
+                pipeline.addLast(new IotmProtocolDecoder(IotmProtocol.this));
+            }
+        });
+    }
 
 }

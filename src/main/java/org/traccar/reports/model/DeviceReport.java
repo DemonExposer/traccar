@@ -22,32 +22,34 @@ import java.util.List;
 
 public class DeviceReport {
 
-	private String deviceName;
-	private String groupName = "";
-	private List<?> objects;
+    private String deviceName;
 
-	public String getDeviceName() {
-		return deviceName;
-	}
+    public String getDeviceName() {
+        return deviceName;
+    }
 
-	public void setDeviceName(String deviceName) {
-		this.deviceName = deviceName;
-	}
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
+    }
 
-	public String getGroupName() {
-		return groupName;
-	}
+    private String groupName = "";
 
-	public void setGroupName(String groupName) {
-		this.groupName = groupName;
-	}
+    public String getGroupName() {
+        return groupName;
+    }
 
-	public Collection<?> getObjects() {
-		return objects;
-	}
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
 
-	public void setObjects(Collection<?> objects) {
-		this.objects = new ArrayList<>(objects);
-	}
+    private List<?> objects;
+
+    public Collection<?> getObjects() {
+        return objects;
+    }
+
+    public void setObjects(Collection<?> objects) {
+        this.objects = new ArrayList<>(objects);
+    }
 
 }

@@ -20,104 +20,114 @@ import java.util.Map;
 
 public class Statistics extends ExtendedModel {
 
-	private Date captureTime;
-	private int activeUsers;
-	private int activeDevices;
-	private int requests;
-	private int messagesReceived;
-	private int messagesStored;
-	private int mailSent;
-	private int smsSent;
-	private int geocoderRequests;
-	private int geolocationRequests;
-	private Map<String, Integer> protocols;
+    private Date captureTime;
 
-	public Date getCaptureTime() {
-		return captureTime;
-	}
+    public Date getCaptureTime() {
+        return captureTime;
+    }
 
-	public void setCaptureTime(Date captureTime) {
-		this.captureTime = captureTime;
-	}
+    public void setCaptureTime(Date captureTime) {
+        this.captureTime = captureTime;
+    }
 
-	public int getActiveUsers() {
-		return activeUsers;
-	}
+    private int activeUsers;
 
-	public void setActiveUsers(int activeUsers) {
-		this.activeUsers = activeUsers;
-	}
+    public int getActiveUsers() {
+        return activeUsers;
+    }
 
-	public int getActiveDevices() {
-		return activeDevices;
-	}
+    public void setActiveUsers(int activeUsers) {
+        this.activeUsers = activeUsers;
+    }
 
-	public void setActiveDevices(int activeDevices) {
-		this.activeDevices = activeDevices;
-	}
+    private int activeDevices;
 
-	public int getRequests() {
-		return requests;
-	}
+    public int getActiveDevices() {
+        return activeDevices;
+    }
 
-	public void setRequests(int requests) {
-		this.requests = requests;
-	}
+    public void setActiveDevices(int activeDevices) {
+        this.activeDevices = activeDevices;
+    }
 
-	public int getMessagesReceived() {
-		return messagesReceived;
-	}
+    private int requests;
 
-	public void setMessagesReceived(int messagesReceived) {
-		this.messagesReceived = messagesReceived;
-	}
+    public int getRequests() {
+        return requests;
+    }
 
-	public int getMessagesStored() {
-		return messagesStored;
-	}
+    public void setRequests(int requests) {
+        this.requests = requests;
+    }
 
-	public void setMessagesStored(int messagesStored) {
-		this.messagesStored = messagesStored;
-	}
+    private int messagesReceived;
 
-	public int getMailSent() {
-		return mailSent;
-	}
+    public int getMessagesReceived() {
+        return messagesReceived;
+    }
 
-	public void setMailSent(int mailSent) {
-		this.mailSent = mailSent;
-	}
+    public void setMessagesReceived(int messagesReceived) {
+        this.messagesReceived = messagesReceived;
+    }
 
-	public int getSmsSent() {
-		return smsSent;
-	}
+    private int messagesStored;
 
-	public void setSmsSent(int smsSent) {
-		this.smsSent = smsSent;
-	}
+    public int getMessagesStored() {
+        return messagesStored;
+    }
 
-	public int getGeocoderRequests() {
-		return geocoderRequests;
-	}
+    public void setMessagesStored(int messagesStored) {
+        this.messagesStored = messagesStored;
+    }
 
-	public void setGeocoderRequests(int geocoderRequests) {
-		this.geocoderRequests = geocoderRequests;
-	}
+    private int mailSent;
 
-	public int getGeolocationRequests() {
-		return geolocationRequests;
-	}
+    public int getMailSent() {
+        return mailSent;
+    }
 
-	public void setGeolocationRequests(int geolocationRequests) {
-		this.geolocationRequests = geolocationRequests;
-	}
+    public void setMailSent(int mailSent) {
+        this.mailSent = mailSent;
+    }
 
-	public Map<String, Integer> getProtocols() {
-		return protocols;
-	}
+    private int smsSent;
 
-	public void setProtocols(Map<String, Integer> protocols) {
-		this.protocols = protocols;
-	}
+    public int getSmsSent() {
+        return smsSent;
+    }
+
+    public void setSmsSent(int smsSent) {
+        this.smsSent = smsSent;
+    }
+
+    private int geocoderRequests;
+
+    public int getGeocoderRequests() {
+        return geocoderRequests;
+    }
+
+    public void setGeocoderRequests(int geocoderRequests) {
+        this.geocoderRequests = geocoderRequests;
+    }
+
+    private int geolocationRequests;
+
+    public int getGeolocationRequests() {
+        return geolocationRequests;
+    }
+
+    public void setGeolocationRequests(int geolocationRequests) {
+        this.geolocationRequests = geolocationRequests;
+    }
+
+    private Map<String, Integer> protocols;
+
+    public Map<String, Integer> getProtocols() {
+        return protocols;
+    }
+
+    public void setProtocols(Map<String, Integer> protocols) {
+        this.protocols = protocols;
+    }
 
 }

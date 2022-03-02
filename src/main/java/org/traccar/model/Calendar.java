@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.filter.Filter;
-import net.fortuna.ical4j.filter.PeriodRule;
+import net.fortuna.ical4j.filter.predicate.PeriodRule;
 import net.fortuna.ical4j.model.DateTime;
 import net.fortuna.ical4j.model.Period;
 import net.fortuna.ical4j.model.component.CalendarComponent;
@@ -34,42 +34,44 @@ import java.util.Date;
 
 public class Calendar extends ExtendedModel {
 
-	private String name;
-	private byte[] data;
-	private net.fortuna.ical4j.model.Calendar calendar;
+    private String name;
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public byte[] getData() {
-		return data.clone();
-	}
+    private byte[] data;
 
-	public void setData(byte[] data) throws IOException, ParserException {
-		CalendarBuilder builder = new CalendarBuilder();
-		calendar = builder.build(new ByteArrayInputStream(data));
-		this.data = data.clone();
-	}
+    public byte[] getData() {
+        return data.clone();
+    }
 
-	@QueryIgnore
-	@JsonIgnore
-	public net.fortuna.ical4j.model.Calendar getCalendar() {
-		return calendar;
-	}
+    public void setData(byte[] data) throws IOException, ParserException {
+        CalendarBuilder builder = new CalendarBuilder();
+        calendar = builder.build(new ByteArrayInputStream(data));
+        this.data = data.clone();
+    }
 
-	public boolean checkMoment(Date date) {
-		if (calendar != null) {
-			Period period = new Period(new DateTime(date), Duration.ZERO);
-			Filter<CalendarComponent> filter = new Filter<>(new PeriodRule<>(period));
-			Collection<CalendarComponent> events = filter.filter(calendar.getComponents(CalendarComponent.VEVENT));
-			return events != null && !events.isEmpty();
-		}
-		return false;
-	}
+    private net.fortuna.ical4j.model.Calendar calendar;
+
+    @QueryIgnore
+    @JsonIgnore
+    public net.fortuna.ical4j.model.Calendar getCalendar() {
+        return calendar;
+    }
+
+    public boolean checkMoment(Date date) {
+        if (calendar != null) {
+            Period period = new Period(new DateTime(date), Duration.ZERO);
+            Filter<CalendarComponent> filter = new Filter<>(new PeriodRule<>(period));
+            Collection<CalendarComponent> events = filter.filter(calendar.getComponents(CalendarComponent.VEVENT));
+            return events != null && !events.isEmpty();
+        }
+        return false;
+    }
 
 }

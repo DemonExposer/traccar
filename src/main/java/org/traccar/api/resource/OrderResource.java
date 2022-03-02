@@ -28,8 +28,8 @@ import javax.ws.rs.core.MediaType;
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderResource extends SimpleObjectResource<Order> {
 
-	public OrderResource() {
-		super(Order.class);
-	}
+    public OrderResource() {
+        super(Order.class);
+    }
 
 }

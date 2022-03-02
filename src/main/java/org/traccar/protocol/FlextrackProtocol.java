@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class FlextrackProtocol extends BaseProtocol {
 
-	public FlextrackProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\r"));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new FlextrackProtocolDecoder(FlextrackProtocol.this));
-			}
-		});
-	}
+    public FlextrackProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, "\r"));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new FlextrackProtocolDecoder(FlextrackProtocol.this));
+            }
+        });
+    }
 
 }

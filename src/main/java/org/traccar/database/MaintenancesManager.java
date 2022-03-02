@@ -20,8 +20,8 @@ import org.traccar.model.Maintenance;
 
 public class MaintenancesManager extends ExtendedObjectManager<Maintenance> {
 
-	public MaintenancesManager(DataManager dataManager) {
-		super(dataManager, Maintenance.class);
-	}
+    public MaintenancesManager(DataManager dataManager) {
+        super(dataManager, Maintenance.class);
+    }
 
 }

@@ -23,15 +23,15 @@ import org.traccar.TrackerServer;
 
 public class B2316Protocol extends BaseProtocol {
 
-	public B2316Protocol() {
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new B2316ProtocolDecoder(B2316Protocol.this));
-			}
-		});
-	}
+    public B2316Protocol() {
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new B2316ProtocolDecoder(B2316Protocol.this));
+            }
+        });
+    }
 
 }

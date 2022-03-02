@@ -29,85 +29,86 @@ import java.util.Date;
 
 public class ContinentalProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_KEEPALIVE = 0x00;
-	public static final int MSG_STATUS = 0x02;
-	public static final int MSG_ACK = 0x06;
-	public static final int MSG_NACK = 0x15;
-	public ContinentalProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public ContinentalProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private double readCoordinate(ByteBuf buf, boolean extended) {
-		long value = buf.readUnsignedInt();
-		if (extended ? (value & 0x08000000) != 0 : (value & 0x00800000) != 0) {
-			value |= extended ? 0xF0000000 : 0xFF000000;
-		}
-		return (int) value / (extended ? 360000.0 : 3600.0);
-	}
+    public static final int MSG_KEEPALIVE = 0x00;
+    public static final int MSG_STATUS = 0x02;
+    public static final int MSG_ACK = 0x06;
+    public static final int MSG_NACK = 0x15;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private double readCoordinate(ByteBuf buf, boolean extended) {
+        long value = buf.readUnsignedInt();
+        if (extended ? (value & 0x08000000) != 0 : (value & 0x00800000) != 0) {
+            value |= extended ? 0xF0000000 : 0xFF000000;
+        }
+        return (int) value / (extended ? 360000.0 : 3600.0);
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		buf.readUnsignedShort(); // length
-		buf.readUnsignedByte(); // software version
+        ByteBuf buf = (ByteBuf) msg;
 
-		long serialNumber = buf.readUnsignedInt();
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(serialNumber));
-		if (deviceSession == null) {
-			return null;
-		}
+        buf.skipBytes(2); // header
+        buf.readUnsignedShort(); // length
+        buf.readUnsignedByte(); // software version
 
-		buf.readUnsignedByte(); // product
+        long serialNumber = buf.readUnsignedInt();
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(serialNumber));
+        if (deviceSession == null) {
+            return null;
+        }
 
-		int type = buf.readUnsignedByte();
+        buf.readUnsignedByte(); // product
 
-		if (type == MSG_STATUS) {
+        int type = buf.readUnsignedByte();
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+        if (type == MSG_STATUS) {
 
-			position.setFixTime(new Date(buf.readUnsignedInt() * 1000L));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			boolean extended = buf.getUnsignedByte(buf.readerIndex()) != 0;
-			position.setLatitude(readCoordinate(buf, extended));
-			position.setLongitude(readCoordinate(buf, extended));
+            position.setFixTime(new Date(buf.readUnsignedInt() * 1000L));
 
-			position.setCourse(buf.readUnsignedShort());
-			position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShort()));
+            boolean extended = buf.getUnsignedByte(buf.readerIndex()) != 0;
+            position.setLatitude(readCoordinate(buf, extended));
+            position.setLongitude(readCoordinate(buf, extended));
 
-			position.setValid(buf.readUnsignedByte() > 0);
+            position.setCourse(buf.readUnsignedShort());
+            position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShort()));
 
-			position.setDeviceTime(new Date(buf.readUnsignedInt() * 1000L));
+            position.setValid(buf.readUnsignedByte() > 0);
 
-			position.set(Position.KEY_EVENT, buf.readUnsignedShort());
+            position.setDeviceTime(new Date(buf.readUnsignedInt() * 1000L));
 
-			int input = buf.readUnsignedShort();
-			position.set(Position.KEY_IGNITION, BitUtil.check(input, 0));
-			position.set(Position.KEY_INPUT, input);
+            position.set(Position.KEY_EVENT, buf.readUnsignedShort());
 
-			position.set(Position.KEY_OUTPUT, buf.readUnsignedShort());
-			position.set(Position.KEY_BATTERY, buf.readUnsignedByte());
-			position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
+            int input = buf.readUnsignedShort();
+            position.set(Position.KEY_IGNITION, BitUtil.check(input, 0));
+            position.set(Position.KEY_INPUT, input);
 
-			buf.readUnsignedShort(); // reserved
+            position.set(Position.KEY_OUTPUT, buf.readUnsignedShort());
+            position.set(Position.KEY_BATTERY, buf.readUnsignedByte());
+            position.set(Position.KEY_DEVICE_TEMP, buf.readByte());
 
-			if (buf.readableBytes() > 4) {
-				position.set(Position.KEY_ODOMETER, buf.readUnsignedInt());
-			}
+            buf.readUnsignedShort(); // reserved
 
-			if (buf.readableBytes() > 4) {
-				position.set(Position.KEY_HOURS, UnitsConverter.msFromHours(buf.readUnsignedInt()));
-			}
+            if (buf.readableBytes() > 4) {
+                position.set(Position.KEY_ODOMETER, buf.readUnsignedInt());
+            }
 
-			return position;
+            if (buf.readableBytes() > 4) {
+                position.set(Position.KEY_HOURS, UnitsConverter.msFromHours(buf.readUnsignedInt()));
+            }
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

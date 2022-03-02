@@ -18,50 +18,54 @@ package org.traccar.model;
 
 public class DeviceState {
 
-	private Boolean motionState;
-	private Position motionPosition;
-	private Boolean overspeedState;
-	private Position overspeedPosition;
-	private long overspeedGeofenceId;
+    private Boolean motionState;
 
-	public Boolean getMotionState() {
-		return motionState;
-	}
+    public void setMotionState(boolean motionState) {
+        this.motionState = motionState;
+    }
 
-	public void setMotionState(boolean motionState) {
-		this.motionState = motionState;
-	}
+    public Boolean getMotionState() {
+        return motionState;
+    }
 
-	public Position getMotionPosition() {
-		return motionPosition;
-	}
+    private Position motionPosition;
 
-	public void setMotionPosition(Position motionPosition) {
-		this.motionPosition = motionPosition;
-	}
+    public void setMotionPosition(Position motionPosition) {
+        this.motionPosition = motionPosition;
+    }
 
-	public Boolean getOverspeedState() {
-		return overspeedState;
-	}
+    public Position getMotionPosition() {
+        return motionPosition;
+    }
 
-	public void setOverspeedState(boolean overspeedState) {
-		this.overspeedState = overspeedState;
-	}
+    private Boolean overspeedState;
 
-	public Position getOverspeedPosition() {
-		return overspeedPosition;
-	}
+    public void setOverspeedState(boolean overspeedState) {
+        this.overspeedState = overspeedState;
+    }
 
-	public void setOverspeedPosition(Position overspeedPosition) {
-		this.overspeedPosition = overspeedPosition;
-	}
+    public Boolean getOverspeedState() {
+        return overspeedState;
+    }
 
-	public long getOverspeedGeofenceId() {
-		return overspeedGeofenceId;
-	}
+    private Position overspeedPosition;
 
-	public void setOverspeedGeofenceId(long overspeedGeofenceId) {
-		this.overspeedGeofenceId = overspeedGeofenceId;
-	}
+    public void setOverspeedPosition(Position overspeedPosition) {
+        this.overspeedPosition = overspeedPosition;
+    }
+
+    public Position getOverspeedPosition() {
+        return overspeedPosition;
+    }
+
+    private long overspeedGeofenceId;
+
+    public void setOverspeedGeofenceId(long overspeedGeofenceId) {
+        this.overspeedGeofenceId = overspeedGeofenceId;
+    }
+
+    public long getOverspeedGeofenceId() {
+        return overspeedGeofenceId;
+    }
 
 }

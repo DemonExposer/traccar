@@ -34,11 +34,11 @@ import java.util.Date;
 @Consumes(MediaType.APPLICATION_JSON)
 public class StatisticsResource extends BaseResource {
 
-	@GET
-	public Collection<Statistics> get(
-			@QueryParam("from") Date from, @QueryParam("to") Date to) throws SQLException {
-		Context.getPermissionsManager().checkAdmin(getUserId());
-		return Context.getDataManager().getStatistics(from, to);
-	}
+    @GET
+    public Collection<Statistics> get(
+            @QueryParam("from") Date from, @QueryParam("to") Date to) throws SQLException {
+        Context.getPermissionsManager().checkAdmin(getUserId());
+        return Context.getDataManager().getStatistics(from, to);
+    }
 
 }

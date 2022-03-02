@@ -27,154 +27,156 @@ import static org.locationtech.spatial4j.distance.DistanceUtils.DEG_TO_KM;
 
 public class GeofencePolygon extends GeofenceGeometry {
 
-	private ArrayList<Coordinate> coordinates;
-	private double[] constant;
-	private double[] multiple;
-	private boolean needNormalize = false;
+    public GeofencePolygon() {
+    }
 
-	public GeofencePolygon() {
-	}
+    public GeofencePolygon(String wkt) throws ParseException {
+        fromWkt(wkt);
+    }
 
-	public GeofencePolygon(String wkt) throws ParseException {
-		fromWkt(wkt);
-	}
+    private ArrayList<Coordinate> coordinates;
 
-	private void preCalculate() {
-		if (coordinates == null) {
-			return;
-		}
+    private double[] constant;
+    private double[] multiple;
 
-		int polyCorners = coordinates.size();
-		int i;
-		int j = polyCorners - 1;
+    private boolean needNormalize = false;
 
-		if (constant != null) {
-			constant = null;
-		}
-		if (multiple != null) {
-			multiple = null;
-		}
+    private void preCalculate() {
+        if (coordinates == null) {
+            return;
+        }
 
-		constant = new double[polyCorners];
-		multiple = new double[polyCorners];
+        int polyCorners = coordinates.size();
+        int i;
+        int j = polyCorners - 1;
 
-		boolean hasNegative = false;
-		boolean hasPositive = false;
-		for (i = 0; i < polyCorners; i++) {
-			if (coordinates.get(i).getLon() > 90) {
-				hasPositive = true;
-			} else if (coordinates.get(i).getLon() < -90) {
-				hasNegative = true;
-			}
-		}
-		needNormalize = hasPositive && hasNegative;
+        if (constant != null) {
+            constant = null;
+        }
+        if (multiple != null) {
+            multiple = null;
+        }
 
-		for (i = 0; i < polyCorners; j = i++) {
-			if (normalizeLon(coordinates.get(j).getLon()) == normalizeLon(coordinates.get(i).getLon())) {
-				constant[i] = coordinates.get(i).getLat();
-				multiple[i] = 0;
-			} else {
-				constant[i] = coordinates.get(i).getLat()
-						- (normalizeLon(coordinates.get(i).getLon()) * coordinates.get(j).getLat())
-						/ (normalizeLon(coordinates.get(j).getLon()) - normalizeLon(coordinates.get(i).getLon()))
-						+ (normalizeLon(coordinates.get(i).getLon()) * coordinates.get(i).getLat())
-						/ (normalizeLon(coordinates.get(j).getLon()) - normalizeLon(coordinates.get(i).getLon()));
-				multiple[i] = (coordinates.get(j).getLat() - coordinates.get(i).getLat())
-						/ (normalizeLon(coordinates.get(j).getLon()) - normalizeLon(coordinates.get(i).getLon()));
-			}
-		}
-	}
+        constant = new double[polyCorners];
+        multiple = new double[polyCorners];
 
-	private double normalizeLon(double lon) {
-		if (needNormalize && lon < -90) {
-			return lon + 360;
-		}
-		return lon;
-	}
+        boolean hasNegative = false;
+        boolean hasPositive = false;
+        for (i = 0; i < polyCorners; i++) {
+            if (coordinates.get(i).getLon() > 90) {
+                hasPositive = true;
+            } else if (coordinates.get(i).getLon() < -90) {
+                hasNegative = true;
+            }
+        }
+        needNormalize = hasPositive && hasNegative;
 
-	@Override
-	public boolean containsPoint(double latitude, double longitude) {
+        for (i = 0; i < polyCorners; j = i++) {
+            if (normalizeLon(coordinates.get(j).getLon()) == normalizeLon(coordinates.get(i).getLon())) {
+                constant[i] = coordinates.get(i).getLat();
+                multiple[i] = 0;
+            } else {
+                constant[i] = coordinates.get(i).getLat()
+                        - (normalizeLon(coordinates.get(i).getLon()) * coordinates.get(j).getLat())
+                        / (normalizeLon(coordinates.get(j).getLon()) - normalizeLon(coordinates.get(i).getLon()))
+                        + (normalizeLon(coordinates.get(i).getLon()) * coordinates.get(i).getLat())
+                        / (normalizeLon(coordinates.get(j).getLon()) - normalizeLon(coordinates.get(i).getLon()));
+                multiple[i] = (coordinates.get(j).getLat() - coordinates.get(i).getLat())
+                        / (normalizeLon(coordinates.get(j).getLon()) - normalizeLon(coordinates.get(i).getLon()));
+            }
+        }
+    }
 
-		int polyCorners = coordinates.size();
-		int i;
-		int j = polyCorners - 1;
-		double longitudeNorm = normalizeLon(longitude);
-		boolean oddNodes = false;
+    private double normalizeLon(double lon) {
+        if (needNormalize && lon < -90) {
+            return lon + 360;
+        }
+        return lon;
+    }
 
-		for (i = 0; i < polyCorners; j = i++) {
-			if (normalizeLon(coordinates.get(i).getLon()) < longitudeNorm
-					&& normalizeLon(coordinates.get(j).getLon()) >= longitudeNorm
-					|| normalizeLon(coordinates.get(j).getLon()) < longitudeNorm
-					&& normalizeLon(coordinates.get(i).getLon()) >= longitudeNorm) {
-				oddNodes ^= longitudeNorm * multiple[i] + constant[i] < latitude;
-			}
-		}
-		return oddNodes;
-	}
+    @Override
+    public boolean containsPoint(double latitude, double longitude) {
 
-	@Override
-	public double calculateArea() {
-		JtsShapeFactory jtsShapeFactory = new JtsSpatialContextFactory().newSpatialContext().getShapeFactory();
-		ShapeFactory.PolygonBuilder polygonBuilder = jtsShapeFactory.polygon();
-		for (Coordinate coordinate : coordinates) {
-			polygonBuilder.pointXY(coordinate.getLon(), coordinate.getLat());
-		}
-		return polygonBuilder.build().getArea(SpatialContext.GEO) * DEG_TO_KM * DEG_TO_KM;
-	}
+        int polyCorners = coordinates.size();
+        int i;
+        int j = polyCorners - 1;
+        double longitudeNorm = normalizeLon(longitude);
+        boolean oddNodes = false;
 
-	@Override
-	public String toWkt() {
-		StringBuilder buf = new StringBuilder();
-		buf.append("POLYGON ((");
-		for (Coordinate coordinate : coordinates) {
-			buf.append(coordinate.getLat());
-			buf.append(" ");
-			buf.append(coordinate.getLon());
-			buf.append(", ");
-		}
-		return buf.substring(0, buf.length() - 2) + "))";
-	}
+        for (i = 0; i < polyCorners; j = i++) {
+            if (normalizeLon(coordinates.get(i).getLon()) < longitudeNorm
+                    && normalizeLon(coordinates.get(j).getLon()) >= longitudeNorm
+                    || normalizeLon(coordinates.get(j).getLon()) < longitudeNorm
+                    && normalizeLon(coordinates.get(i).getLon()) >= longitudeNorm) {
+                oddNodes ^= longitudeNorm * multiple[i] + constant[i] < latitude;
+            }
+        }
+        return oddNodes;
+    }
 
-	@Override
-	public void fromWkt(String wkt) throws ParseException {
-		if (coordinates == null) {
-			coordinates = new ArrayList<>();
-		} else {
-			coordinates.clear();
-		}
+    @Override
+    public double calculateArea() {
+        JtsShapeFactory jtsShapeFactory = new JtsSpatialContextFactory().newSpatialContext().getShapeFactory();
+        ShapeFactory.PolygonBuilder polygonBuilder = jtsShapeFactory.polygon();
+        for (Coordinate coordinate : coordinates) {
+            polygonBuilder.pointXY(coordinate.getLon(), coordinate.getLat());
+        }
+        return polygonBuilder.build().getArea(SpatialContext.GEO) * DEG_TO_KM * DEG_TO_KM;
+    }
 
-		if (!wkt.startsWith("POLYGON")) {
-			throw new ParseException("Mismatch geometry type", 0);
-		}
-		String content = wkt.substring(wkt.indexOf("((") + 2, wkt.indexOf("))"));
-		if (content.isEmpty()) {
-			throw new ParseException("No content", 0);
-		}
-		String[] commaTokens = content.split(",");
-		if (commaTokens.length < 3) {
-			throw new ParseException("Not valid content", 0);
-		}
+    @Override
+    public String toWkt() {
+        StringBuilder buf = new StringBuilder();
+        buf.append("POLYGON ((");
+        for (Coordinate coordinate : coordinates) {
+            buf.append(coordinate.getLat());
+            buf.append(" ");
+            buf.append(coordinate.getLon());
+            buf.append(", ");
+        }
+        return buf.substring(0, buf.length() - 2) + "))";
+    }
 
-		for (String commaToken : commaTokens) {
-			String[] tokens = commaToken.trim().split("\\s");
-			if (tokens.length != 2) {
-				throw new ParseException("Here must be two coordinates: " + commaToken, 0);
-			}
-			Coordinate coordinate = new Coordinate();
-			try {
-				coordinate.setLat(Double.parseDouble(tokens[0]));
-			} catch (NumberFormatException e) {
-				throw new ParseException(tokens[0] + " is not a double", 0);
-			}
-			try {
-				coordinate.setLon(Double.parseDouble(tokens[1]));
-			} catch (NumberFormatException e) {
-				throw new ParseException(tokens[1] + " is not a double", 0);
-			}
-			coordinates.add(coordinate);
-		}
+    @Override
+    public void fromWkt(String wkt) throws ParseException {
+        if (coordinates == null) {
+            coordinates = new ArrayList<>();
+        } else {
+            coordinates.clear();
+        }
 
-		preCalculate();
-	}
+        if (!wkt.startsWith("POLYGON")) {
+            throw new ParseException("Mismatch geometry type", 0);
+        }
+        String content = wkt.substring(wkt.indexOf("((") + 2, wkt.indexOf("))"));
+        if (content.isEmpty()) {
+            throw new ParseException("No content", 0);
+        }
+        String[] commaTokens = content.split(",");
+        if (commaTokens.length < 3) {
+            throw new ParseException("Not valid content", 0);
+        }
+
+        for (String commaToken : commaTokens) {
+            String[] tokens = commaToken.trim().split("\\s");
+            if (tokens.length != 2) {
+                throw new ParseException("Here must be two coordinates: " + commaToken, 0);
+            }
+            Coordinate coordinate = new Coordinate();
+            try {
+                coordinate.setLat(Double.parseDouble(tokens[0]));
+            } catch (NumberFormatException e) {
+                throw new ParseException(tokens[0] + " is not a double", 0);
+            }
+            try {
+                coordinate.setLon(Double.parseDouble(tokens[1]));
+            } catch (NumberFormatException e) {
+                throw new ParseException(tokens[1] + " is not a double", 0);
+            }
+            coordinates.add(coordinate);
+        }
+
+        preCalculate();
+    }
 
 }

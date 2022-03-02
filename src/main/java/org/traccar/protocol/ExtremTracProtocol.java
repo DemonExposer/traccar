@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class ExtremTracProtocol extends BaseProtocol {
 
-	public ExtremTracProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new ExtremTracProtocolDecoder(ExtremTracProtocol.this));
-			}
-		});
-	}
+    public ExtremTracProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new ExtremTracProtocolDecoder(ExtremTracProtocol.this));
+            }
+        });
+    }
 
 }

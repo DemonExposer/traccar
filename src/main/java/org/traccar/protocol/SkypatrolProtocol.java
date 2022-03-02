@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class SkypatrolProtocol extends BaseProtocol {
 
-	public SkypatrolProtocol() {
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new SkypatrolProtocolDecoder(SkypatrolProtocol.this));
-			}
-		});
-	}
+    public SkypatrolProtocol() {
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new SkypatrolProtocolDecoder(SkypatrolProtocol.this));
+            }
+        });
+    }
 
 }

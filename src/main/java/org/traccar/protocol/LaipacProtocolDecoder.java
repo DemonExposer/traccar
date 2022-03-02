@@ -34,248 +34,250 @@ import java.util.regex.Pattern;
 
 public class LaipacProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final String DEFAULT_DEVICE_PASSWORD = "00000000";
-	private static final Pattern PATTERN_EAVSYS = new PatternBuilder()
-			.text("$EAVSYS,")
-			.expression("([^,]+),")              // identifier
-			.expression("([0-9]+),")             // iccid
-			.expression("(\\+?[0-9]+)?,")        // sim phone number
-			.expression("(?:[^,]*),")            // owner name
-			.expression("([^,]*)?")              // firmware version
-			.text("*")
-			.number("(xx)")                      // checksum
-			.compile();
-	private static final Pattern PATTERN_AVRMC = new PatternBuilder()
-			.text("$AVRMC,")
-			.expression("([^,]+),")              // identifier
-			.number("(dd)(dd)(dd),")             // time (hhmmss)
-			.expression("([AVRPavrp]),")         // validity
-			.number("(dd)(dd.d+),")              // latitude
-			.expression("([NS]),")               // latitude hemisphere
-			.number("(ddd)(dd.d+),")             // longitude
-			.number("([EW]),")                   // longitude hemisphere
-			.number("(d+.d+),")                  // speed
-			.number("(d+.d+),")                  // course
-			.number("(dd)(dd)(dd),")             // date (ddmmyy)
-			.expression("([0-9A-Za-z]),")        // event code
-			.expression("([\\d.]+),")            // battery voltage
-			.number("(d+),")                     // current mileage
-			.number("(d),")                      // gps status
-			.number("(d+),")                     // adc1
-			.number("(d+)")                      // adc2
-			.number(",(xxxx|x)")                 // lac | lac+cid = 0
-			.number("(xxxx),")                   // cid | nothing
-			.number("(ddd|d)")                   // mcc | mcc+mnc = 0
-			.number("(ddd)")                     // mnc | nothing
-			.optional(4)
-			.expression(",([^*]*)")              // anything remaining (be forward compatible)
-			.optional(1)
-			.text("*")
-			.number("(xx)")                      // checksum
-			.compile();
+    public LaipacProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public LaipacProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public static final String DEFAULT_DEVICE_PASSWORD = "00000000";
 
-	private String decodeAlarm(String event) {
-		switch (event) {
-			case "Z":
-				return Position.ALARM_LOW_BATTERY;
-			case "Y":
-				return Position.ALARM_TOW;
-			case "X":
-				return Position.ALARM_GEOFENCE_ENTER;
-			case "T":
-				return Position.ALARM_TAMPERING;
-			case "H":
-				return Position.ALARM_POWER_OFF;
-			case "8":
-				return Position.ALARM_VIBRATION;
-			case "7":
-			case "4":
-				return Position.ALARM_GEOFENCE_EXIT;
-			case "6":
-				return Position.ALARM_OVERSPEED;
-			case "5":
-				return Position.ALARM_POWER_CUT;
-			case "3":
-				return Position.ALARM_SOS;
-			default:
-				return null;
-		}
-	}
+    private static final Pattern PATTERN_EAVSYS = new PatternBuilder()
+            .text("$EAVSYS,")
+            .expression("([^,]+),")              // identifier
+            .expression("([0-9]+),")             // iccid
+            .expression("(\\+?[0-9]+)?,")        // sim phone number
+            .expression("(?:[^,]*),")            // owner name
+            .expression("([^,]*)?")              // firmware version
+            .text("*")
+            .number("(xx)")                      // checksum
+            .compile();
 
-	private String decodeEvent(String event, Position position) {
+    private static final Pattern PATTERN_AVRMC = new PatternBuilder()
+            .text("$AVRMC,")
+            .expression("([^,]+),")              // identifier
+            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .expression("([AVRPavrp]),")         // validity
+            .number("(dd)(dd.d+),")              // latitude
+            .expression("([NS]),")               // latitude hemisphere
+            .number("(ddd)(dd.d+),")             // longitude
+            .number("([EW]),")                   // longitude hemisphere
+            .number("(d+.d+),")                  // speed
+            .number("(d+.d+),")                  // course
+            .number("(dd)(dd)(dd),")             // date (ddmmyy)
+            .expression("([0-9A-Za-z]),")        // event code
+            .expression("([\\d.]+),")            // battery voltage
+            .number("(d+),")                     // current mileage
+            .number("(d),")                      // gps status
+            .number("(d+),")                     // adc1
+            .number("(d+)")                      // adc2
+            .number(",(xxxx|x)")                 // lac | lac+cid = 0
+            .number("(xxxx),")                   // cid | nothing
+            .number("(ddd|d)")                   // mcc | mcc+mnc = 0
+            .number("(ddd)")                     // mnc | nothing
+            .optional(4)
+            .expression(",([^*]*)")              // anything remaining (be forward compatible)
+            .optional(1)
+            .text("*")
+            .number("(xx)")                      // checksum
+            .compile();
 
-		if (event.length() == 1) {
-			char inputStatus = event.charAt(0);
-			if (inputStatus >= 'A' && inputStatus <= 'D') {
-				int inputStatusInt = inputStatus - 'A';
-				position.set(Position.PREFIX_IN + 1, inputStatusInt & 1);
-				position.set(Position.PREFIX_IN + 2, inputStatusInt & 2);
-				return null;
-			}
-		}
+    private String decodeAlarm(String event) {
+        switch (event) {
+            case "Z":
+                return Position.ALARM_LOW_BATTERY;
+            case "Y":
+                return Position.ALARM_TOW;
+            case "X":
+                return Position.ALARM_GEOFENCE_ENTER;
+            case "T":
+                return Position.ALARM_TAMPERING;
+            case "H":
+                return Position.ALARM_POWER_OFF;
+            case "8":
+                return Position.ALARM_VIBRATION;
+            case "7":
+            case "4":
+                return Position.ALARM_GEOFENCE_EXIT;
+            case "6":
+                return Position.ALARM_OVERSPEED;
+            case "5":
+                return Position.ALARM_POWER_CUT;
+            case "3":
+                return Position.ALARM_SOS;
+            default:
+                return null;
+        }
+    }
 
-		return event;
-	}
+    private String decodeEvent(String event, Position position) {
 
-	private void sendEventResponse(
-			String event, String devicePassword, Channel channel, SocketAddress remoteAddress) {
+        if (event.length() == 1) {
+            char inputStatus = event.charAt(0);
+            if (inputStatus >= 'A' && inputStatus <= 'D') {
+                int inputStatusInt = inputStatus - 'A';
+                position.set(Position.PREFIX_IN + 1, inputStatusInt & 1);
+                position.set(Position.PREFIX_IN + 2, inputStatusInt & 2);
+                return null;
+            }
+        }
 
-		String responseCode = null;
+        return event;
+    }
 
-		switch (event) {
-			case "3":
-				responseCode = "d";
-				break;
-			case "S":
-			case "T":
-				responseCode = "t";
-				break;
-			case "X":
-			case "4":
-				responseCode = "x";
-				break;
-			case "Y":
-				responseCode = "y";
-				break;
-			case "Z":
-				responseCode = "z";
-				break;
-			default:
-				break;
-		}
+    private void sendEventResponse(
+            String event, String devicePassword, Channel channel, SocketAddress remoteAddress) {
 
-		if (responseCode != null) {
-			String response = "$AVCFG," + devicePassword + "," + responseCode;
-			response += Checksum.nmea(response.substring(1)) + "\r\n";
-			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-		}
+        String responseCode = null;
 
-	}
+        switch (event) {
+            case "3":
+                responseCode = "d";
+                break;
+            case "S":
+            case "T":
+                responseCode = "t";
+                break;
+            case "X":
+            case "4":
+                responseCode = "x";
+                break;
+            case "Y":
+                responseCode = "y";
+                break;
+            case "Z":
+                responseCode = "z";
+                break;
+            default:
+                break;
+        }
 
-	private void sendAcknowledge(
-			String status, String event, String checksum, Channel channel, SocketAddress remoteAddress) {
+        if (responseCode != null) {
+            String response = "$AVCFG," + devicePassword + "," + responseCode;
+            response += Checksum.nmea(response.substring(1)) + "\r\n";
+            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+        }
 
-		if (Character.isLowerCase(status.charAt(0))) {
-			String response = "$EAVACK," + event + "," + checksum;
-			response += Checksum.nmea(response.substring(1)) + "\r\n";
-			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-		}
+    }
 
-	}
+    private void sendAcknowledge(
+            String status, String event, String checksum, Channel channel, SocketAddress remoteAddress) {
 
-	protected Object decodeEavsys(
-			String sentence, Channel channel, SocketAddress remoteAddress) {
+        if (Character.isLowerCase(status.charAt(0))) {
+            String response = "$EAVACK," + event + "," + checksum;
+            response += Checksum.nmea(response.substring(1)) + "\r\n";
+            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+        }
 
-		Parser parser = new Parser(PATTERN_EAVSYS, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+    }
 
-		DeviceSession deviceSession =
-				getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
+    protected Object decodeEavsys(
+            String sentence, Channel channel, SocketAddress remoteAddress) {
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Parser parser = new Parser(PATTERN_EAVSYS, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		getLastLocation(position, null);
+        DeviceSession deviceSession =
+            getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
 
-		position.set(Position.KEY_ICCID, parser.next());
-		position.set(Position.KEY_PHONE, parser.next());
-		position.set(Position.KEY_VERSION_FW, parser.next());
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		return position;
-	}
+        getLastLocation(position, null);
 
-	protected Object decodeAvrmc(
-			String sentence, Channel channel, SocketAddress remoteAddress) {
+        position.set(Position.KEY_ICCID, parser.next());
+        position.set(Position.KEY_PHONE, parser.next());
+        position.set(Position.KEY_VERSION_FW, parser.next());
 
-		Parser parser = new Parser(PATTERN_AVRMC, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+        return position;
+    }
 
-		DeviceSession deviceSession =
-				getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
+    protected Object decodeAvrmc(
+            String sentence, Channel channel, SocketAddress remoteAddress) {
 
-		Position position = new Position(getProtocolName());
+        Parser parser = new Parser(PATTERN_AVRMC, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		position.setDeviceId(deviceSession.getDeviceId());
-		DateBuilder dateBuilder = new DateBuilder()
-				.setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        DeviceSession deviceSession =
+            getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
 
-		String status = parser.next();
-		String upperCaseStatus = status.toUpperCase();
-		position.setValid(upperCaseStatus.equals("A") || upperCaseStatus.equals("R") || upperCaseStatus.equals("P"));
-		position.set(Position.KEY_STATUS, status);
+        Position position = new Position(getProtocolName());
 
-		position.setLatitude(parser.nextCoordinate());
-		position.setLongitude(parser.nextCoordinate());
-		position.setSpeed(parser.nextDouble(0));
-		position.setCourse(parser.nextDouble(0));
+        position.setDeviceId(deviceSession.getDeviceId());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
 
-		dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
-		position.setTime(dateBuilder.getDate());
+        String status = parser.next();
+        String upperCaseStatus = status.toUpperCase();
+        position.setValid(upperCaseStatus.equals("A") || upperCaseStatus.equals("R") || upperCaseStatus.equals("P"));
+        position.set(Position.KEY_STATUS, status);
 
-		String event = parser.next();
-		position.set(Position.KEY_ALARM, decodeAlarm(event));
-		position.set(Position.KEY_EVENT, decodeEvent(event, position));
-		position.set(Position.KEY_BATTERY, Double.parseDouble(parser.next().replaceAll("\\.", "")) * 0.001);
-		position.set(Position.KEY_ODOMETER, parser.nextDouble() * 1000);
-		position.set(Position.KEY_GPS, parser.nextInt());
-		position.set(Position.PREFIX_ADC + 1, parser.nextDouble() * 0.001);
-		position.set(Position.PREFIX_ADC + 2, parser.nextDouble() * 0.001);
+        position.setLatitude(parser.nextCoordinate());
+        position.setLongitude(parser.nextCoordinate());
+        position.setSpeed(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble(0));
 
-		Integer lac = parser.nextHexInt();
-		Integer cid = parser.nextHexInt();
-		Integer mcc = parser.nextInt();
-		Integer mnc = parser.nextInt();
-		if (lac != null && cid != null && mcc != null && mnc != null) {
-			position.setNetwork(new Network(CellTower.from(mcc, mnc, lac, cid)));
-		}
+        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        position.setTime(dateBuilder.getDate());
 
-		parser.next(); // unused
+        String event = parser.next();
+        position.set(Position.KEY_ALARM, decodeAlarm(event));
+        position.set(Position.KEY_EVENT, decodeEvent(event, position));
+        position.set(Position.KEY_BATTERY, Double.parseDouble(parser.next().replaceAll("\\.", "")) * 0.001);
+        position.set(Position.KEY_ODOMETER, parser.nextDouble() * 1000);
+        position.set(Position.KEY_GPS, parser.nextInt());
+        position.set(Position.PREFIX_ADC + 1, parser.nextDouble() * 0.001);
+        position.set(Position.PREFIX_ADC + 2, parser.nextDouble() * 0.001);
 
-		String checksum = parser.next();
+        Integer lac = parser.nextHexInt();
+        Integer cid = parser.nextHexInt();
+        Integer mcc = parser.nextInt();
+        Integer mnc = parser.nextInt();
+        if (lac != null && cid != null && mcc != null && mnc != null) {
+            position.setNetwork(new Network(CellTower.from(mcc, mnc, lac, cid)));
+        }
 
-		if (channel != null) {
+        parser.next(); // unused
 
-			sendAcknowledge(status, event, checksum, channel, remoteAddress);
+        String checksum = parser.next();
 
-			String devicePassword = Context.getIdentityManager()
-					.getDevicePassword(deviceSession.getDeviceId(), getProtocolName(), DEFAULT_DEVICE_PASSWORD);
-			sendEventResponse(event, devicePassword, channel, remoteAddress);
-		}
+        if (channel != null) {
 
-		return position;
-	}
+            sendAcknowledge(status, event, checksum, channel, remoteAddress);
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+            String devicePassword = Context.getIdentityManager()
+                .getDevicePassword(deviceSession.getDeviceId(), getProtocolName(), DEFAULT_DEVICE_PASSWORD);
+            sendEventResponse(event, devicePassword, channel, remoteAddress);
+        }
 
-		String sentence = (String) msg;
+        return position;
+    }
 
-		if (sentence.startsWith("$ECHK")) {
-			if (channel != null) {
-				channel.writeAndFlush(new NetworkMessage(sentence + "\r\n", remoteAddress));
-			}
-		} else if (sentence.startsWith("$EAVSYS")) {
-			return decodeEavsys(sentence, channel, remoteAddress);
-		} else if (sentence.startsWith("$AVRMC")) {
-			return decodeAvrmc(sentence, channel, remoteAddress);
-		}
+    @Override
+    protected Object decode(
+        Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		return null;
-	}
+        String sentence = (String) msg;
+
+        if (sentence.startsWith("$ECHK")) {
+            if (channel != null) {
+                channel.writeAndFlush(new NetworkMessage(sentence + "\r\n", remoteAddress));
+            }
+        } else if (sentence.startsWith("$EAVSYS")) {
+            return decodeEavsys(sentence, channel, remoteAddress);
+        } else if (sentence.startsWith("$AVRMC")) {
+            return decodeAvrmc(sentence, channel, remoteAddress);
+        }
+
+        return null;
+    }
 
 }

@@ -33,48 +33,48 @@ import java.util.Locale;
 
 public final class TextTemplateFormatter {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(TextTemplateFormatter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TextTemplateFormatter.class);
 
-	private TextTemplateFormatter() {
-	}
+    private TextTemplateFormatter() {
+    }
 
-	public static VelocityContext prepareContext(User user) {
+    public static VelocityContext prepareContext(User user) {
 
-		VelocityContext velocityContext = new VelocityContext();
+        VelocityContext velocityContext = new VelocityContext();
 
-		if (user != null) {
-			velocityContext.put("user", user);
-			velocityContext.put("timezone", ReportUtils.getTimezone(user.getId()));
-		}
+        if (user != null) {
+            velocityContext.put("user", user);
+            velocityContext.put("timezone", ReportUtils.getTimezone(user.getId()));
+        }
 
-		velocityContext.put("webUrl", Context.getVelocityEngine().getProperty("web.url"));
-		velocityContext.put("dateTool", new DateTool());
-		velocityContext.put("numberTool", new NumberTool());
-		velocityContext.put("locale", Locale.getDefault());
+        velocityContext.put("webUrl", Context.getVelocityEngine().getProperty("web.url"));
+        velocityContext.put("dateTool", new DateTool());
+        velocityContext.put("numberTool", new NumberTool());
+        velocityContext.put("locale", Locale.getDefault());
 
-		return velocityContext;
-	}
+        return velocityContext;
+    }
 
-	public static Template getTemplate(String name, String path) {
+    public static Template getTemplate(String name, String path) {
 
-		String templateFilePath;
-		Template template;
+        String templateFilePath;
+        Template template;
 
-		try {
-			templateFilePath = Paths.get(path, name + ".vm").toString();
-			template = Context.getVelocityEngine().getTemplate(templateFilePath, StandardCharsets.UTF_8.name());
-		} catch (ResourceNotFoundException error) {
-			LOGGER.warn("Notification template error", error);
-			templateFilePath = Paths.get(path, "unknown.vm").toString();
-			template = Context.getVelocityEngine().getTemplate(templateFilePath, StandardCharsets.UTF_8.name());
-		}
-		return template;
-	}
+        try {
+            templateFilePath = Paths.get(path, name + ".vm").toString();
+            template = Context.getVelocityEngine().getTemplate(templateFilePath, StandardCharsets.UTF_8.name());
+        } catch (ResourceNotFoundException error) {
+            LOGGER.warn("Notification template error", error);
+            templateFilePath = Paths.get(path, "unknown.vm").toString();
+            template = Context.getVelocityEngine().getTemplate(templateFilePath, StandardCharsets.UTF_8.name());
+        }
+        return template;
+    }
 
-	public static NotificationMessage formatMessage(VelocityContext velocityContext, String name, String templatePath) {
-		StringWriter writer = new StringWriter();
-		getTemplate(name, templatePath).merge(velocityContext, writer);
-		return new NotificationMessage((String) velocityContext.get("subject"), writer.toString());
-	}
+    public static NotificationMessage formatMessage(VelocityContext velocityContext, String name, String templatePath) {
+        StringWriter writer = new StringWriter();
+        getTemplate(name, templatePath).merge(velocityContext, writer);
+        return new NotificationMessage((String) velocityContext.get("subject"), writer.toString());
+    }
 
 }

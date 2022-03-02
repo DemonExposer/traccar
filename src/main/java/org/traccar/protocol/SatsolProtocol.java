@@ -24,14 +24,14 @@ import java.nio.ByteOrder;
 
 public class SatsolProtocol extends BaseProtocol {
 
-	public SatsolProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1400, 8, 2, 0, 0, true));
-				pipeline.addLast(new SatsolProtocolDecoder(SatsolProtocol.this));
-			}
-		});
-	}
+    public SatsolProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1400, 8, 2, 0, 0, true));
+                pipeline.addLast(new SatsolProtocolDecoder(SatsolProtocol.this));
+            }
+        });
+    }
 
 }

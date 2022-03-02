@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class ArnaviProtocol extends BaseProtocol {
 
-	public ArnaviProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new ArnaviFrameDecoder());
-				pipeline.addLast(new ArnaviProtocolDecoder(ArnaviProtocol.this));
-			}
-		});
-	}
+    public ArnaviProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new ArnaviFrameDecoder());
+                pipeline.addLast(new ArnaviProtocolDecoder(ArnaviProtocol.this));
+            }
+        });
+    }
 
 }

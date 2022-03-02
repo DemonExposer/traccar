@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class DmtHttpProtocol extends BaseProtocol {
 
-	public DmtHttpProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new HttpResponseEncoder());
-				pipeline.addLast(new HttpRequestDecoder());
-				pipeline.addLast(new HttpObjectAggregator(65535));
-				pipeline.addLast(new DmtHttpProtocolDecoder(DmtHttpProtocol.this));
-			}
-		});
-	}
+    public DmtHttpProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new HttpResponseEncoder());
+                pipeline.addLast(new HttpRequestDecoder());
+                pipeline.addLast(new HttpObjectAggregator(65535));
+                pipeline.addLast(new DmtHttpProtocolDecoder(DmtHttpProtocol.this));
+            }
+        });
+    }
 
 }

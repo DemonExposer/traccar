@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class MoovboxProtocol extends BaseProtocol {
 
-	public MoovboxProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new HttpResponseEncoder());
-				pipeline.addLast(new HttpRequestDecoder());
-				pipeline.addLast(new HttpObjectAggregator(65535));
-				pipeline.addLast(new MoovboxProtocolDecoder(MoovboxProtocol.this));
-			}
-		});
-	}
+    public MoovboxProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new HttpResponseEncoder());
+                pipeline.addLast(new HttpRequestDecoder());
+                pipeline.addLast(new HttpObjectAggregator(65535));
+                pipeline.addLast(new MoovboxProtocolDecoder(MoovboxProtocol.this));
+            }
+        });
+    }
 
 }

@@ -22,15 +22,15 @@ import java.util.concurrent.TimeUnit;
 
 public class TaskWebSocketKeepalive implements Runnable {
 
-	private static final long PERIOD_SECONDS = 55;
+    private static final long PERIOD_SECONDS = 55;
 
-	public void schedule(ScheduledExecutorService executor) {
-		executor.scheduleAtFixedRate(this, PERIOD_SECONDS, PERIOD_SECONDS, TimeUnit.SECONDS);
-	}
+    public void schedule(ScheduledExecutorService executor) {
+        executor.scheduleAtFixedRate(this, PERIOD_SECONDS, PERIOD_SECONDS, TimeUnit.SECONDS);
+    }
 
-	@Override
-	public void run() {
-		Context.getConnectionManager().sendKeepalive();
-	}
+    @Override
+    public void run() {
+        Context.getConnectionManager().sendKeepalive();
+    }
 
 }

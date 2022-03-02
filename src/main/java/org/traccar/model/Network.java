@@ -23,93 +23,99 @@ import java.util.Collection;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Network {
 
-	private Integer homeMobileCountryCode;
-	private Integer homeMobileNetworkCode;
-	private String radioType = "gsm";
-	private String carrier;
-	private Boolean considerIp = false;
-	private Collection<CellTower> cellTowers;
-	private Collection<WifiAccessPoint> wifiAccessPoints;
+    public Network() {
+    }
 
-	public Network() {
-	}
+    public Network(CellTower cellTower) {
+        addCellTower(cellTower);
+    }
 
-	public Network(CellTower cellTower) {
-		addCellTower(cellTower);
-	}
+    public Network(WifiAccessPoint wifiAccessPoint) {
+        addWifiAccessPoint(wifiAccessPoint);
+    }
 
-	public Network(WifiAccessPoint wifiAccessPoint) {
-		addWifiAccessPoint(wifiAccessPoint);
-	}
+    private Integer homeMobileCountryCode;
 
-	public Integer getHomeMobileCountryCode() {
-		return homeMobileCountryCode;
-	}
+    public Integer getHomeMobileCountryCode() {
+        return homeMobileCountryCode;
+    }
 
-	public void setHomeMobileCountryCode(Integer homeMobileCountryCode) {
-		this.homeMobileCountryCode = homeMobileCountryCode;
-	}
+    public void setHomeMobileCountryCode(Integer homeMobileCountryCode) {
+        this.homeMobileCountryCode = homeMobileCountryCode;
+    }
 
-	public Integer getHomeMobileNetworkCode() {
-		return homeMobileNetworkCode;
-	}
+    private Integer homeMobileNetworkCode;
 
-	public void setHomeMobileNetworkCode(Integer homeMobileNetworkCode) {
-		this.homeMobileNetworkCode = homeMobileNetworkCode;
-	}
+    public Integer getHomeMobileNetworkCode() {
+        return homeMobileNetworkCode;
+    }
 
-	public String getRadioType() {
-		return radioType;
-	}
+    public void setHomeMobileNetworkCode(Integer homeMobileNetworkCode) {
+        this.homeMobileNetworkCode = homeMobileNetworkCode;
+    }
 
-	public void setRadioType(String radioType) {
-		this.radioType = radioType;
-	}
+    private String radioType = "gsm";
 
-	public String getCarrier() {
-		return carrier;
-	}
+    public String getRadioType() {
+        return radioType;
+    }
 
-	public void setCarrier(String carrier) {
-		this.carrier = carrier;
-	}
+    public void setRadioType(String radioType) {
+        this.radioType = radioType;
+    }
 
-	public Boolean getConsiderIp() {
-		return considerIp;
-	}
+    private String carrier;
 
-	public void setConsiderIp(Boolean considerIp) {
-		this.considerIp = considerIp;
-	}
+    public String getCarrier() {
+        return carrier;
+    }
 
-	public Collection<CellTower> getCellTowers() {
-		return cellTowers;
-	}
+    public void setCarrier(String carrier) {
+        this.carrier = carrier;
+    }
 
-	public void setCellTowers(Collection<CellTower> cellTowers) {
-		this.cellTowers = cellTowers;
-	}
+    private Boolean considerIp = false;
 
-	public void addCellTower(CellTower cellTower) {
-		if (cellTowers == null) {
-			cellTowers = new ArrayList<>();
-		}
-		cellTowers.add(cellTower);
-	}
+    public Boolean getConsiderIp() {
+        return considerIp;
+    }
 
-	public Collection<WifiAccessPoint> getWifiAccessPoints() {
-		return wifiAccessPoints;
-	}
+    public void setConsiderIp(Boolean considerIp) {
+        this.considerIp = considerIp;
+    }
 
-	public void setWifiAccessPoints(Collection<WifiAccessPoint> wifiAccessPoints) {
-		this.wifiAccessPoints = wifiAccessPoints;
-	}
+    private Collection<CellTower> cellTowers;
 
-	public void addWifiAccessPoint(WifiAccessPoint wifiAccessPoint) {
-		if (wifiAccessPoints == null) {
-			wifiAccessPoints = new ArrayList<>();
-		}
-		wifiAccessPoints.add(wifiAccessPoint);
-	}
+    public Collection<CellTower> getCellTowers() {
+        return cellTowers;
+    }
+
+    public void setCellTowers(Collection<CellTower> cellTowers) {
+        this.cellTowers = cellTowers;
+    }
+
+    public void addCellTower(CellTower cellTower) {
+        if (cellTowers == null) {
+            cellTowers = new ArrayList<>();
+        }
+        cellTowers.add(cellTower);
+    }
+
+    private Collection<WifiAccessPoint> wifiAccessPoints;
+
+    public Collection<WifiAccessPoint> getWifiAccessPoints() {
+        return wifiAccessPoints;
+    }
+
+    public void setWifiAccessPoints(Collection<WifiAccessPoint> wifiAccessPoints) {
+        this.wifiAccessPoints = wifiAccessPoints;
+    }
+
+    public void addWifiAccessPoint(WifiAccessPoint wifiAccessPoint) {
+        if (wifiAccessPoints == null) {
+            wifiAccessPoints = new ArrayList<>();
+        }
+        wifiAccessPoints.add(wifiAccessPoint);
+    }
 
 }

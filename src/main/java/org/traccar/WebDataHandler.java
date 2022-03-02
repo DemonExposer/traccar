@@ -55,256 +55,256 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ChannelHandler.Sharable
 public class WebDataHandler extends BaseDataHandler {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(WebDataHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebDataHandler.class);
 
-	private static final String KEY_POSITION = "position";
-	private static final String KEY_DEVICE = "device";
+    private static final String KEY_POSITION = "position";
+    private static final String KEY_DEVICE = "device";
 
-	private final IdentityManager identityManager;
-	private final ObjectMapper objectMapper;
-	private final Client client;
+    private final IdentityManager identityManager;
+    private final ObjectMapper objectMapper;
+    private final Client client;
 
-	private final String url;
-	private final String header;
-	private final boolean json;
-	private final boolean urlVariables;
+    private final String url;
+    private final String header;
+    private final boolean json;
+    private final boolean urlVariables;
 
-	private final boolean retryEnabled;
-	private final int retryDelay;
-	private final int retryCount;
-	private final int retryLimit;
+    private final boolean retryEnabled;
+    private final int retryDelay;
+    private final int retryCount;
+    private final int retryLimit;
 
-	private final AtomicInteger deliveryPending;
+    private final AtomicInteger deliveryPending;
 
-	@Inject
-	public WebDataHandler(
-			Config config, IdentityManager identityManager, ObjectMapper objectMapper, Client client) {
+    @Inject
+    public WebDataHandler(
+            Config config, IdentityManager identityManager, ObjectMapper objectMapper, Client client) {
 
-		this.identityManager = identityManager;
-		this.objectMapper = objectMapper;
-		this.client = client;
-		this.url = config.getString(Keys.FORWARD_URL);
-		this.header = config.getString(Keys.FORWARD_HEADER);
-		this.json = config.getBoolean(Keys.FORWARD_JSON);
-		this.urlVariables = config.getBoolean(Keys.FORWARD_URL_VARIABLES);
+        this.identityManager = identityManager;
+        this.objectMapper = objectMapper;
+        this.client = client;
+        this.url = config.getString(Keys.FORWARD_URL);
+        this.header = config.getString(Keys.FORWARD_HEADER);
+        this.json = config.getBoolean(Keys.FORWARD_JSON);
+        this.urlVariables = config.getBoolean(Keys.FORWARD_URL_VARIABLES);
 
-		this.retryEnabled = config.getBoolean(Keys.FORWARD_RETRY_ENABLE);
-		this.retryDelay = config.getInteger(Keys.FORWARD_RETRY_DELAY, 100);
-		this.retryCount = config.getInteger(Keys.FORWARD_RETRY_COUNT, 10);
-		this.retryLimit = config.getInteger(Keys.FORWARD_RETRY_LIMIT, 100);
+        this.retryEnabled = config.getBoolean(Keys.FORWARD_RETRY_ENABLE);
+        this.retryDelay = config.getInteger(Keys.FORWARD_RETRY_DELAY, 100);
+        this.retryCount = config.getInteger(Keys.FORWARD_RETRY_COUNT, 10);
+        this.retryLimit = config.getInteger(Keys.FORWARD_RETRY_LIMIT, 100);
 
-		this.deliveryPending = new AtomicInteger(0);
-	}
+        this.deliveryPending = new AtomicInteger(0);
+    }
 
-	private static String formatSentence(Position position) {
+    private static String formatSentence(Position position) {
 
-		StringBuilder s = new StringBuilder("$GPRMC,");
+        StringBuilder s = new StringBuilder("$GPRMC,");
 
-		try (Formatter f = new Formatter(s, Locale.ENGLISH)) {
+        try (Formatter f = new Formatter(s, Locale.ENGLISH)) {
 
-			Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.ENGLISH);
-			calendar.setTimeInMillis(position.getFixTime().getTime());
+            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.ENGLISH);
+            calendar.setTimeInMillis(position.getFixTime().getTime());
 
-			f.format("%1$tH%1$tM%1$tS.%1$tL,A,", calendar);
+            f.format("%1$tH%1$tM%1$tS.%1$tL,A,", calendar);
 
-			double lat = position.getLatitude();
-			double lon = position.getLongitude();
+            double lat = position.getLatitude();
+            double lon = position.getLongitude();
 
-			f.format("%02d%07.4f,%c,", (int) Math.abs(lat), Math.abs(lat) % 1 * 60, lat < 0 ? 'S' : 'N');
-			f.format("%03d%07.4f,%c,", (int) Math.abs(lon), Math.abs(lon) % 1 * 60, lon < 0 ? 'W' : 'E');
+            f.format("%02d%07.4f,%c,", (int) Math.abs(lat), Math.abs(lat) % 1 * 60, lat < 0 ? 'S' : 'N');
+            f.format("%03d%07.4f,%c,", (int) Math.abs(lon), Math.abs(lon) % 1 * 60, lon < 0 ? 'W' : 'E');
 
-			f.format("%.2f,%.2f,", position.getSpeed(), position.getCourse());
-			f.format("%1$td%1$tm%1$ty,,", calendar);
-		}
+            f.format("%.2f,%.2f,", position.getSpeed(), position.getCourse());
+            f.format("%1$td%1$tm%1$ty,,", calendar);
+        }
 
-		s.append(Checksum.nmea(s.substring(1)));
+        s.append(Checksum.nmea(s.substring(1)));
 
-		return s.toString();
-	}
+        return s.toString();
+    }
 
-	private String calculateStatus(Position position) {
-		if (position.getAttributes().containsKey(Position.KEY_ALARM)) {
-			return "0xF841"; // STATUS_PANIC_ON
-		} else if (position.getSpeed() < 1.0) {
-			return "0xF020"; // STATUS_LOCATION
-		} else {
-			return "0xF11C"; // STATUS_MOTION_MOVING
-		}
-	}
+    private String calculateStatus(Position position) {
+        if (position.getAttributes().containsKey(Position.KEY_ALARM)) {
+            return "0xF841"; // STATUS_PANIC_ON
+        } else if (position.getSpeed() < 1.0) {
+            return "0xF020"; // STATUS_LOCATION
+        } else {
+            return "0xF11C"; // STATUS_MOTION_MOVING
+        }
+    }
 
-	public String formatRequest(Position position) throws UnsupportedEncodingException, JsonProcessingException {
+    public String formatRequest(Position position) throws UnsupportedEncodingException, JsonProcessingException {
 
-		Device device = identityManager.getById(position.getDeviceId());
+        Device device = identityManager.getById(position.getDeviceId());
 
-		String request = url
-				.replace("{name}", URLEncoder.encode(device.getName(), StandardCharsets.UTF_8.name()))
-				.replace("{uniqueId}", device.getUniqueId())
-				.replace("{status}", device.getStatus())
-				.replace("{deviceId}", String.valueOf(position.getDeviceId()))
-				.replace("{protocol}", String.valueOf(position.getProtocol()))
-				.replace("{deviceTime}", String.valueOf(position.getDeviceTime().getTime()))
-				.replace("{fixTime}", String.valueOf(position.getFixTime().getTime()))
-				.replace("{valid}", String.valueOf(position.getValid()))
-				.replace("{latitude}", String.valueOf(position.getLatitude()))
-				.replace("{longitude}", String.valueOf(position.getLongitude()))
-				.replace("{altitude}", String.valueOf(position.getAltitude()))
-				.replace("{speed}", String.valueOf(position.getSpeed()))
-				.replace("{course}", String.valueOf(position.getCourse()))
-				.replace("{accuracy}", String.valueOf(position.getAccuracy()))
-				.replace("{statusCode}", calculateStatus(position));
+        String request = url
+                .replace("{name}", URLEncoder.encode(device.getName(), StandardCharsets.UTF_8.name()))
+                .replace("{uniqueId}", device.getUniqueId())
+                .replace("{status}", device.getStatus())
+                .replace("{deviceId}", String.valueOf(position.getDeviceId()))
+                .replace("{protocol}", String.valueOf(position.getProtocol()))
+                .replace("{deviceTime}", String.valueOf(position.getDeviceTime().getTime()))
+                .replace("{fixTime}", String.valueOf(position.getFixTime().getTime()))
+                .replace("{valid}", String.valueOf(position.getValid()))
+                .replace("{latitude}", String.valueOf(position.getLatitude()))
+                .replace("{longitude}", String.valueOf(position.getLongitude()))
+                .replace("{altitude}", String.valueOf(position.getAltitude()))
+                .replace("{speed}", String.valueOf(position.getSpeed()))
+                .replace("{course}", String.valueOf(position.getCourse()))
+                .replace("{accuracy}", String.valueOf(position.getAccuracy()))
+                .replace("{statusCode}", calculateStatus(position));
 
-		if (position.getAddress() != null) {
-			request = request.replace(
-					"{address}", URLEncoder.encode(position.getAddress(), StandardCharsets.UTF_8.name()));
-		}
+        if (position.getAddress() != null) {
+            request = request.replace(
+                    "{address}", URLEncoder.encode(position.getAddress(), StandardCharsets.UTF_8.name()));
+        }
 
-		if (request.contains("{attributes}")) {
-			String attributes = objectMapper.writeValueAsString(position.getAttributes());
-			request = request.replace(
-					"{attributes}", URLEncoder.encode(attributes, StandardCharsets.UTF_8.name()));
-		}
+        if (request.contains("{attributes}")) {
+            String attributes = objectMapper.writeValueAsString(position.getAttributes());
+            request = request.replace(
+                    "{attributes}", URLEncoder.encode(attributes, StandardCharsets.UTF_8.name()));
+        }
 
-		if (request.contains("{gprmc}")) {
-			request = request.replace("{gprmc}", formatSentence(position));
-		}
+        if (request.contains("{gprmc}")) {
+            request = request.replace("{gprmc}", formatSentence(position));
+        }
 
-		if (request.contains("{group}")) {
-			String deviceGroupName = "";
-			if (device.getGroupId() != 0) {
-				Group group = Context.getGroupsManager().getById(device.getGroupId());
-				if (group != null) {
-					deviceGroupName = group.getName();
-				}
-			}
+        if (request.contains("{group}")) {
+            String deviceGroupName = "";
+            if (device.getGroupId() != 0) {
+                Group group = Context.getGroupsManager().getById(device.getGroupId());
+                if (group != null) {
+                    deviceGroupName = group.getName();
+                }
+            }
 
-			request = request.replace("{group}", URLEncoder.encode(deviceGroupName, StandardCharsets.UTF_8.name()));
-		}
+            request = request.replace("{group}", URLEncoder.encode(deviceGroupName, StandardCharsets.UTF_8.name()));
+        }
 
-		return request;
-	}
+        return request;
+    }
 
-	@Override
-	protected Position handlePosition(Position position) {
+    class AsyncRequestAndCallback implements InvocationCallback<Response>, TimerTask {
 
-		AsyncRequestAndCallback request = new AsyncRequestAndCallback(position);
-		request.send();
+        private int retries = 0;
+        private Map<String, Object> payload;
+        private final Invocation.Builder requestBuilder;
+        private MediaType mediaType = MediaType.APPLICATION_JSON_TYPE;
 
-		return position;
-	}
+        AsyncRequestAndCallback(Position position) {
 
-	private Map<String, Object> prepareJsonPayload(Position position) {
+            String formattedUrl;
+            try {
+                formattedUrl = json && !urlVariables ? url : formatRequest(position);
+            } catch (UnsupportedEncodingException | JsonProcessingException e) {
+                throw new RuntimeException("Forwarding formatting error", e);
+            }
 
-		Map<String, Object> data = new HashMap<>();
-		Device device = identityManager.getById(position.getDeviceId());
+            requestBuilder = client.target(formattedUrl).request();
+            if (header != null && !header.isEmpty()) {
+                for (String line: header.split("\\r?\\n")) {
+                    String[] values = line.split(":", 2);
+                    String headerName = values[0].trim();
+                    String headerValue = values[1].trim();
+                    if (headerName.equals(HttpHeaders.CONTENT_TYPE)) {
+                        mediaType = MediaType.valueOf(headerValue);
+                    } else {
+                        requestBuilder.header(headerName, headerValue);
+                    }
+                }
+            }
 
-		data.put(KEY_POSITION, position);
+            if (json) {
+                payload = prepareJsonPayload(position);
+            }
 
-		if (device != null) {
-			data.put(KEY_DEVICE, device);
-		}
+            deliveryPending.incrementAndGet();
+        }
 
-		return data;
-	}
+        private void send() {
+            LOGGER.debug("Position forwarding initiated");
+            if (json) {
+                try {
+                    Entity<String> entity = Entity.entity(objectMapper.writeValueAsString(payload), mediaType);
+                    requestBuilder.async().post(entity, this);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Failed to serialize location to json", e);
+                }
+            } else {
+                requestBuilder.async().get(this);
+            }
+        }
 
-	class AsyncRequestAndCallback implements InvocationCallback<Response>, TimerTask {
+        private void retry(Throwable throwable) {
+            boolean scheduled = false;
+            try {
+                if (retryEnabled && deliveryPending.get() <= retryLimit && retries < retryCount) {
+                    schedule();
+                    scheduled = true;
+                }
+            } finally {
+                int pending = scheduled ? deliveryPending.get() : deliveryPending.decrementAndGet();
+                LOGGER.warn("Position forwarding failed: " + pending + " pending", throwable);
+            }
+        }
 
-		private final Invocation.Builder requestBuilder;
-		private int retries = 0;
-		private Map<String, Object> payload;
-		private MediaType mediaType = MediaType.APPLICATION_JSON_TYPE;
+        private void schedule() {
+            Main.getInjector().getInstance(Timer.class).newTimeout(
+                this, retryDelay * (long) Math.pow(2, retries++), TimeUnit.MILLISECONDS);
+        }
 
-		AsyncRequestAndCallback(Position position) {
+        @Override
+        public void completed(Response response) {
+            if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
+                deliveryPending.decrementAndGet();
+                LOGGER.debug("Position forwarding succeeded");
+            } else {
+                retry(new RuntimeException("Status code 2xx expected"));
+            }
+        }
 
-			String formattedUrl;
-			try {
-				formattedUrl = json && !urlVariables ? url : formatRequest(position);
-			} catch (UnsupportedEncodingException | JsonProcessingException e) {
-				throw new RuntimeException("Forwarding formatting error", e);
-			}
+        @Override
+        public void failed(Throwable throwable) {
+            retry(throwable);
+        }
 
-			requestBuilder = client.target(formattedUrl).request();
-			if (header != null && !header.isEmpty()) {
-				for (String line : header.split("\\r?\\n")) {
-					String[] values = line.split(":", 2);
-					String headerName = values[0].trim();
-					String headerValue = values[1].trim();
-					if (headerName.equals(HttpHeaders.CONTENT_TYPE)) {
-						mediaType = MediaType.valueOf(headerValue);
-					} else {
-						requestBuilder.header(headerName, headerValue);
-					}
-				}
-			}
+        @Override
+        public void run(Timeout timeout) {
+            boolean sent = false;
+            try {
+                if (!timeout.isCancelled()) {
+                    send();
+                    sent = true;
+                }
+            } finally {
+                if (!sent) {
+                    deliveryPending.decrementAndGet();
+                }
+            }
+        }
 
-			if (json) {
-				payload = prepareJsonPayload(position);
-			}
+    }
 
-			deliveryPending.incrementAndGet();
-		}
+    @Override
+    protected Position handlePosition(Position position) {
 
-		private void send() {
-			LOGGER.debug("Position forwarding initiated");
-			if (json) {
-				try {
-					Entity<String> entity = Entity.entity(objectMapper.writeValueAsString(payload), mediaType);
-					requestBuilder.async().post(entity, this);
-				} catch (JsonProcessingException e) {
-					throw new RuntimeException("Failed to serialize location to json", e);
-				}
-			} else {
-				requestBuilder.async().get(this);
-			}
-		}
+        AsyncRequestAndCallback request = new AsyncRequestAndCallback(position);
+        request.send();
 
-		private void retry(Throwable throwable) {
-			boolean scheduled = false;
-			try {
-				if (retryEnabled && deliveryPending.get() <= retryLimit && retries < retryCount) {
-					schedule();
-					scheduled = true;
-				}
-			} finally {
-				int pending = scheduled ? deliveryPending.get() : deliveryPending.decrementAndGet();
-				LOGGER.warn("Position forwarding failed: " + pending + " pending", throwable);
-			}
-		}
+        return position;
+    }
 
-		private void schedule() {
-			Main.getInjector().getInstance(Timer.class).newTimeout(
-					this, retryDelay * (long) Math.pow(2, retries++), TimeUnit.MILLISECONDS);
-		}
+    private Map<String, Object> prepareJsonPayload(Position position) {
 
-		@Override
-		public void completed(Response response) {
-			if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
-				deliveryPending.decrementAndGet();
-				LOGGER.debug("Position forwarding succeeded");
-			} else {
-				retry(new RuntimeException("Status code 2xx expected"));
-			}
-		}
+        Map<String, Object> data = new HashMap<>();
+        Device device = identityManager.getById(position.getDeviceId());
 
-		@Override
-		public void failed(Throwable throwable) {
-			retry(throwable);
-		}
+        data.put(KEY_POSITION, position);
 
-		@Override
-		public void run(Timeout timeout) {
-			boolean sent = false;
-			try {
-				if (!timeout.isCancelled()) {
-					send();
-					sent = true;
-				}
-			} finally {
-				if (!sent) {
-					deliveryPending.decrementAndGet();
-				}
-			}
-		}
+        if (device != null) {
+            data.put(KEY_DEVICE, device);
+        }
 
-	}
+        return data;
+    }
 
 }

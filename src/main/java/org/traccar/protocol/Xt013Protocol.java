@@ -25,16 +25,16 @@ import io.netty.handler.codec.string.StringEncoder;
 
 public class Xt013Protocol extends BaseProtocol {
 
-	public Xt013Protocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new Xt013ProtocolDecoder(Xt013Protocol.this));
-			}
-		});
-	}
+    public Xt013Protocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new Xt013ProtocolDecoder(Xt013Protocol.this));
+            }
+        });
+    }
 
 }

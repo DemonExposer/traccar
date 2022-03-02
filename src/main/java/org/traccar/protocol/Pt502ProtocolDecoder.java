@@ -35,176 +35,178 @@ import java.util.regex.Pattern;
 
 public class Pt502ProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final int MAX_CHUNK_SIZE = 960;
-	private static final Pattern PATTERN = new PatternBuilder()
-			.any().text("$")
-			.expression("([^,]+),")              // type
-			.number("(d+),")                     // id
-			.number("(dd)(dd)(dd).(ddd),")       // time (hhmmss.sss)
-			.expression("([AV]),")               // validity
-			.number("(d+)(dd.dddd),")            // latitude
-			.expression("([NS]),")
-			.number("(d+)(dd.dddd),")            // longitude
-			.expression("([EW]),")
-			.number("(d+.d+)?,")                 // speed
-			.number("(d+.d+)?,")                 // course
-			.number("(dd)(dd)(dd),,,?")          // date (ddmmyy)
-			.expression(".?/")
-			.expression("([01])+,")              // input
-			.expression("([01])+/")              // output
-			.expression("([^/]+)?/")             // adc
-			.number("(d+)")                      // odometer
-			.expression("/([^/]+)?/")            // rfid
-			.number("(xxx)").optional(2)         // state
-			.any()
-			.compile();
-	private ByteBuf photo;
+    private static final int MAX_CHUNK_SIZE = 960;
 
-	public Pt502ProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private ByteBuf photo;
 
-	private String decodeAlarm(String value) {
-		switch (value) {
-			case "IN1":
-				return Position.ALARM_SOS;
-			case "GOF":
-				return Position.ALARM_GEOFENCE;
-			case "TOW":
-				return Position.ALARM_TOW;
-			case "HDA":
-				return Position.ALARM_ACCELERATION;
-			case "HDB":
-				return Position.ALARM_BRAKING;
-			case "FDA":
-				return Position.ALARM_FATIGUE_DRIVING;
-			case "SKA":
-				return Position.ALARM_VIBRATION;
-			case "PMA":
-				return Position.ALARM_MOVEMENT;
-			case "CPA":
-				return Position.ALARM_POWER_CUT;
-			default:
-				return null;
-		}
-	}
+    public Pt502ProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private Position decodePosition(Channel channel, SocketAddress remoteAddress, String sentence) {
+    private static final Pattern PATTERN = new PatternBuilder()
+            .any().text("$")
+            .expression("([^,]+),")              // type
+            .number("(d+),")                     // id
+            .number("(dd)(dd)(dd).(ddd),")       // time (hhmmss.sss)
+            .expression("([AV]),")               // validity
+            .number("(d+)(dd.dddd),")            // latitude
+            .expression("([NS]),")
+            .number("(d+)(dd.dddd),")            // longitude
+            .expression("([EW]),")
+            .number("(d+.d+)?,")                 // speed
+            .number("(d+.d+)?,")                 // course
+            .number("(dd)(dd)(dd),,,?")          // date (ddmmyy)
+            .expression(".?/")
+            .expression("([01])+,")              // input
+            .expression("([01])+/")              // output
+            .expression("([^/]+)?/")             // adc
+            .number("(d+)")                      // odometer
+            .expression("/([^/]+)?/")            // rfid
+            .number("(xxx)").optional(2)         // state
+            .any()
+            .compile();
 
-		Parser parser = new Parser(PATTERN, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+    private String decodeAlarm(String value) {
+        switch (value) {
+            case "IN1":
+                return Position.ALARM_SOS;
+            case "GOF":
+                return Position.ALARM_GEOFENCE;
+            case "TOW":
+                return Position.ALARM_TOW;
+            case "HDA":
+                return Position.ALARM_ACCELERATION;
+            case "HDB":
+                return Position.ALARM_BRAKING;
+            case "FDA":
+                return Position.ALARM_FATIGUE_DRIVING;
+            case "SKA":
+                return Position.ALARM_VIBRATION;
+            case "PMA":
+                return Position.ALARM_MOVEMENT;
+            case "CPA":
+                return Position.ALARM_POWER_CUT;
+            default:
+                return null;
+        }
+    }
 
-		Position position = new Position(getProtocolName());
-		position.set(Position.KEY_ALARM, decodeAlarm(parser.next()));
+    private Position decodePosition(Channel channel, SocketAddress remoteAddress, String sentence) {
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
-		position.setDeviceId(deviceSession.getDeviceId());
+        Parser parser = new Parser(PATTERN, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		DateBuilder dateBuilder = new DateBuilder()
-				.setTime(parser.nextInt(), parser.nextInt(), parser.nextInt(), parser.nextInt());
+        Position position = new Position(getProtocolName());
+        position.set(Position.KEY_ALARM, decodeAlarm(parser.next()));
 
-		position.setValid(parser.next().equals("A"));
-		position.setLatitude(parser.nextCoordinate());
-		position.setLongitude(parser.nextCoordinate());
-		position.setSpeed(parser.nextDouble(0));
-		position.setCourse(parser.nextDouble(0));
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
-		position.setTime(dateBuilder.getDate());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt(), parser.nextInt());
 
-		position.set(Position.KEY_INPUT, parser.next());
-		position.set(Position.KEY_OUTPUT, parser.next());
+        position.setValid(parser.next().equals("A"));
+        position.setLatitude(parser.nextCoordinate());
+        position.setLongitude(parser.nextCoordinate());
+        position.setSpeed(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble(0));
 
-		if (parser.hasNext()) {
-			String[] values = parser.next().split(",");
-			for (int i = 0; i < values.length; i++) {
-				position.set(Position.PREFIX_ADC + (i + 1), Integer.parseInt(values[i], 16));
-			}
-		}
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
-		position.set(Position.KEY_ODOMETER, parser.nextInt(0));
-		position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
+        position.set(Position.KEY_INPUT, parser.next());
+        position.set(Position.KEY_OUTPUT, parser.next());
 
-		if (parser.hasNext()) {
-			int value = parser.nextHexInt(0);
-			position.set(Position.KEY_BATTERY, value >> 8);
-			position.set(Position.KEY_RSSI, (value >> 4) & 0xf);
-			position.set(Position.KEY_SATELLITES, value & 0xf);
-		}
+        if (parser.hasNext()) {
+            String[] values = parser.next().split(",");
+            for (int i = 0; i < values.length; i++) {
+                position.set(Position.PREFIX_ADC + (i + 1), Integer.parseInt(values[i], 16));
+            }
+        }
 
-		return position;
-	}
+        position.set(Position.KEY_ODOMETER, parser.nextInt(0));
+        position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
 
-	private void requestPhotoFragment(Channel channel) {
-		if (channel != null) {
-			int offset = photo.writerIndex();
-			int size = Math.min(photo.writableBytes(), MAX_CHUNK_SIZE);
-			channel.writeAndFlush(new NetworkMessage("#PHD" + offset + "," + size + "\r\n", channel.remoteAddress()));
-		}
-	}
+        if (parser.hasNext()) {
+            int value = parser.nextHexInt(0);
+            position.set(Position.KEY_BATTERY, value >> 8);
+            position.set(Position.KEY_RSSI, (value >> 4) & 0xf);
+            position.set(Position.KEY_SATELLITES, value & 0xf);
+        }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+        return position;
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    private void requestPhotoFragment(Channel channel) {
+        if (channel != null) {
+            int offset = photo.writerIndex();
+            int size = Math.min(photo.writableBytes(), MAX_CHUNK_SIZE);
+            channel.writeAndFlush(new NetworkMessage("#PHD" + offset + "," + size + "\r\n", channel.remoteAddress()));
+        }
+    }
 
-		int typeEndIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ',');
-		String type = buf.toString(buf.readerIndex(), typeEndIndex - buf.readerIndex(), StandardCharsets.US_ASCII);
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		if (type.startsWith("$PHD")) {
+        ByteBuf buf = (ByteBuf) msg;
 
-			int dataIndex = buf.indexOf(typeEndIndex + 1, buf.writerIndex(), (byte) ',') + 1;
-			buf.readerIndex(dataIndex);
+        int typeEndIndex = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ',');
+        String type = buf.toString(buf.readerIndex(), typeEndIndex - buf.readerIndex(), StandardCharsets.US_ASCII);
 
-			if (photo != null) {
+        if (type.startsWith("$PHD")) {
 
-				photo.writeBytes(buf.readSlice(buf.readableBytes()));
+            int dataIndex = buf.indexOf(typeEndIndex + 1, buf.writerIndex(), (byte) ',') + 1;
+            buf.readerIndex(dataIndex);
 
-				if (photo.writableBytes() > 0) {
+            if (photo != null) {
 
-					requestPhotoFragment(channel);
+                photo.writeBytes(buf.readSlice(buf.readableBytes()));
 
-				} else {
+                if (photo.writableBytes() > 0) {
 
-					DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-					String uniqueId = Context.getIdentityManager().getById(deviceSession.getDeviceId()).getUniqueId();
+                    requestPhotoFragment(channel);
 
-					Position position = new Position(getProtocolName());
-					position.setDeviceId(deviceSession.getDeviceId());
+                } else {
 
-					getLastLocation(position, null);
+                    DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+                    String uniqueId = Context.getIdentityManager().getById(deviceSession.getDeviceId()).getUniqueId();
 
-					position.set(Position.KEY_IMAGE, Context.getMediaManager().writeFile(uniqueId, photo, "jpg"));
-					photo.release();
-					photo = null;
+                    Position position = new Position(getProtocolName());
+                    position.setDeviceId(deviceSession.getDeviceId());
 
-					return position;
+                    getLastLocation(position, null);
 
-				}
+                    position.set(Position.KEY_IMAGE, Context.getMediaManager().writeFile(uniqueId, photo, "jpg"));
+                    photo.release();
+                    photo = null;
 
-			}
+                    return position;
 
-		} else {
+                }
 
-			if (type.startsWith("$PHO")) {
-				int size = Integer.parseInt(type.split("-")[0].substring(4));
-				if (size > 0) {
-					photo = Unpooled.buffer(size);
-					requestPhotoFragment(channel);
-				}
-			}
+            }
 
-			return decodePosition(channel, remoteAddress, buf.toString(StandardCharsets.US_ASCII));
+        } else {
 
-		}
+            if (type.startsWith("$PHO")) {
+                int size = Integer.parseInt(type.split("-")[0].substring(4));
+                if (size > 0) {
+                    photo = Unpooled.buffer(size);
+                    requestPhotoFragment(channel);
+                }
+            }
 
-		return null;
-	}
+            return decodePosition(channel, remoteAddress, buf.toString(StandardCharsets.US_ASCII));
+
+        }
+
+        return null;
+    }
 
 }

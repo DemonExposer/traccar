@@ -40,441 +40,444 @@ import org.traccar.model.Server;
 
 public class DeviceManager extends BaseObjectManager<Device> implements IdentityManager, ManagableObjects {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DeviceManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeviceManager.class);
 
-	private final Config config;
-	private final long dataRefreshDelay;
-	private final AtomicLong devicesLastUpdate = new AtomicLong();
-	private final Map<Long, Position> positions = new ConcurrentHashMap<>();
-	private final Map<Long, DeviceState> deviceStates = new ConcurrentHashMap<>();
-	private Map<String, Device> devicesByUniqueId;
-	private Map<String, Device> devicesByPhone;
+    private final Config config;
+    private final long dataRefreshDelay;
 
-	public DeviceManager(DataManager dataManager) {
-		super(dataManager, Device.class);
-		this.config = Context.getConfig();
-		try {
-			writeLock();
-			if (devicesByPhone == null) {
-				devicesByPhone = new ConcurrentHashMap<>();
-			}
-			if (devicesByUniqueId == null) {
-				devicesByUniqueId = new ConcurrentHashMap<>();
-			}
-		} finally {
-			writeUnlock();
-		}
-		dataRefreshDelay = config.getLong(Keys.DATABASE_REFRESH_DELAY) * 1000;
-		refreshLastPositions();
-	}
+    private Map<String, Device> devicesByUniqueId;
+    private Map<String, Device> devicesByPhone;
+    private final AtomicLong devicesLastUpdate = new AtomicLong();
 
-	@Override
-	public long addUnknownDevice(String uniqueId) {
-		Device device = new Device();
-		device.setName(uniqueId);
-		device.setUniqueId(uniqueId);
-		device.setCategory(Context.getConfig().getString(Keys.DATABASE_REGISTER_UNKNOWN_DEFAULT_CATEGORY));
+    private final Map<Long, Position> positions = new ConcurrentHashMap<>();
 
-		long defaultGroupId = Context.getConfig().getLong(Keys.DATABASE_REGISTER_UNKNOWN_DEFAULT_GROUP_ID);
-		if (defaultGroupId != 0) {
-			device.setGroupId(defaultGroupId);
-		}
+    private final Map<Long, DeviceState> deviceStates = new ConcurrentHashMap<>();
 
-		try {
-			addItem(device);
+    public DeviceManager(DataManager dataManager) {
+        super(dataManager, Device.class);
+        this.config = Context.getConfig();
+        try {
+            writeLock();
+            if (devicesByPhone == null) {
+                devicesByPhone = new ConcurrentHashMap<>();
+            }
+            if (devicesByUniqueId == null) {
+                devicesByUniqueId = new ConcurrentHashMap<>();
+            }
+        } finally {
+            writeUnlock();
+        }
+        dataRefreshDelay = config.getLong(Keys.DATABASE_REFRESH_DELAY) * 1000;
+        refreshLastPositions();
+    }
 
-			LOGGER.info("Automatically registered device " + uniqueId);
+    @Override
+    public long addUnknownDevice(String uniqueId) {
+        Device device = new Device();
+        device.setName(uniqueId);
+        device.setUniqueId(uniqueId);
+        device.setCategory(Context.getConfig().getString(Keys.DATABASE_REGISTER_UNKNOWN_DEFAULT_CATEGORY));
 
-			if (defaultGroupId != 0) {
-				Context.getPermissionsManager().refreshDeviceAndGroupPermissions();
-				Context.getPermissionsManager().refreshAllExtendedPermissions();
-			}
+        long defaultGroupId = Context.getConfig().getLong(Keys.DATABASE_REGISTER_UNKNOWN_DEFAULT_GROUP_ID);
+        if (defaultGroupId != 0) {
+            device.setGroupId(defaultGroupId);
+        }
 
-			return device.getId();
-		} catch (SQLException e) {
-			LOGGER.warn("Automatic device registration error", e);
-			return 0;
-		}
-	}
+        try {
+            addItem(device);
 
-	public void updateDeviceCache(boolean force) throws SQLException {
-		long lastUpdate = devicesLastUpdate.get();
-		if ((force || System.currentTimeMillis() - lastUpdate > dataRefreshDelay)
-				&& devicesLastUpdate.compareAndSet(lastUpdate, System.currentTimeMillis())) {
-			refreshItems();
-		}
-	}
+            LOGGER.info("Automatically registered device " + uniqueId);
 
-	@Override
-	public Device getByUniqueId(String uniqueId) throws SQLException {
-		boolean forceUpdate;
-		try {
-			readLock();
-			forceUpdate = !devicesByUniqueId.containsKey(uniqueId) && !config.getBoolean(Keys.DATABASE_IGNORE_UNKNOWN);
-		} finally {
-			readUnlock();
-		}
-		updateDeviceCache(forceUpdate);
-		try {
-			readLock();
-			return devicesByUniqueId.get(uniqueId);
-		} finally {
-			readUnlock();
-		}
-	}
+            if (defaultGroupId != 0) {
+                Context.getPermissionsManager().refreshDeviceAndGroupPermissions();
+                Context.getPermissionsManager().refreshAllExtendedPermissions();
+            }
 
-	@Override
-	public String getDevicePassword(long id, String protocol, String defaultPassword) {
+            return device.getId();
+        } catch (SQLException e) {
+            LOGGER.warn("Automatic device registration error", e);
+            return 0;
+        }
+    }
 
-		String password = lookupAttributeString(id, Command.KEY_DEVICE_PASSWORD, null, false, false);
-		if (password != null) {
-			return password;
-		}
+    public void updateDeviceCache(boolean force) throws SQLException {
+        long lastUpdate = devicesLastUpdate.get();
+        if ((force || System.currentTimeMillis() - lastUpdate > dataRefreshDelay)
+                && devicesLastUpdate.compareAndSet(lastUpdate, System.currentTimeMillis())) {
+            refreshItems();
+        }
+    }
 
-		if (protocol != null) {
-			password = Context.getConfig().getString(Keys.PROTOCOL_DEVICE_PASSWORD.withPrefix(protocol));
-			if (password != null) {
-				return password;
-			}
-		}
+    @Override
+    public Device getByUniqueId(String uniqueId) throws SQLException {
+        boolean forceUpdate;
+        try {
+            readLock();
+            forceUpdate = !devicesByUniqueId.containsKey(uniqueId) && !config.getBoolean(Keys.DATABASE_IGNORE_UNKNOWN);
+        } finally {
+            readUnlock();
+        }
+        updateDeviceCache(forceUpdate);
+        try {
+            readLock();
+            return devicesByUniqueId.get(uniqueId);
+        } finally {
+            readUnlock();
+        }
+    }
 
-		return defaultPassword;
-	}
+    @Override
+    public String getDevicePassword(long id, String protocol, String defaultPassword) {
 
-	public Device getDeviceByPhone(String phone) {
-		try {
-			readLock();
-			return devicesByPhone.get(phone);
-		} finally {
-			readUnlock();
-		}
-	}
+        String password = lookupAttributeString(id, Command.KEY_DEVICE_PASSWORD, null, false, false);
+        if (password != null) {
+            return password;
+        }
 
-	@Override
-	public Set<Long> getAllItems() {
-		Set<Long> result = super.getAllItems();
-		if (result.isEmpty()) {
-			try {
-				updateDeviceCache(true);
-			} catch (SQLException e) {
-				LOGGER.warn("Update device cache error", e);
-			}
-			result = super.getAllItems();
-		}
-		return result;
-	}
+        if (protocol != null) {
+            password = Context.getConfig().getString(Keys.PROTOCOL_DEVICE_PASSWORD.withPrefix(protocol));
+            if (password != null) {
+                return password;
+            }
+        }
 
-	public Collection<Device> getAllDevices() {
-		return getItems(getAllItems());
-	}
+        return defaultPassword;
+    }
 
-	public Set<Long> getAllUserItems(long userId) {
-		return Context.getPermissionsManager().getDevicePermissions(userId);
-	}
+    public Device getDeviceByPhone(String phone) {
+        try {
+            readLock();
+            return devicesByPhone.get(phone);
+        } finally {
+            readUnlock();
+        }
+    }
 
-	@Override
-	public Set<Long> getUserItems(long userId) {
-		if (Context.getPermissionsManager() != null) {
-			Set<Long> result = new HashSet<>();
-			for (long deviceId : Context.getPermissionsManager().getDevicePermissions(userId)) {
-				Device device = getById(deviceId);
-				if (device != null && !device.getDisabled()) {
-					result.add(deviceId);
-				}
-			}
-			return result;
-		} else {
-			return new HashSet<>();
-		}
-	}
+    @Override
+    public Set<Long> getAllItems() {
+        Set<Long> result = super.getAllItems();
+        if (result.isEmpty()) {
+            try {
+                updateDeviceCache(true);
+            } catch (SQLException e) {
+                LOGGER.warn("Update device cache error", e);
+            }
+            result = super.getAllItems();
+        }
+        return result;
+    }
 
-	public Set<Long> getAllManagedItems(long userId) {
-		Set<Long> result = new HashSet<>(getAllUserItems(userId));
-		for (long managedUserId : Context.getUsersManager().getUserItems(userId)) {
-			result.addAll(getAllUserItems(managedUserId));
-		}
-		return result;
-	}
+    public Collection<Device> getAllDevices() {
+        return getItems(getAllItems());
+    }
 
-	@Override
-	public Set<Long> getManagedItems(long userId) {
-		Set<Long> result = new HashSet<>(getUserItems(userId));
-		for (long managedUserId : Context.getUsersManager().getUserItems(userId)) {
-			result.addAll(getUserItems(managedUserId));
-		}
-		return result;
-	}
+    public Set<Long> getAllUserItems(long userId) {
+        return Context.getPermissionsManager().getDevicePermissions(userId);
+    }
 
-	private void addByUniqueId(Device device) {
-		try {
-			writeLock();
-			if (devicesByUniqueId == null) {
-				devicesByUniqueId = new ConcurrentHashMap<>();
-			}
-			devicesByUniqueId.put(device.getUniqueId(), device);
-		} finally {
-			writeUnlock();
-		}
-	}
+    @Override
+    public Set<Long> getUserItems(long userId) {
+        if (Context.getPermissionsManager() != null) {
+            Set<Long> result = new HashSet<>();
+            for (long deviceId : Context.getPermissionsManager().getDevicePermissions(userId)) {
+                Device device = getById(deviceId);
+                if (device != null && !device.getDisabled()) {
+                    result.add(deviceId);
+                }
+            }
+            return result;
+        } else {
+            return new HashSet<>();
+        }
+    }
 
-	private void removeByUniqueId(String deviceUniqueId) {
-		try {
-			writeLock();
-			if (devicesByUniqueId != null) {
-				devicesByUniqueId.remove(deviceUniqueId);
-			}
-		} finally {
-			writeUnlock();
-		}
-	}
+    public Set<Long> getAllManagedItems(long userId) {
+        Set<Long> result = new HashSet<>(getAllUserItems(userId));
+        for (long managedUserId : Context.getUsersManager().getUserItems(userId)) {
+            result.addAll(getAllUserItems(managedUserId));
+        }
+        return result;
+    }
 
-	private void addByPhone(Device device) {
-		try {
-			writeLock();
-			if (devicesByPhone == null) {
-				devicesByPhone = new ConcurrentHashMap<>();
-			}
-			devicesByPhone.put(device.getPhone(), device);
-		} finally {
-			writeUnlock();
-		}
-	}
+    @Override
+    public Set<Long> getManagedItems(long userId) {
+        Set<Long> result = new HashSet<>(getUserItems(userId));
+        for (long managedUserId : Context.getUsersManager().getUserItems(userId)) {
+            result.addAll(getUserItems(managedUserId));
+        }
+        return result;
+    }
 
-	private void removeByPhone(String phone) {
-		if (phone == null || phone.isEmpty()) {
-			return;
-		}
-		try {
-			writeLock();
-			if (devicesByPhone != null) {
-				devicesByPhone.remove(phone);
-			}
-		} finally {
-			writeUnlock();
-		}
-	}
+    private void addByUniqueId(Device device) {
+        try {
+            writeLock();
+            if (devicesByUniqueId == null) {
+                devicesByUniqueId = new ConcurrentHashMap<>();
+            }
+            devicesByUniqueId.put(device.getUniqueId(), device);
+        } finally {
+            writeUnlock();
+        }
+    }
 
-	@Override
-	protected void addNewItem(Device device) {
-		super.addNewItem(device);
-		addByUniqueId(device);
-		if (device.getPhone() != null && !device.getPhone().isEmpty()) {
-			addByPhone(device);
-		}
-		if (Context.getGeofenceManager() != null) {
-			Position lastPosition = getLastPosition(device.getId());
-			if (lastPosition != null) {
-				device.setGeofenceIds(Context.getGeofenceManager().getCurrentDeviceGeofences(lastPosition));
-			}
-		}
-	}
+    private void removeByUniqueId(String deviceUniqueId) {
+        try {
+            writeLock();
+            if (devicesByUniqueId != null) {
+                devicesByUniqueId.remove(deviceUniqueId);
+            }
+        } finally {
+            writeUnlock();
+        }
+    }
 
-	@Override
-	protected void updateCachedItem(Device device) {
-		Device cachedDevice = getById(device.getId());
-		cachedDevice.setName(device.getName());
-		cachedDevice.setGroupId(device.getGroupId());
-		cachedDevice.setCategory(device.getCategory());
-		cachedDevice.setContact(device.getContact());
-		cachedDevice.setModel(device.getModel());
-		cachedDevice.setDisabled(device.getDisabled());
-		cachedDevice.setAttributes(device.getAttributes());
-		if (!device.getUniqueId().equals(cachedDevice.getUniqueId())) {
-			removeByUniqueId(cachedDevice.getUniqueId());
-			cachedDevice.setUniqueId(device.getUniqueId());
-			addByUniqueId(cachedDevice);
-		}
-		if (device.getPhone() != null && !device.getPhone().isEmpty()
-				&& !device.getPhone().equals(cachedDevice.getPhone())) {
-			String phone = cachedDevice.getPhone();
-			removeByPhone(phone);
-			cachedDevice.setPhone(device.getPhone());
-			addByPhone(cachedDevice);
-		}
-	}
+    private void addByPhone(Device device) {
+        try {
+            writeLock();
+            if (devicesByPhone == null) {
+                devicesByPhone = new ConcurrentHashMap<>();
+            }
+            devicesByPhone.put(device.getPhone(), device);
+        } finally {
+            writeUnlock();
+        }
+    }
 
-	@Override
-	protected void removeCachedItem(long deviceId) {
-		Device cachedDevice = getById(deviceId);
-		if (cachedDevice != null) {
-			String deviceUniqueId = cachedDevice.getUniqueId();
-			String phone = cachedDevice.getPhone();
-			super.removeCachedItem(deviceId);
-			removeByUniqueId(deviceUniqueId);
-			removeByPhone(phone);
-		}
-		positions.remove(deviceId);
-	}
+    private void removeByPhone(String phone) {
+        if (phone == null || phone.isEmpty()) {
+            return;
+        }
+        try {
+            writeLock();
+            if (devicesByPhone != null) {
+                devicesByPhone.remove(phone);
+            }
+        } finally {
+            writeUnlock();
+        }
+    }
 
-	public void updateDeviceStatus(Device device) throws SQLException {
-		getDataManager().updateDeviceStatus(device);
-		Device cachedDevice = getById(device.getId());
-		if (cachedDevice != null) {
-			cachedDevice.setStatus(device.getStatus());
-		}
-	}
+    @Override
+    protected void addNewItem(Device device) {
+        super.addNewItem(device);
+        addByUniqueId(device);
+        if (device.getPhone() != null  && !device.getPhone().isEmpty()) {
+            addByPhone(device);
+        }
+        if (Context.getGeofenceManager() != null) {
+            Position lastPosition = getLastPosition(device.getId());
+            if (lastPosition != null) {
+                device.setGeofenceIds(Context.getGeofenceManager().getCurrentDeviceGeofences(lastPosition));
+            }
+        }
+    }
 
-	private void refreshLastPositions() {
-		if (getDataManager() != null) {
-			try {
-				for (Position position : getDataManager().getLatestPositions()) {
-					positions.put(position.getDeviceId(), position);
-				}
-			} catch (SQLException error) {
-				LOGGER.warn("Load latest positions error", error);
-			}
-		}
-	}
+    @Override
+    protected void updateCachedItem(Device device) {
+        Device cachedDevice = getById(device.getId());
+        cachedDevice.setName(device.getName());
+        cachedDevice.setGroupId(device.getGroupId());
+        cachedDevice.setCategory(device.getCategory());
+        cachedDevice.setContact(device.getContact());
+        cachedDevice.setModel(device.getModel());
+        cachedDevice.setDisabled(device.getDisabled());
+        cachedDevice.setAttributes(device.getAttributes());
+        if (!device.getUniqueId().equals(cachedDevice.getUniqueId())) {
+            removeByUniqueId(cachedDevice.getUniqueId());
+            cachedDevice.setUniqueId(device.getUniqueId());
+            addByUniqueId(cachedDevice);
+        }
+        if (device.getPhone() != null && !device.getPhone().isEmpty()
+                && !device.getPhone().equals(cachedDevice.getPhone())) {
+            String phone = cachedDevice.getPhone();
+            removeByPhone(phone);
+            cachedDevice.setPhone(device.getPhone());
+            addByPhone(cachedDevice);
+        }
+    }
 
-	public boolean isLatestPosition(Position position) {
-		Position lastPosition = getLastPosition(position.getDeviceId());
-		return lastPosition == null || position.getFixTime().compareTo(lastPosition.getFixTime()) >= 0;
-	}
+    @Override
+    protected void removeCachedItem(long deviceId) {
+        Device cachedDevice = getById(deviceId);
+        if (cachedDevice != null) {
+            String deviceUniqueId = cachedDevice.getUniqueId();
+            String phone = cachedDevice.getPhone();
+            super.removeCachedItem(deviceId);
+            removeByUniqueId(deviceUniqueId);
+            removeByPhone(phone);
+        }
+        positions.remove(deviceId);
+    }
 
-	public void updateLatestPosition(Position position) throws SQLException {
+    public void updateDeviceStatus(Device device) throws SQLException {
+        getDataManager().updateDeviceStatus(device);
+        Device cachedDevice = getById(device.getId());
+        if (cachedDevice != null) {
+            cachedDevice.setStatus(device.getStatus());
+        }
+    }
 
-		if (isLatestPosition(position)) {
+    private void refreshLastPositions() {
+        if (getDataManager() != null) {
+            try {
+                for (Position position : getDataManager().getLatestPositions()) {
+                    positions.put(position.getDeviceId(), position);
+                }
+            } catch (SQLException error) {
+                LOGGER.warn("Load latest positions error", error);
+            }
+        }
+    }
 
-			getDataManager().updateLatestPosition(position);
+    public boolean isLatestPosition(Position position) {
+        Position lastPosition = getLastPosition(position.getDeviceId());
+        return lastPosition == null || position.getFixTime().compareTo(lastPosition.getFixTime()) >= 0;
+    }
 
-			Device device = getById(position.getDeviceId());
-			if (device != null) {
-				device.setPositionId(position.getId());
-			}
+    public void updateLatestPosition(Position position) throws SQLException {
 
-			positions.put(position.getDeviceId(), position);
+        if (isLatestPosition(position)) {
 
-			if (Context.getConnectionManager() != null) {
-				Context.getConnectionManager().updatePosition(position);
-			}
-		}
-	}
+            getDataManager().updateLatestPosition(position);
 
-	@Override
-	public Position getLastPosition(long deviceId) {
-		return positions.get(deviceId);
-	}
+            Device device = getById(position.getDeviceId());
+            if (device != null) {
+                device.setPositionId(position.getId());
+            }
 
-	public Collection<Position> getInitialState(long userId) {
+            positions.put(position.getDeviceId(), position);
 
-		List<Position> result = new LinkedList<>();
+            if (Context.getConnectionManager() != null) {
+                Context.getConnectionManager().updatePosition(position);
+            }
+        }
+    }
 
-		if (Context.getPermissionsManager() != null) {
-			for (long deviceId : Context.getPermissionsManager().getUserAdmin(userId)
-					? getAllUserItems(userId) : getUserItems(userId)) {
-				if (positions.containsKey(deviceId)) {
-					result.add(positions.get(deviceId));
-				}
-			}
-		}
+    @Override
+    public Position getLastPosition(long deviceId) {
+        return positions.get(deviceId);
+    }
 
-		return result;
-	}
+    public Collection<Position> getInitialState(long userId) {
 
-	@Override
-	public boolean lookupAttributeBoolean(
-			long deviceId, String attributeName, boolean defaultValue, boolean lookupServer, boolean lookupConfig) {
-		Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
-		if (result != null) {
-			return result instanceof String ? Boolean.parseBoolean((String) result) : (Boolean) result;
-		}
-		return defaultValue;
-	}
+        List<Position> result = new LinkedList<>();
 
-	@Override
-	public String lookupAttributeString(
-			long deviceId, String attributeName, String defaultValue, boolean lookupServer, boolean lookupConfig) {
-		Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
-		return result != null ? (String) result : defaultValue;
-	}
+        if (Context.getPermissionsManager() != null) {
+            for (long deviceId : Context.getPermissionsManager().getUserAdmin(userId)
+                    ? getAllUserItems(userId) : getUserItems(userId)) {
+                if (positions.containsKey(deviceId)) {
+                    result.add(positions.get(deviceId));
+                }
+            }
+        }
 
-	@Override
-	public int lookupAttributeInteger(
-			long deviceId, String attributeName, int defaultValue, boolean lookupServer, boolean lookupConfig) {
-		Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
-		if (result != null) {
-			return result instanceof String ? Integer.parseInt((String) result) : ((Number) result).intValue();
-		}
-		return defaultValue;
-	}
+        return result;
+    }
 
-	@Override
-	public long lookupAttributeLong(
-			long deviceId, String attributeName, long defaultValue, boolean lookupServer, boolean lookupConfig) {
-		Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
-		if (result != null) {
-			return result instanceof String ? Long.parseLong((String) result) : ((Number) result).longValue();
-		}
-		return defaultValue;
-	}
+    @Override
+    public boolean lookupAttributeBoolean(
+            long deviceId, String attributeName, boolean defaultValue, boolean lookupServer, boolean lookupConfig) {
+        Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
+        if (result != null) {
+            return result instanceof String ? Boolean.parseBoolean((String) result) : (Boolean) result;
+        }
+        return defaultValue;
+    }
 
-	public double lookupAttributeDouble(
-			long deviceId, String attributeName, double defaultValue, boolean lookupServer, boolean lookupConfig) {
-		Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
-		if (result != null) {
-			return result instanceof String ? Double.parseDouble((String) result) : ((Number) result).doubleValue();
-		}
-		return defaultValue;
-	}
+    @Override
+    public String lookupAttributeString(
+            long deviceId, String attributeName, String defaultValue, boolean lookupServer, boolean lookupConfig) {
+        Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
+        return result != null ? (String) result : defaultValue;
+    }
 
-	private Object lookupAttribute(long deviceId, String attributeName, boolean lookupServer, boolean lookupConfig) {
-		Object result = null;
-		Device device = getById(deviceId);
-		if (device != null) {
-			result = device.getAttributes().get(attributeName);
-			if (result == null) {
-				long groupId = device.getGroupId();
-				while (groupId != 0) {
-					Group group = Context.getGroupsManager().getById(groupId);
-					if (group != null) {
-						result = group.getAttributes().get(attributeName);
-						if (result != null) {
-							break;
-						}
-						groupId = group.getGroupId();
-					} else {
-						groupId = 0;
-					}
-				}
-			}
-			if (result == null && lookupServer) {
-				Server server = Context.getPermissionsManager().getServer();
-				result = server.getAttributes().get(attributeName);
-			}
-			if (result == null && lookupConfig) {
-				result = Context.getConfig().getString(attributeName);
-			}
-		}
-		return result;
-	}
+    @Override
+    public int lookupAttributeInteger(
+            long deviceId, String attributeName, int defaultValue, boolean lookupServer, boolean lookupConfig) {
+        Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
+        if (result != null) {
+            return result instanceof String ? Integer.parseInt((String) result) : ((Number) result).intValue();
+        }
+        return defaultValue;
+    }
 
-	public void resetDeviceAccumulators(DeviceAccumulators deviceAccumulators) throws SQLException {
-		Position last = positions.get(deviceAccumulators.getDeviceId());
-		if (last != null) {
-			if (deviceAccumulators.getTotalDistance() != null) {
-				last.getAttributes().put(Position.KEY_TOTAL_DISTANCE, deviceAccumulators.getTotalDistance());
-			}
-			if (deviceAccumulators.getHours() != null) {
-				last.getAttributes().put(Position.KEY_HOURS, deviceAccumulators.getHours());
-			}
-			getDataManager().addObject(last);
-			updateLatestPosition(last);
-		} else {
-			throw new IllegalArgumentException();
-		}
-	}
+    @Override
+    public long lookupAttributeLong(
+            long deviceId, String attributeName, long defaultValue, boolean lookupServer, boolean lookupConfig) {
+        Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
+        if (result != null) {
+            return result instanceof String ? Long.parseLong((String) result) : ((Number) result).longValue();
+        }
+        return defaultValue;
+    }
 
-	public DeviceState getDeviceState(long deviceId) {
-		DeviceState deviceState = deviceStates.get(deviceId);
-		if (deviceState == null) {
-			deviceState = new DeviceState();
-			deviceStates.put(deviceId, deviceState);
-		}
-		return deviceState;
-	}
+    public double lookupAttributeDouble(
+            long deviceId, String attributeName, double defaultValue, boolean lookupServer, boolean lookupConfig) {
+        Object result = lookupAttribute(deviceId, attributeName, lookupServer, lookupConfig);
+        if (result != null) {
+            return result instanceof String ? Double.parseDouble((String) result) : ((Number) result).doubleValue();
+        }
+        return defaultValue;
+    }
 
-	public void setDeviceState(long deviceId, DeviceState deviceState) {
-		deviceStates.put(deviceId, deviceState);
-	}
+    private Object lookupAttribute(long deviceId, String attributeName, boolean lookupServer, boolean lookupConfig) {
+        Object result = null;
+        Device device = getById(deviceId);
+        if (device != null) {
+            result = device.getAttributes().get(attributeName);
+            if (result == null) {
+                long groupId = device.getGroupId();
+                while (groupId != 0) {
+                    Group group = Context.getGroupsManager().getById(groupId);
+                    if (group != null) {
+                        result = group.getAttributes().get(attributeName);
+                        if (result != null) {
+                            break;
+                        }
+                        groupId = group.getGroupId();
+                    } else {
+                        groupId = 0;
+                    }
+                }
+            }
+            if (result == null && lookupServer) {
+                Server server = Context.getPermissionsManager().getServer();
+                result = server.getAttributes().get(attributeName);
+            }
+            if (result == null && lookupConfig) {
+                result = Context.getConfig().getString(attributeName);
+            }
+        }
+        return result;
+    }
+
+    public void resetDeviceAccumulators(DeviceAccumulators deviceAccumulators) throws SQLException {
+        Position last = positions.get(deviceAccumulators.getDeviceId());
+        if (last != null) {
+            if (deviceAccumulators.getTotalDistance() != null) {
+                last.getAttributes().put(Position.KEY_TOTAL_DISTANCE, deviceAccumulators.getTotalDistance());
+            }
+            if (deviceAccumulators.getHours() != null) {
+                last.getAttributes().put(Position.KEY_HOURS, deviceAccumulators.getHours());
+            }
+            getDataManager().addObject(last);
+            updateLatestPosition(last);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    public DeviceState getDeviceState(long deviceId) {
+        DeviceState deviceState = deviceStates.get(deviceId);
+        if (deviceState == null) {
+            deviceState = new DeviceState();
+            deviceStates.put(deviceId, deviceState);
+        }
+        return deviceState;
+    }
+
+    public void setDeviceState(long deviceId, DeviceState deviceState) {
+        deviceStates.put(deviceId, deviceState);
+    }
 
 }

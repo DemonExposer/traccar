@@ -34,97 +34,97 @@ import java.util.Map;
 
 public class LeafSpyProtocolDecoder extends BaseHttpProtocolDecoder {
 
-	public LeafSpyProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public LeafSpyProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	@Override
-	protected Object decode(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    @Override
+    protected Object decode(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		FullHttpRequest request = (FullHttpRequest) msg;
-		QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-		Map<String, List<String>> params = decoder.parameters();
-		if (params.isEmpty()) {
-			decoder = new QueryStringDecoder(request.content().toString(StandardCharsets.US_ASCII), false);
-			params = decoder.parameters();
-		}
+        FullHttpRequest request = (FullHttpRequest) msg;
+        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+        Map<String, List<String>> params = decoder.parameters();
+        if (params.isEmpty()) {
+            decoder = new QueryStringDecoder(request.content().toString(StandardCharsets.US_ASCII), false);
+            params = decoder.parameters();
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setValid(true);
+        Position position = new Position(getProtocolName());
+        position.setValid(true);
 
-		for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-			for (String value : entry.getValue()) {
-				switch (entry.getKey()) {
-					case "pass":
-						DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, value);
-						if (deviceSession == null) {
-							sendResponse(channel, HttpResponseStatus.BAD_REQUEST);
-							return null;
-						}
-						position.setDeviceId(deviceSession.getDeviceId());
-						break;
-					case "Lat":
-						position.setLatitude(Double.parseDouble(value));
-						break;
-					case "Long":
-						position.setLongitude(Double.parseDouble(value));
-						break;
-					case "RPM":
-						position.set(Position.KEY_RPM, Integer.parseInt(value));
-						position.setSpeed(convertSpeed(Double.parseDouble(value) / 63, "kmh"));
-						break;
-					case "Elv":
-						position.setAltitude(Double.parseDouble(value));
-						break;
-					case "SOC":
-						position.set(Position.KEY_BATTERY_LEVEL, Double.parseDouble(value));
-						break;
-					case "user":
-						position.set(Position.KEY_DRIVER_UNIQUE_ID, value);
-						break;
-					case "ChrgMode":
-						position.set(Position.KEY_CHARGE, Integer.parseInt(value) != 0);
-						break;
-					case "Odo":
-						position.set(Position.KEY_OBD_ODOMETER, Integer.parseInt(value) * 1000);
-						break;
-					default:
-						try {
-							position.set(entry.getKey(), Double.parseDouble(value));
-						} catch (NumberFormatException e) {
-							switch (value) {
-								case "true":
-									position.set(entry.getKey(), true);
-									break;
-								case "false":
-									position.set(entry.getKey(), false);
-									break;
-								default:
-									position.set(entry.getKey(), value);
-									break;
-							}
-						}
-						break;
-				}
-			}
-		}
+        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+            for (String value : entry.getValue()) {
+                switch (entry.getKey()) {
+                    case "pass":
+                        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, value);
+                        if (deviceSession == null) {
+                            sendResponse(channel, HttpResponseStatus.BAD_REQUEST);
+                            return null;
+                        }
+                        position.setDeviceId(deviceSession.getDeviceId());
+                        break;
+                    case "Lat":
+                        position.setLatitude(Double.parseDouble(value));
+                        break;
+                    case "Long":
+                        position.setLongitude(Double.parseDouble(value));
+                        break;
+                    case "RPM":
+                        position.set(Position.KEY_RPM, Integer.parseInt(value));
+                        position.setSpeed(convertSpeed(Double.parseDouble(value) / 63, "kmh"));
+                        break;
+                    case "Elv":
+                        position.setAltitude(Double.parseDouble(value));
+                        break;
+                    case "SOC":
+                        position.set(Position.KEY_BATTERY_LEVEL, Double.parseDouble(value));
+                        break;
+                    case "user":
+                        position.set(Position.KEY_DRIVER_UNIQUE_ID, value);
+                        break;
+                    case "ChrgMode":
+                        position.set(Position.KEY_CHARGE, Integer.parseInt(value) != 0);
+                        break;
+                    case "Odo":
+                        position.set(Position.KEY_OBD_ODOMETER, Integer.parseInt(value) * 1000);
+                        break;
+                    default:
+                        try {
+                            position.set(entry.getKey(), Double.parseDouble(value));
+                        } catch (NumberFormatException e) {
+                            switch (value) {
+                                case "true":
+                                    position.set(entry.getKey(), true);
+                                    break;
+                                case "false":
+                                    position.set(entry.getKey(), false);
+                                    break;
+                                default:
+                                    position.set(entry.getKey(), value);
+                                    break;
+                            }
+                        }
+                        break;
+                }
+            }
+        }
 
-		if (position.getFixTime() == null) {
-			position.setTime(new Date());
-		}
+        if (position.getFixTime() == null) {
+            position.setTime(new Date());
+        }
 
-		if (position.getLatitude() == 0 && position.getLongitude() == 0) {
-			getLastLocation(position, position.getDeviceTime());
-		}
+        if (position.getLatitude() == 0 && position.getLongitude() == 0) {
+            getLastLocation(position, position.getDeviceTime());
+        }
 
-		if (position.getDeviceId() != 0) {
-			sendResponse(channel, HttpResponseStatus.OK,
-					Unpooled.copiedBuffer("\"status\":\"0\"", StandardCharsets.US_ASCII));
-			return position;
-		} else {
-			sendResponse(channel, HttpResponseStatus.BAD_REQUEST);
-			return null;
-		}
-	}
+        if (position.getDeviceId() != 0) {
+            sendResponse(channel, HttpResponseStatus.OK,
+                    Unpooled.copiedBuffer("\"status\":\"0\"", StandardCharsets.US_ASCII));
+            return position;
+        } else {
+            sendResponse(channel, HttpResponseStatus.BAD_REQUEST);
+            return null;
+        }
+    }
 
 }

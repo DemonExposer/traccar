@@ -31,140 +31,140 @@ import java.net.SocketAddress;
 
 public class BlueProtocolDecoder extends BaseProtocolDecoder {
 
-	public BlueProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public BlueProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private double readCoordinate(ByteBuf buf, boolean negative) {
+    private double readCoordinate(ByteBuf buf, boolean negative) {
 
-		int value = buf.readUnsignedShort();
-		int degrees = value / 100;
-		double minutes = value % 100 + buf.readUnsignedShort() * 0.0001;
-		double coordinate = degrees + minutes / 60;
-		return negative ? -coordinate : coordinate;
-	}
+        int value = buf.readUnsignedShort();
+        int degrees = value / 100;
+        double minutes = value % 100 + buf.readUnsignedShort() * 0.0001;
+        double coordinate = degrees + minutes / 60;
+        return negative ? -coordinate : coordinate;
+    }
 
-	private void sendResponse(Channel channel, int deviceIndex) {
-		if (channel != null) {
+    private void sendResponse(Channel channel, int deviceIndex) {
+        if (channel != null) {
 
-			ByteBuf response = Unpooled.buffer();
-			response.writeByte(0xaa);
-			response.writeShort(2 + 1 + 1 + 6 + 1);
-			response.writeByte(0x86); // version
-			response.writeByte(0);
+            ByteBuf response = Unpooled.buffer();
+            response.writeByte(0xaa);
+            response.writeShort(2 + 1 + 1 + 6 + 1);
+            response.writeByte(0x86); // version
+            response.writeByte(0);
 
-			response.writeByte(6); // data length
-			response.writeByte(0xa4); // type
-			response.writeByte(0); // server index
-			response.writeByte(deviceIndex);
-			response.writeByte(0);
-			response.writeByte(0);
+            response.writeByte(6); // data length
+            response.writeByte(0xa4); // type
+            response.writeByte(0); // server index
+            response.writeByte(deviceIndex);
+            response.writeByte(0);
+            response.writeByte(0);
 
-			response.writeByte(Checksum.xor(response.nioBuffer(1, response.writerIndex() - 1)));
+            response.writeByte(Checksum.xor(response.nioBuffer(1, response.writerIndex() - 1)));
 
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-	private String decodeAlarm(int value) {
-		switch (value) {
-			case 1:
-				return Position.ALARM_SOS;
-			case 8:
-				return Position.ALARM_OVERSPEED;
-			case 19:
-				return Position.ALARM_LOW_POWER;
-			default:
-				return null;
-		}
-	}
+    private String decodeAlarm(int value) {
+        switch (value) {
+            case 1:
+                return Position.ALARM_SOS;
+            case 8:
+                return Position.ALARM_OVERSPEED;
+            case 19:
+                return Position.ALARM_LOW_POWER;
+            default:
+                return null;
+        }
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		ByteBuf buf = (ByteBuf) msg;
+        ByteBuf buf = (ByteBuf) msg;
 
-		buf.readUnsignedByte(); // header
-		buf.readUnsignedShort(); // length
-		buf.readUnsignedByte(); // version
-		buf.readUnsignedByte();
+        buf.readUnsignedByte(); // header
+        buf.readUnsignedShort(); // length
+        buf.readUnsignedByte(); // version
+        buf.readUnsignedByte();
 
-		String id = String.valueOf(buf.readUnsignedInt());
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
-		if (deviceSession == null) {
-			return null;
-		}
+        String id = String.valueOf(buf.readUnsignedInt());
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
+        if (deviceSession == null) {
+            return null;
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		while (buf.readableBytes() > 1) {
+        while (buf.readableBytes() > 1) {
 
-			int frameEnd = buf.readerIndex() + buf.readUnsignedByte();
+            int frameEnd = buf.readerIndex() + buf.readUnsignedByte();
 
-			int type = buf.readUnsignedByte();
-			int index = buf.readUnsignedByte();
-			buf.readUnsignedByte();
-			buf.readUnsignedByte(); // flags
+            int type = buf.readUnsignedByte();
+            int index = buf.readUnsignedByte();
+            buf.readUnsignedByte();
+            buf.readUnsignedByte(); // flags
 
-			if (type == 0x01) {
+            if (type == 0x01) {
 
-				buf.readUnsignedByte(); // reserved
-				int flags = buf.readUnsignedByte();
+                buf.readUnsignedByte(); // reserved
+                int flags = buf.readUnsignedByte();
 
-				position.setValid(BitUtil.check(flags, 7));
-				position.setLatitude(readCoordinate(buf, BitUtil.check(flags, 6)));
-				position.setLongitude(readCoordinate(buf, BitUtil.check(flags, 5)));
-				position.setSpeed(buf.readUnsignedShort() + buf.readUnsignedShort() * 0.001);
-				position.setCourse(buf.readUnsignedShort() + buf.readUnsignedByte() * 0.01);
+                position.setValid(BitUtil.check(flags, 7));
+                position.setLatitude(readCoordinate(buf, BitUtil.check(flags, 6)));
+                position.setLongitude(readCoordinate(buf, BitUtil.check(flags, 5)));
+                position.setSpeed(buf.readUnsignedShort() + buf.readUnsignedShort() * 0.001);
+                position.setCourse(buf.readUnsignedShort() + buf.readUnsignedByte() * 0.01);
 
-				DateBuilder dateBuilder = new DateBuilder()
-						.setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
-						.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-				position.setTime(dateBuilder.getDate());
+                DateBuilder dateBuilder = new DateBuilder()
+                        .setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
+                        .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+                position.setTime(dateBuilder.getDate());
 
-				buf.readUnsignedShort(); // lac
-				buf.readUnsignedShort(); // cid
+                buf.readUnsignedShort(); // lac
+                buf.readUnsignedShort(); // cid
 
-			} else if (type == 0x12) {
+            } else if (type == 0x12) {
 
-				int status;
+                int status;
 
-				status = buf.readUnsignedByte(); // status 1
-				position.set(Position.KEY_ALARM, BitUtil.check(status, 1) ? Position.ALARM_VIBRATION : null);
+                status = buf.readUnsignedByte(); // status 1
+                position.set(Position.KEY_ALARM, BitUtil.check(status, 1) ? Position.ALARM_VIBRATION : null);
 
-				buf.readUnsignedByte(); // status 2
-				buf.readUnsignedByte(); // status 3
+                buf.readUnsignedByte(); // status 2
+                buf.readUnsignedByte(); // status 3
 
-				status = buf.readUnsignedByte(); // status 4
-				int ignition = BitUtil.between(status, 2, 4);
-				if (ignition == 0b01) {
-					position.set(Position.KEY_IGNITION, false);
-				}
-				if (ignition == 0b10) {
-					position.set(Position.KEY_IGNITION, true);
-				}
+                status = buf.readUnsignedByte(); // status 4
+                int ignition = BitUtil.between(status, 2, 4);
+                if (ignition == 0b01) {
+                    position.set(Position.KEY_IGNITION, false);
+                }
+                if (ignition == 0b10) {
+                    position.set(Position.KEY_IGNITION, true);
+                }
 
-				buf.readUnsignedByte(); // status 5
-				buf.readUnsignedByte(); // status 6
+                buf.readUnsignedByte(); // status 5
+                buf.readUnsignedByte(); // status 6
 
-				position.set(Position.KEY_STATUS, buf.readUnsignedShort());
+                position.set(Position.KEY_STATUS, buf.readUnsignedShort());
 
-			} else if (type == 0x81) {
+            } else if (type == 0x81) {
 
-				position.set(Position.KEY_ALARM, decodeAlarm(buf.readUnsignedByte()));
+                position.set(Position.KEY_ALARM, decodeAlarm(buf.readUnsignedByte()));
 
-			} else if (type == 0x84) {
+            } else if (type == 0x84) {
 
-				sendResponse(channel, index);
+                sendResponse(channel, index);
 
-			}
+            }
 
-			buf.readerIndex(frameEnd);
-		}
+            buf.readerIndex(frameEnd);
+        }
 
-		return position.getFixTime() != null ? position : null;
-	}
+        return position.getFixTime() != null ? position : null;
+    }
 
 }

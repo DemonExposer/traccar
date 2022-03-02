@@ -34,188 +34,189 @@ import java.util.regex.Pattern;
 
 public class EasyTrackProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final Pattern PATTERN = new PatternBuilder()
-			.text("*").expression("..,")         // manufacturer
-			.number("(d+),")                     // imei
-			.expression("([^,]{2}),")            // command
-			.expression("([AV]),")               // validity
-			.number("(xx)(xx)(xx),")             // date (yymmdd)
-			.number("(xx)(xx)(xx),")             // time (hhmmss)
-			.number("(x)(x{7}),")                // latitude
-			.number("(x)(x{7}),")                // longitude
-			.number("(x{4}),")                   // speed
-			.number("(x{4}),")                   // course
-			.number("(x{8}),")                   // status
-			.number("(x+),")                     // signal
-			.number("(d+),")                     // power
-			.number("(x+),")                     // fuel
-			.number("(x+)")                      // odometer
-			.groupBegin()
-			.number(",(x+)")                     // altitude
-			.groupBegin()
-			.number(",d+")                       // gps data
-			.number(",(d*)")                     // rfid
-			.number(",(x+)")                     // temperature
-			.number(",(d+.d+)")                  // adc
-			.number(",(d+)")                     // satellites
-			.groupEnd("?")
-			.groupEnd("?")
-			.any()
-			.compile();
-	private static final Pattern PATTERN_CELL = new PatternBuilder()
-			.text("*").expression("..,")         // manufacturer
-			.number("(d+),")                     // imei
-			.text("JZ,")                         // command
-			.number("([01]),")                   // result
-			.number("(d+),")                     // cid
-			.number("(d+),")                     // lac
-			.number("(d+),")                     // mcc
-			.number("(d+)")                      // mnc
-			.any()
-			.compile();
+    public EasyTrackProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public EasyTrackProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private static final Pattern PATTERN = new PatternBuilder()
+            .text("*").expression("..,")         // manufacturer
+            .number("(d+),")                     // imei
+            .expression("([^,]{2}),")            // command
+            .expression("([AV]),")               // validity
+            .number("(xx)(xx)(xx),")             // date (yymmdd)
+            .number("(xx)(xx)(xx),")             // time (hhmmss)
+            .number("(x)(x{7}),")                // latitude
+            .number("(x)(x{7}),")                // longitude
+            .number("(x{4}),")                   // speed
+            .number("(x{4}),")                   // course
+            .number("(x{8}),")                   // status
+            .number("(x+),")                     // signal
+            .number("(d+),")                     // power
+            .number("(x+),")                     // fuel
+            .number("(x+)")                      // odometer
+            .groupBegin()
+            .number(",(x+)")                     // altitude
+            .groupBegin()
+            .number(",d+")                       // gps data
+            .number(",(d*)")                     // rfid
+            .number(",(x+)")                     // temperature
+            .number(",(d+.d+)")                  // adc
+            .number(",(d+)")                     // satellites
+            .groupEnd("?")
+            .groupEnd("?")
+            .any()
+            .compile();
 
-	private String decodeAlarm(long status) {
-		if ((status & 0x02000000) != 0) {
-			return Position.ALARM_GEOFENCE_ENTER;
-		}
-		if ((status & 0x04000000) != 0) {
-			return Position.ALARM_GEOFENCE_EXIT;
-		}
-		if ((status & 0x08000000) != 0) {
-			return Position.ALARM_LOW_BATTERY;
-		}
-		if ((status & 0x20000000) != 0) {
-			return Position.ALARM_VIBRATION;
-		}
-		if ((status & 0x80000000) != 0) {
-			return Position.ALARM_OVERSPEED;
-		}
-		if ((status & 0x00010000) != 0) {
-			return Position.ALARM_SOS;
-		}
-		if ((status & 0x00040000) != 0) {
-			return Position.ALARM_POWER_CUT;
-		}
-		return null;
-	}
+    private static final Pattern PATTERN_CELL = new PatternBuilder()
+            .text("*").expression("..,")         // manufacturer
+            .number("(d+),")                     // imei
+            .text("JZ,")                         // command
+            .number("([01]),")                   // result
+            .number("(d+),")                     // cid
+            .number("(d+),")                     // lac
+            .number("(d+),")                     // mcc
+            .number("(d+)")                      // mnc
+            .any()
+            .compile();
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private String decodeAlarm(long status) {
+        if ((status & 0x02000000) != 0) {
+            return Position.ALARM_GEOFENCE_ENTER;
+        }
+        if ((status & 0x04000000) != 0) {
+            return Position.ALARM_GEOFENCE_EXIT;
+        }
+        if ((status & 0x08000000) != 0) {
+            return Position.ALARM_LOW_BATTERY;
+        }
+        if ((status & 0x20000000) != 0) {
+            return Position.ALARM_VIBRATION;
+        }
+        if ((status & 0x80000000) != 0) {
+            return Position.ALARM_OVERSPEED;
+        }
+        if ((status & 0x00010000) != 0) {
+            return Position.ALARM_SOS;
+        }
+        if ((status & 0x00040000) != 0) {
+            return Position.ALARM_POWER_CUT;
+        }
+        return null;
+    }
 
-		String sentence = (String) msg;
-		String type = sentence.substring(20, 22);
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		if (channel != null && (type.equals("TX") || type.equals("MQ"))) {
-			channel.writeAndFlush(new NetworkMessage(sentence + "#", remoteAddress));
-		}
+        String sentence = (String) msg;
+        String type = sentence.substring(20, 22);
 
-		if (type.equals("JZ")) {
-			return decodeCell(channel, remoteAddress, sentence);
-		} else {
-			return decodeLocation(channel, remoteAddress, sentence);
-		}
-	}
+        if (channel != null && (type.equals("TX") || type.equals("MQ"))) {
+            channel.writeAndFlush(new NetworkMessage(sentence + "#", remoteAddress));
+        }
 
-	private Position decodeLocation(Channel channel, SocketAddress remoteAddress, String sentence) {
+        if (type.equals("JZ")) {
+            return decodeCell(channel, remoteAddress, sentence);
+        } else {
+            return decodeLocation(channel, remoteAddress, sentence);
+        }
+    }
 
-		Parser parser = new Parser(PATTERN, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+    private Position decodeLocation(Channel channel, SocketAddress remoteAddress, String sentence) {
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-		if (deviceSession == null) {
-			return null;
-		}
+        Parser parser = new Parser(PATTERN, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
 
-		position.set(Position.KEY_COMMAND, parser.next());
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		position.setValid(parser.next().equals("A"));
+        position.set(Position.KEY_COMMAND, parser.next());
 
-		DateBuilder dateBuilder = new DateBuilder()
-				.setDate(parser.nextHexInt(), parser.nextHexInt(), parser.nextHexInt())
-				.setTime(parser.nextHexInt(), parser.nextHexInt(), parser.nextHexInt());
-		position.setTime(dateBuilder.getDate());
+        position.setValid(parser.next().equals("A"));
 
-		if (BitUtil.check(parser.nextHexInt(), 3)) {
-			position.setLatitude(-parser.nextHexInt() / 600000.0);
-		} else {
-			position.setLatitude(parser.nextHexInt() / 600000.0);
-		}
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextHexInt(), parser.nextHexInt(), parser.nextHexInt())
+                .setTime(parser.nextHexInt(), parser.nextHexInt(), parser.nextHexInt());
+        position.setTime(dateBuilder.getDate());
 
-		if (BitUtil.check(parser.nextHexInt(), 3)) {
-			position.setLongitude(-parser.nextHexInt() / 600000.0);
-		} else {
-			position.setLongitude(parser.nextHexInt() / 600000.0);
-		}
+        if (BitUtil.check(parser.nextHexInt(), 3)) {
+            position.setLatitude(-parser.nextHexInt() / 600000.0);
+        } else {
+            position.setLatitude(parser.nextHexInt() / 600000.0);
+        }
 
-		position.setSpeed(UnitsConverter.knotsFromKph(parser.nextHexInt() / 100.0));
-		double course = parser.nextHexInt() * 0.01;
-		if (course < 360) {
-			position.setCourse(course);
-		}
+        if (BitUtil.check(parser.nextHexInt(), 3)) {
+            position.setLongitude(-parser.nextHexInt() / 600000.0);
+        } else {
+            position.setLongitude(parser.nextHexInt() / 600000.0);
+        }
 
-		long status = parser.nextHexLong();
-		position.set(Position.KEY_ALARM, decodeAlarm(status));
-		position.set(Position.KEY_BLOCKED, (status & 0x00080000) > 0);
-		position.set(Position.KEY_IGNITION, (status & 0x00800000) > 0);
-		position.set(Position.KEY_STATUS, status);
+        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextHexInt() / 100.0));
+        double course = parser.nextHexInt() * 0.01;
+        if (course < 360) {
+            position.setCourse(course);
+        }
 
-		position.set(Position.KEY_RSSI, parser.nextHexInt());
-		position.set(Position.KEY_POWER, parser.nextDouble());
-		position.set(Position.KEY_FUEL_LEVEL, parser.nextHexInt());
-		position.set(Position.KEY_ODOMETER, parser.nextHexInt() * 100);
+        long status = parser.nextHexLong();
+        position.set(Position.KEY_ALARM, decodeAlarm(status));
+        position.set(Position.KEY_BLOCKED, (status & 0x00080000) > 0);
+        position.set(Position.KEY_IGNITION, (status & 0x00800000) > 0);
+        position.set(Position.KEY_STATUS, status);
 
-		position.setAltitude(parser.nextDouble(0));
+        position.set(Position.KEY_RSSI, parser.nextHexInt());
+        position.set(Position.KEY_POWER, parser.nextDouble());
+        position.set(Position.KEY_FUEL_LEVEL, parser.nextHexInt());
+        position.set(Position.KEY_ODOMETER, parser.nextHexInt() * 100);
 
-		if (parser.hasNext(4)) {
-			position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
-			position.set(Position.PREFIX_TEMP + 1, parser.nextHexInt() * 0.01);
-			position.set(Position.PREFIX_ADC + 1, parser.nextDouble());
-			position.set(Position.KEY_SATELLITES, parser.nextInt());
-		}
+        position.setAltitude(parser.nextDouble(0));
 
-		return position;
-	}
+        if (parser.hasNext(4)) {
+            position.set(Position.KEY_DRIVER_UNIQUE_ID, parser.next());
+            position.set(Position.PREFIX_TEMP + 1, parser.nextHexInt() * 0.01);
+            position.set(Position.PREFIX_ADC + 1, parser.nextDouble());
+            position.set(Position.KEY_SATELLITES, parser.nextInt());
+        }
 
-	private Position decodeCell(Channel channel, SocketAddress remoteAddress, String sentence) {
+        return position;
+    }
 
-		Parser parser = new Parser(PATTERN_CELL, sentence);
-		if (!parser.matches()) {
-			return null;
-		}
+    private Position decodeCell(Channel channel, SocketAddress remoteAddress, String sentence) {
 
-		String imei = parser.next();
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-		if (deviceSession == null) {
-			return null;
-		}
+        Parser parser = new Parser(PATTERN_CELL, sentence);
+        if (!parser.matches()) {
+            return null;
+        }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        String imei = parser.next();
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+        if (deviceSession == null) {
+            return null;
+        }
 
-		getLastLocation(position, null);
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-		if (channel != null && parser.nextInt() > 0) {
-			String response = String.format("*ET,%s,JZ,undefined#", imei);
-			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-		}
+        getLastLocation(position, null);
 
-		int cid = parser.nextInt();
-		int lac = parser.nextInt();
-		int mcc = parser.nextInt();
-		int mnc = parser.nextInt();
-		position.setNetwork(new Network(CellTower.from(mcc, mnc, lac, cid)));
+        if (channel != null && parser.nextInt() > 0) {
+            String response = String.format("*ET,%s,JZ,undefined#", imei);
+            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+        }
 
-		return position;
-	}
+        int cid = parser.nextInt();
+        int lac = parser.nextInt();
+        int mcc = parser.nextInt();
+        int mnc = parser.nextInt();
+        position.setNetwork(new Network(CellTower.from(mcc, mnc, lac, cid)));
+
+        return position;
+    }
 
 }

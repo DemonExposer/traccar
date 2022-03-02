@@ -21,14 +21,14 @@ import org.traccar.TrackerServer;
 
 public class RetranslatorProtocol extends BaseProtocol {
 
-	public RetranslatorProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new RetranslatorFrameDecoder());
-				pipeline.addLast(new RetranslatorProtocolDecoder(RetranslatorProtocol.this));
-			}
-		});
-	}
+    public RetranslatorProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new RetranslatorFrameDecoder());
+                pipeline.addLast(new RetranslatorProtocolDecoder(RetranslatorProtocol.this));
+            }
+        });
+    }
 
 }

@@ -21,17 +21,16 @@ import org.traccar.PipelineBuilder;
 import org.traccar.TrackerServer;
 
 import java.nio.ByteOrder;
-
 public class ProgressProtocol extends BaseProtocol {
 
-	public ProgressProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 2, 2, 4, 0, true));
-				pipeline.addLast(new ProgressProtocolDecoder(ProgressProtocol.this));
-			}
-		});
-	}
+    public ProgressProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, 1024, 2, 2, 4, 0, true));
+                pipeline.addLast(new ProgressProtocolDecoder(ProgressProtocol.this));
+            }
+        });
+    }
 
 }

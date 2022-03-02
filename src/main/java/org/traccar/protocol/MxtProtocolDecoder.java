@@ -32,147 +32,148 @@ import java.net.SocketAddress;
 
 public class MxtProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_ACK = 0x02;
-	public static final int MSG_NACK = 0x03;
-	public static final int MSG_POSITION = 0x31;
-	public MxtProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public MxtProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private static void sendResponse(Channel channel, int device, long id, int crc) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer();
-			response.writeByte(device);
-			response.writeByte(MSG_ACK);
-			response.writeIntLE((int) id);
-			response.writeShortLE(crc);
-			response.writeShortLE(Checksum.crc16(
-					Checksum.CRC16_XMODEM, response.nioBuffer()));
+    public static final int MSG_ACK = 0x02;
+    public static final int MSG_NACK = 0x03;
+    public static final int MSG_POSITION = 0x31;
 
-			ByteBuf encoded = Unpooled.buffer();
-			encoded.writeByte(0x01); // header
-			while (response.isReadable()) {
-				int b = response.readByte();
-				if (b == 0x01 || b == 0x04 || b == 0x10 || b == 0x11 || b == 0x13) {
-					encoded.writeByte(0x10);
-					b += 0x20;
-				}
-				encoded.writeByte(b);
-			}
-			response.release();
-			encoded.writeByte(0x04); // ending
-			channel.writeAndFlush(new NetworkMessage(encoded, channel.remoteAddress()));
-		}
-	}
+    private static void sendResponse(Channel channel, int device, long id, int crc) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeByte(device);
+            response.writeByte(MSG_ACK);
+            response.writeIntLE((int) id);
+            response.writeShortLE(crc);
+            response.writeShortLE(Checksum.crc16(
+                    Checksum.CRC16_XMODEM, response.nioBuffer()));
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+            ByteBuf encoded = Unpooled.buffer();
+            encoded.writeByte(0x01); // header
+            while (response.isReadable()) {
+                int b = response.readByte();
+                if (b == 0x01 || b == 0x04 || b == 0x10 || b == 0x11 || b == 0x13) {
+                    encoded.writeByte(0x10);
+                    b += 0x20;
+                }
+                encoded.writeByte(b);
+            }
+            response.release();
+            encoded.writeByte(0x04); // ending
+            channel.writeAndFlush(new NetworkMessage(encoded, channel.remoteAddress()));
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.readUnsignedByte(); // start
-		int device = buf.readUnsignedByte(); // device descriptor
-		int type = buf.readUnsignedByte();
+        ByteBuf buf = (ByteBuf) msg;
 
-		long id = buf.readUnsignedIntLE();
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(id));
-		if (deviceSession == null) {
-			return null;
-		}
+        buf.readUnsignedByte(); // start
+        int device = buf.readUnsignedByte(); // device descriptor
+        int type = buf.readUnsignedByte();
 
-		if (type == MSG_POSITION) {
+        long id = buf.readUnsignedIntLE();
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, String.valueOf(id));
+        if (deviceSession == null) {
+            return null;
+        }
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+        if (type == MSG_POSITION) {
 
-			buf.readUnsignedByte(); // protocol
-			int infoGroups = buf.readUnsignedByte();
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			position.set(Position.KEY_INDEX, buf.readUnsignedShortLE());
+            buf.readUnsignedByte(); // protocol
+            int infoGroups = buf.readUnsignedByte();
 
-			DateBuilder dateBuilder = new DateBuilder().setDate(2000, 1, 1);
+            position.set(Position.KEY_INDEX, buf.readUnsignedShortLE());
 
-			long date = buf.readUnsignedIntLE();
+            DateBuilder dateBuilder = new DateBuilder().setDate(2000, 1, 1);
 
-			long days = BitUtil.from(date, 6 + 6 + 5);
-			if (days < 7 * 780) {
-				days += 7 * 1024;
-			}
+            long date = buf.readUnsignedIntLE();
 
-			long hours = BitUtil.between(date, 6 + 6, 6 + 6 + 5);
-			long minutes = BitUtil.between(date, 6, 6 + 6);
-			long seconds = BitUtil.to(date, 6);
+            long days = BitUtil.from(date, 6 + 6 + 5);
+            if (days < 7 * 780) {
+                days += 7 * 1024;
+            }
 
-			dateBuilder.addMillis((((days * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000);
+            long hours = BitUtil.between(date, 6 + 6, 6 + 6 + 5);
+            long minutes = BitUtil.between(date, 6, 6 + 6);
+            long seconds = BitUtil.to(date, 6);
 
-			position.setTime(dateBuilder.getDate());
+            dateBuilder.addMillis((((days * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000);
 
-			position.setValid(true);
-			position.setLatitude(buf.readIntLE() / 1000000.0);
-			position.setLongitude(buf.readIntLE() / 1000000.0);
+            position.setTime(dateBuilder.getDate());
 
-			long flags = buf.readUnsignedIntLE();
-			position.set(Position.KEY_IGNITION, BitUtil.check(flags, 0));
-			if (BitUtil.check(flags, 1)) {
-				position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
-			}
-			position.set(Position.KEY_INPUT, BitUtil.between(flags, 2, 7));
-			position.set(Position.KEY_OUTPUT, BitUtil.between(flags, 7, 10));
-			position.setCourse(BitUtil.between(flags, 10, 13) * 45);
-			// position.setValid(BitUtil.check(flags, 15));
-			position.set(Position.KEY_CHARGE, BitUtil.check(flags, 20));
+            position.setValid(true);
+            position.setLatitude(buf.readIntLE() / 1000000.0);
+            position.setLongitude(buf.readIntLE() / 1000000.0);
 
-			position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
+            long flags = buf.readUnsignedIntLE();
+            position.set(Position.KEY_IGNITION, BitUtil.check(flags, 0));
+            if (BitUtil.check(flags, 1)) {
+                position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
+            }
+            position.set(Position.KEY_INPUT, BitUtil.between(flags, 2, 7));
+            position.set(Position.KEY_OUTPUT, BitUtil.between(flags, 7, 10));
+            position.setCourse(BitUtil.between(flags, 10, 13) * 45);
+            // position.setValid(BitUtil.check(flags, 15));
+            position.set(Position.KEY_CHARGE, BitUtil.check(flags, 20));
 
-			buf.readUnsignedByte(); // input mask
+            position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
 
-			if (BitUtil.check(infoGroups, 0)) {
-				buf.skipBytes(8); // waypoints
-			}
+            buf.readUnsignedByte(); // input mask
 
-			if (BitUtil.check(infoGroups, 1)) {
-				buf.skipBytes(8); // wireless accessory
-			}
+            if (BitUtil.check(infoGroups, 0)) {
+                buf.skipBytes(8); // waypoints
+            }
 
-			if (BitUtil.check(infoGroups, 2)) {
-				position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
-				position.set(Position.KEY_HDOP, buf.readUnsignedByte());
-				position.setAccuracy(buf.readUnsignedByte());
-				position.set(Position.KEY_RSSI, buf.readUnsignedByte());
-				buf.readUnsignedShortLE(); // time since boot
-				position.set(Position.KEY_POWER, buf.readUnsignedByte());
-				position.set(Position.PREFIX_TEMP + 1, buf.readByte());
-			}
+            if (BitUtil.check(infoGroups, 1)) {
+                buf.skipBytes(8); // wireless accessory
+            }
 
-			if (BitUtil.check(infoGroups, 3)) {
-				position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
-			}
+            if (BitUtil.check(infoGroups, 2)) {
+                position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
+                position.set(Position.KEY_HDOP, buf.readUnsignedByte());
+                position.setAccuracy(buf.readUnsignedByte());
+                position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+                buf.readUnsignedShortLE(); // time since boot
+                position.set(Position.KEY_POWER, buf.readUnsignedByte());
+                position.set(Position.PREFIX_TEMP + 1, buf.readByte());
+            }
 
-			if (BitUtil.check(infoGroups, 4)) {
-				position.set(Position.KEY_HOURS, UnitsConverter.msFromMinutes(buf.readUnsignedIntLE()));
-			}
+            if (BitUtil.check(infoGroups, 3)) {
+                position.set(Position.KEY_ODOMETER, buf.readUnsignedIntLE());
+            }
 
-			if (BitUtil.check(infoGroups, 5)) {
-				buf.readUnsignedIntLE(); // reason
-			}
+            if (BitUtil.check(infoGroups, 4)) {
+                position.set(Position.KEY_HOURS, UnitsConverter.msFromMinutes(buf.readUnsignedIntLE()));
+            }
 
-			if (BitUtil.check(infoGroups, 6)) {
-				position.set(Position.KEY_POWER, buf.readUnsignedShortLE() * 0.001);
-				position.set(Position.KEY_BATTERY, buf.readUnsignedShortLE());
-			}
+            if (BitUtil.check(infoGroups, 5)) {
+                buf.readUnsignedIntLE(); // reason
+            }
 
-			if (BitUtil.check(infoGroups, 7)) {
-				position.set(Position.KEY_DRIVER_UNIQUE_ID, String.valueOf(buf.readUnsignedIntLE()));
-			}
+            if (BitUtil.check(infoGroups, 6)) {
+                position.set(Position.KEY_POWER, buf.readUnsignedShortLE() * 0.001);
+                position.set(Position.KEY_BATTERY, buf.readUnsignedShortLE());
+            }
 
-			buf.readerIndex(buf.writerIndex() - 3);
-			sendResponse(channel, device, id, buf.readUnsignedShortLE());
+            if (BitUtil.check(infoGroups, 7)) {
+                position.set(Position.KEY_DRIVER_UNIQUE_ID, String.valueOf(buf.readUnsignedIntLE()));
+            }
 
-			return position;
-		}
+            buf.readerIndex(buf.writerIndex() - 3);
+            sendResponse(channel, device, id, buf.readUnsignedShortLE());
 
-		return null;
-	}
+            return position;
+        }
+
+        return null;
+    }
 
 }

@@ -24,24 +24,24 @@ import java.nio.charset.StandardCharsets;
 
 public class MeitrackFrameDecoder extends BaseFrameDecoder {
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(
+            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-		if (buf.readableBytes() < 10) {
-			return null;
-		}
+        if (buf.readableBytes() < 10) {
+            return null;
+        }
 
-		int index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ',');
-		if (index != -1) {
-			int length = index - buf.readerIndex() + Integer.parseInt(
-					buf.toString(buf.readerIndex() + 3, index - buf.readerIndex() - 3, StandardCharsets.US_ASCII));
-			if (buf.readableBytes() >= length) {
-				return buf.readRetainedSlice(length);
-			}
-		}
+        int index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) ',');
+        if (index != -1) {
+            int length = index - buf.readerIndex() + Integer.parseInt(
+                    buf.toString(buf.readerIndex() + 3, index - buf.readerIndex() - 3, StandardCharsets.US_ASCII));
+            if (buf.readableBytes() >= length) {
+                return buf.readRetainedSlice(length);
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
 }

@@ -32,98 +32,99 @@ import java.util.Date;
 
 public class ObdDongleProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_TYPE_CONNECT = 0x01;
-	public static final int MSG_TYPE_CONNACK = 0x02;
-	public static final int MSG_TYPE_PUBLISH = 0x03;
-	public static final int MSG_TYPE_PUBACK = 0x04;
-	public static final int MSG_TYPE_PINGREQ = 0x0C;
-	public static final int MSG_TYPE_PINGRESP = 0x0D;
-	public static final int MSG_TYPE_DISCONNECT = 0x0E;
-	public ObdDongleProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public ObdDongleProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private static void sendResponse(Channel channel, int type, int index, String imei, ByteBuf content) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer();
-			response.writeShort(0x5555); // header
-			response.writeShort(index);
-			response.writeBytes(imei.getBytes(StandardCharsets.US_ASCII));
-			response.writeByte(type);
-			response.writeShort(content.readableBytes());
-			response.writeBytes(content);
-			content.release();
-			response.writeByte(0); // checksum
-			response.writeShort(0xAAAA);
-			channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
-		}
-	}
+    public static final int MSG_TYPE_CONNECT = 0x01;
+    public static final int MSG_TYPE_CONNACK = 0x02;
+    public static final int MSG_TYPE_PUBLISH = 0x03;
+    public static final int MSG_TYPE_PUBACK = 0x04;
+    public static final int MSG_TYPE_PINGREQ = 0x0C;
+    public static final int MSG_TYPE_PINGRESP = 0x0D;
+    public static final int MSG_TYPE_DISCONNECT = 0x0E;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private static void sendResponse(Channel channel, int type, int index, String imei, ByteBuf content) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeShort(0x5555); // header
+            response.writeShort(index);
+            response.writeBytes(imei.getBytes(StandardCharsets.US_ASCII));
+            response.writeByte(type);
+            response.writeShort(content.readableBytes());
+            response.writeBytes(content);
+            content.release();
+            response.writeByte(0); // checksum
+            response.writeShort(0xAAAA);
+            channel.writeAndFlush(new NetworkMessage(response, channel.remoteAddress()));
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		int index = buf.readUnsignedShort();
+        ByteBuf buf = (ByteBuf) msg;
 
-		String imei = buf.readSlice(15).toString(StandardCharsets.US_ASCII);
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-		if (deviceSession == null) {
-			return null;
-		}
+        buf.skipBytes(2); // header
+        int index = buf.readUnsignedShort();
 
-		int type = buf.readUnsignedByte();
+        String imei = buf.readSlice(15).toString(StandardCharsets.US_ASCII);
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+        if (deviceSession == null) {
+            return null;
+        }
 
-		buf.readUnsignedShort(); // data length
+        int type = buf.readUnsignedByte();
 
-		if (type == MSG_TYPE_CONNECT) {
+        buf.readUnsignedShort(); // data length
 
-			ByteBuf response = Unpooled.buffer();
-			response.writeByte(1);
-			response.writeShort(0);
-			response.writeInt(0);
-			sendResponse(channel, MSG_TYPE_CONNACK, index, imei, response);
+        if (type == MSG_TYPE_CONNECT) {
 
-		} else if (type == MSG_TYPE_PUBLISH) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeByte(1);
+            response.writeShort(0);
+            response.writeInt(0);
+            sendResponse(channel, MSG_TYPE_CONNACK, index, imei, response);
 
-			int typeMajor = buf.readUnsignedByte();
-			int typeMinor = buf.readUnsignedByte();
+        } else if (type == MSG_TYPE_PUBLISH) {
 
-			buf.readUnsignedByte(); // event id
+            int typeMajor = buf.readUnsignedByte();
+            int typeMinor = buf.readUnsignedByte();
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            buf.readUnsignedByte(); // event id
 
-			position.setTime(new Date(buf.readUnsignedInt() * 1000));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			int flags = buf.readUnsignedByte();
+            position.setTime(new Date(buf.readUnsignedInt() * 1000));
 
-			position.setValid(!BitUtil.check(flags, 6));
+            int flags = buf.readUnsignedByte();
 
-			position.set(Position.KEY_SATELLITES, BitUtil.to(flags, 4));
+            position.setValid(!BitUtil.check(flags, 6));
 
-			double longitude = ((BitUtil.to(buf.readUnsignedShort(), 1) << 24) + buf.readUnsignedMedium()) * 0.00001;
-			position.setLongitude(BitUtil.check(flags, 5) ? longitude : -longitude);
+            position.set(Position.KEY_SATELLITES, BitUtil.to(flags, 4));
 
-			double latitude = buf.readUnsignedMedium() * 0.00001;
-			position.setLatitude(BitUtil.check(flags, 4) ? latitude : -latitude);
+            double longitude = ((BitUtil.to(buf.readUnsignedShort(), 1) << 24) + buf.readUnsignedMedium()) * 0.00001;
+            position.setLongitude(BitUtil.check(flags, 5) ? longitude : -longitude);
 
-			int speedCourse = buf.readUnsignedMedium();
-			position.setSpeed(UnitsConverter.knotsFromMph(BitUtil.from(speedCourse, 10) * 0.1));
-			position.setCourse(BitUtil.to(speedCourse, 10));
+            double latitude = buf.readUnsignedMedium() * 0.00001;
+            position.setLatitude(BitUtil.check(flags, 4) ? latitude : -latitude);
 
-			ByteBuf response = Unpooled.buffer();
-			response.writeByte(typeMajor);
-			response.writeByte(typeMinor);
-			sendResponse(channel, MSG_TYPE_PUBACK, index, imei, response);
+            int speedCourse = buf.readUnsignedMedium();
+            position.setSpeed(UnitsConverter.knotsFromMph(BitUtil.from(speedCourse, 10) * 0.1));
+            position.setCourse(BitUtil.to(speedCourse, 10));
 
-			return position;
+            ByteBuf response = Unpooled.buffer();
+            response.writeByte(typeMajor);
+            response.writeByte(typeMinor);
+            sendResponse(channel, MSG_TYPE_PUBACK, index, imei, response);
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

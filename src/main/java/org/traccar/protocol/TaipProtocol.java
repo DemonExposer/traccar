@@ -24,26 +24,26 @@ import org.traccar.TrackerServer;
 
 public class TaipProtocol extends BaseProtocol {
 
-	public TaipProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '<'));
-				pipeline.addLast(new TaipPrefixEncoder(TaipProtocol.this));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new TaipProtocolDecoder(TaipProtocol.this));
-			}
-		});
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new TaipPrefixEncoder(TaipProtocol.this));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new TaipProtocolDecoder(TaipProtocol.this));
-			}
-		});
-	}
+    public TaipProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new CharacterDelimiterFrameDecoder(1024, '<'));
+                pipeline.addLast(new TaipPrefixEncoder(TaipProtocol.this));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new TaipProtocolDecoder(TaipProtocol.this));
+            }
+        });
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new TaipPrefixEncoder(TaipProtocol.this));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new TaipProtocolDecoder(TaipProtocol.this));
+            }
+        });
+    }
 
 }

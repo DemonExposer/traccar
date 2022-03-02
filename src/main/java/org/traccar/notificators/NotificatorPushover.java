@@ -31,77 +31,77 @@ import javax.ws.rs.client.InvocationCallback;
 
 public class NotificatorPushover extends Notificator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(NotificatorPushover.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NotificatorPushover.class);
 
-	private final String url;
-	private final String token;
-	private final String user;
+    private final String url;
+    private final String token;
+    private final String user;
 
-	public NotificatorPushover() {
-		url = "https://api.pushover.net/1/messages.json";
-		token = Context.getConfig().getString(Keys.NOTIFICATOR_PUSHOVER_TOKEN);
-		user = Context.getConfig().getString(Keys.NOTIFICATOR_PUSHOVER_USER);
-	}
+    public static class Message {
+        @JsonProperty("token")
+        private String token;
+        @JsonProperty("user")
+        private String user;
+        @JsonProperty("device")
+        private String device;
+        @JsonProperty("title")
+        private String title;
+        @JsonProperty("message")
+        private String message;
+    }
 
-	@Override
-	public void sendSync(long userId, Event event, Position position) {
+    public NotificatorPushover() {
+        url = "https://api.pushover.net/1/messages.json";
+        token = Context.getConfig().getString(Keys.NOTIFICATOR_PUSHOVER_TOKEN);
+        user = Context.getConfig().getString(Keys.NOTIFICATOR_PUSHOVER_USER);
+    }
 
-		final User user = Context.getPermissionsManager().getUser(userId);
+    @Override
+    public void sendSync(long userId, Event event, Position position) {
 
-		String device = "";
+        final User user = Context.getPermissionsManager().getUser(userId);
 
-		if (user.getAttributes().containsKey("notificator.pushover.device")) {
-			device = user.getString("notificator.pushover.device").replaceAll(" *, *", ",");
-		}
+        String device = "";
 
-		if (token == null) {
-			LOGGER.warn("Pushover token not found");
-			return;
-		}
+        if (user.getAttributes().containsKey("notificator.pushover.device")) {
+            device = user.getString("notificator.pushover.device").replaceAll(" *, *", ",");
+        }
 
-		if (this.user == null) {
-			LOGGER.warn("Pushover user not found");
-			return;
-		}
+        if (token == null) {
+            LOGGER.warn("Pushover token not found");
+            return;
+        }
 
-		NotificationMessage shortMessage = NotificationFormatter.formatMessage(userId, event, position, "short");
+        if (this.user == null) {
+            LOGGER.warn("Pushover user not found");
+            return;
+        }
 
-		Message message = new Message();
-		message.token = token;
-		message.user = this.user;
-		message.device = device;
-		message.title = shortMessage.getSubject();
-		message.message = shortMessage.getBody();
+        NotificationMessage shortMessage = NotificationFormatter.formatMessage(userId, event, position, "short");
 
-		Context.getClient().target(url).request()
-				.async().post(Entity.json(message), new InvocationCallback<Object>() {
-					@Override
-					public void completed(Object o) {
-					}
+        Message message = new Message();
+        message.token = token;
+        message.user = this.user;
+        message.device = device;
+        message.title = shortMessage.getSubject();
+        message.message = shortMessage.getBody();
 
-					@Override
-					public void failed(Throwable throwable) {
-						LOGGER.warn("Pushover API error", throwable);
-					}
-				});
-	}
+        Context.getClient().target(url).request()
+                .async().post(Entity.json(message), new InvocationCallback<Object>() {
+            @Override
+            public void completed(Object o) {
+            }
 
-	@Override
-	public void sendAsync(long userId, Event event, Position position) {
-		sendSync(userId, event, position);
-	}
+            @Override
+            public void failed(Throwable throwable) {
+                LOGGER.warn("Pushover API error", throwable);
+            }
+        });
+    }
 
-	public static class Message {
-		@JsonProperty("token")
-		private String token;
-		@JsonProperty("user")
-		private String user;
-		@JsonProperty("device")
-		private String device;
-		@JsonProperty("title")
-		private String title;
-		@JsonProperty("message")
-		private String message;
-	}
+    @Override
+    public void sendAsync(long userId, Event event, Position position) {
+        sendSync(userId, event, position);
+    }
 
 }

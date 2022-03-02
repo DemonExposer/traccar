@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class Stl060Protocol extends BaseProtocol {
 
-	public Stl060Protocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new Stl060FrameDecoder(1024));
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new Stl060ProtocolDecoder(Stl060Protocol.this));
-			}
-		});
-	}
+    public Stl060Protocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new Stl060FrameDecoder(1024));
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new Stl060ProtocolDecoder(Stl060Protocol.this));
+            }
+        });
+    }
 
 }

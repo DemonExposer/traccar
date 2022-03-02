@@ -28,8 +28,8 @@ import javax.ws.rs.core.MediaType;
 @Consumes(MediaType.APPLICATION_JSON)
 public class GeofenceResource extends ExtendedObjectResource<Geofence> {
 
-	public GeofenceResource() {
-		super(Geofence.class);
-	}
+    public GeofenceResource() {
+        super(Geofence.class);
+    }
 
 }

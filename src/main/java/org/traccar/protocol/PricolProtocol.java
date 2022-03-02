@@ -22,20 +22,20 @@ import org.traccar.TrackerServer;
 
 public class PricolProtocol extends BaseProtocol {
 
-	public PricolProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new FixedLengthFrameDecoder(64));
-				pipeline.addLast(new PricolProtocolDecoder(PricolProtocol.this));
-			}
-		});
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new PricolProtocolDecoder(PricolProtocol.this));
-			}
-		});
-	}
+    public PricolProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new FixedLengthFrameDecoder(64));
+                pipeline.addLast(new PricolProtocolDecoder(PricolProtocol.this));
+            }
+        });
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new PricolProtocolDecoder(PricolProtocol.this));
+            }
+        });
+    }
 
 }

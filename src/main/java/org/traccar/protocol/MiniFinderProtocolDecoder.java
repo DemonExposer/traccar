@@ -30,188 +30,192 @@ import java.util.regex.Pattern;
 
 public class MiniFinderProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final Pattern PATTERN_FIX = new PatternBuilder()
-			.number("(d+)/(d+)/(d+),")           // date (dd/mm/yy)
-			.number("(d+):(d+):(d+),")           // time (hh:mm:ss)
-			.number("(-?d+.d+),")                // latitude
-			.number("(-?d+.d+),")                // longitude
-			.compile();
-	private static final Pattern PATTERN_STATE = new PatternBuilder()
-			.number("(d+.?d*),")                 // speed (km/h)
-			.number("(d+.?d*),")                 // course
-			.number("(x+),")                     // flags
-			.number("(-?d+.d+),")                // altitude (meters)
-			.number("(d+),")                     // battery (percentage)
-			.compile();
-	private static final Pattern PATTERN_A = new PatternBuilder()
-			.text("!A,")
-			.expression(PATTERN_FIX.pattern())
-			.any()                               // unknown 3 fields
-			.compile();
-	private static final Pattern PATTERN_C = new PatternBuilder()
-			.text("!C,")
-			.expression(PATTERN_FIX.pattern())
-			.expression(PATTERN_STATE.pattern())
-			.any()                               // unknown 3 fields
-			.compile();
-	private static final Pattern PATTERN_BD = new PatternBuilder()
-			.expression("![BD],")                // B - buffered, D - live
-			.expression(PATTERN_FIX.pattern())
-			.expression(PATTERN_STATE.pattern())
-			.number("(d+),")                     // satellites in use
-			.number("(d+),")                     // satellites in view
-			.number("(d+.?d*)")                  // hdop
-			.compile();
+    public MiniFinderProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public MiniFinderProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private static final Pattern PATTERN_FIX = new PatternBuilder()
+            .number("(d+)/(d+)/(d+),")           // date (dd/mm/yy)
+            .number("(d+):(d+):(d+),")           // time (hh:mm:ss)
+            .number("(-?d+.d+),")                // latitude
+            .number("(-?d+.d+),")                // longitude
+            .compile();
 
-	private void decodeFix(Position position, Parser parser) {
+    private static final Pattern PATTERN_STATE = new PatternBuilder()
+            .number("(d+.?d*),")                 // speed (km/h)
+            .number("(d+.?d*),")                 // course
+            .number("(x+),")                     // flags
+            .number("(-?d+.d+),")                // altitude (meters)
+            .number("(d+),")                     // battery (percentage)
+            .compile();
 
-		position.setTime(parser.nextDateTime(Parser.DateTimeFormat.DMY_HMS));
-		position.setLatitude(parser.nextDouble(0));
-		position.setLongitude(parser.nextDouble(0));
-	}
+    private static final Pattern PATTERN_A = new PatternBuilder()
+            .text("!A,")
+            .expression(PATTERN_FIX.pattern())
+            .any()                               // unknown 3 fields
+            .compile();
 
-	private void decodeFlags(Position position, int flags) {
+   private static final Pattern PATTERN_C = new PatternBuilder()
+            .text("!C,")
+            .expression(PATTERN_FIX.pattern())
+            .expression(PATTERN_STATE.pattern())
+            .any()                               // unknown 3 fields
+            .compile();
 
-		position.setValid(BitUtil.to(flags, 2) > 0);
-		if (BitUtil.check(flags, 1)) {
-			position.set(Position.KEY_APPROXIMATE, true);
-		}
+    private static final Pattern PATTERN_BD = new PatternBuilder()
+            .expression("![BD],")                // B - buffered, D - live
+            .expression(PATTERN_FIX.pattern())
+            .expression(PATTERN_STATE.pattern())
+            .number("(d+),")                     // satellites in use
+            .number("(d+),")                     // satellites in view
+            .number("(d+.?d*)")                  // hdop
+            .compile();
 
-		if (BitUtil.check(flags, 2)) {
-			position.set(Position.KEY_ALARM, Position.ALARM_FAULT);
-		}
-		if (BitUtil.check(flags, 6)) {
-			position.set(Position.KEY_ALARM, Position.ALARM_SOS);
-		}
-		if (BitUtil.check(flags, 7)) {
-			position.set(Position.KEY_ALARM, Position.ALARM_OVERSPEED);
-		}
-		if (BitUtil.check(flags, 8)) {
-			position.set(Position.KEY_ALARM, Position.ALARM_FALL_DOWN);
-		}
-		if (BitUtil.check(flags, 9) || BitUtil.check(flags, 10) || BitUtil.check(flags, 11)) {
-			position.set(Position.KEY_ALARM, Position.ALARM_GEOFENCE);
-		}
-		if (BitUtil.check(flags, 12)) {
-			position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
-		}
-		if (BitUtil.check(flags, 15) || BitUtil.check(flags, 14)) {
-			position.set(Position.KEY_ALARM, Position.ALARM_MOVEMENT);
-		}
+    private void decodeFix(Position position, Parser parser) {
 
-		position.set(Position.KEY_RSSI, BitUtil.between(flags, 16, 21));
-		position.set(Position.KEY_CHARGE, BitUtil.check(flags, 22));
-	}
+        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.DMY_HMS));
+        position.setLatitude(parser.nextDouble(0));
+        position.setLongitude(parser.nextDouble(0));
+    }
 
-	private void decodeState(Position position, Parser parser) {
+    private void decodeFlags(Position position, int flags) {
 
-		position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble(0)));
+        position.setValid(BitUtil.to(flags, 2) > 0);
+        if (BitUtil.check(flags, 1)) {
+            position.set(Position.KEY_APPROXIMATE, true);
+        }
 
-		position.setCourse(parser.nextDouble(0));
-		if (position.getCourse() > 360) {
-			position.setCourse(0);
-		}
+        if (BitUtil.check(flags, 2)) {
+            position.set(Position.KEY_ALARM, Position.ALARM_FAULT);
+        }
+        if (BitUtil.check(flags, 6)) {
+            position.set(Position.KEY_ALARM, Position.ALARM_SOS);
+        }
+        if (BitUtil.check(flags, 7)) {
+            position.set(Position.KEY_ALARM, Position.ALARM_OVERSPEED);
+        }
+        if (BitUtil.check(flags, 8)) {
+            position.set(Position.KEY_ALARM, Position.ALARM_FALL_DOWN);
+        }
+        if (BitUtil.check(flags, 9) || BitUtil.check(flags, 10) || BitUtil.check(flags, 11)) {
+            position.set(Position.KEY_ALARM, Position.ALARM_GEOFENCE);
+        }
+        if (BitUtil.check(flags, 12)) {
+            position.set(Position.KEY_ALARM, Position.ALARM_LOW_BATTERY);
+        }
+        if (BitUtil.check(flags, 15) || BitUtil.check(flags, 14)) {
+            position.set(Position.KEY_ALARM, Position.ALARM_MOVEMENT);
+        }
 
-		decodeFlags(position, parser.nextHexInt(0));
+        position.set(Position.KEY_RSSI, BitUtil.between(flags, 16, 21));
+        position.set(Position.KEY_CHARGE, BitUtil.check(flags, 22));
+    }
 
-		position.setAltitude(parser.nextDouble(0));
+    private void decodeState(Position position, Parser parser) {
 
-		position.set(Position.KEY_BATTERY_LEVEL, parser.nextInt(0));
-	}
+        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble(0)));
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+        position.setCourse(parser.nextDouble(0));
+        if (position.getCourse() > 360) {
+            position.setCourse(0);
+        }
 
-		String sentence = (String) msg;
+        decodeFlags(position, parser.nextHexInt(0));
 
-		if (sentence.startsWith("!1,")) {
-			int index = sentence.indexOf(',', 3);
-			if (index < 0) {
-				index = sentence.length();
-			}
-			getDeviceSession(channel, remoteAddress, sentence.substring(3, index));
-			return null;
-		}
+        position.setAltitude(parser.nextDouble(0));
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-		if (deviceSession == null || !sentence.matches("![35A-D],.*")) {
-			return null;
-		}
+        position.set(Position.KEY_BATTERY_LEVEL, parser.nextInt(0));
+    }
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		String type = sentence.substring(1, 2);
-		position.set(Position.KEY_TYPE, type);
+        String sentence = (String) msg;
 
-		if (type.equals("3")) {
+        if (sentence.startsWith("!1,")) {
+            int index = sentence.indexOf(',', 3);
+            if (index < 0) {
+                index = sentence.length();
+            }
+            getDeviceSession(channel, remoteAddress, sentence.substring(3, index));
+            return null;
+        }
 
-			getLastLocation(position, null);
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+        if (deviceSession == null || !sentence.matches("![35A-D],.*")) {
+            return null;
+        }
 
-			position.set(Position.KEY_RESULT, sentence.substring(3));
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-			return position;
+        String type = sentence.substring(1, 2);
+        position.set(Position.KEY_TYPE, type);
 
-		} else if (type.equals("5")) {
+        if (type.equals("3")) {
 
-			String[] values = sentence.split(",");
+            getLastLocation(position, null);
 
-			getLastLocation(position, null);
+            position.set(Position.KEY_RESULT, sentence.substring(3));
 
-			position.set(Position.KEY_RSSI, Integer.parseInt(values[1]));
-			if (values.length >= 4) {
-				position.set(Position.KEY_BATTERY_LEVEL, Integer.parseInt(values[3]));
-			}
+            return position;
 
-			return position;
+        } else if (type.equals("5")) {
 
-		} else if (type.equals("B") || type.equals("D")) {
+            String[] values = sentence.split(",");
 
-			Parser parser = new Parser(PATTERN_BD, sentence);
-			if (!parser.matches()) {
-				return null;
-			}
+            getLastLocation(position, null);
 
-			decodeFix(position, parser);
-			decodeState(position, parser);
+            position.set(Position.KEY_RSSI, Integer.parseInt(values[1]));
+            if (values.length >= 4) {
+                position.set(Position.KEY_BATTERY_LEVEL, Integer.parseInt(values[3]));
+            }
 
-			position.set(Position.KEY_SATELLITES, parser.nextInt(0));
-			position.set(Position.KEY_SATELLITES_VISIBLE, parser.nextInt(0));
-			position.set(Position.KEY_HDOP, parser.nextDouble(0));
+            return position;
 
-			return position;
+        } else if (type.equals("B") || type.equals("D")) {
 
-		} else if (type.equals("C")) {
+            Parser parser = new Parser(PATTERN_BD, sentence);
+            if (!parser.matches()) {
+                return null;
+            }
 
-			Parser parser = new Parser(PATTERN_C, sentence);
-			if (!parser.matches()) {
-				return null;
-			}
+            decodeFix(position, parser);
+            decodeState(position, parser);
 
-			decodeFix(position, parser);
-			decodeState(position, parser);
+            position.set(Position.KEY_SATELLITES, parser.nextInt(0));
+            position.set(Position.KEY_SATELLITES_VISIBLE, parser.nextInt(0));
+            position.set(Position.KEY_HDOP, parser.nextDouble(0));
 
-			return position;
+            return position;
 
-		} else if (type.equals("A")) {
+        } else if (type.equals("C")) {
 
-			Parser parser = new Parser(PATTERN_A, sentence);
-			if (!parser.matches()) {
-				return null;
-			}
+            Parser parser = new Parser(PATTERN_C, sentence);
+            if (!parser.matches()) {
+                return null;
+            }
 
-			decodeFix(position, parser);
+            decodeFix(position, parser);
+            decodeState(position, parser);
 
-			return position;
+            return position;
 
-		}
+        } else if (type.equals("A")) {
 
-		return null;
-	}
+            Parser parser = new Parser(PATTERN_A, sentence);
+            if (!parser.matches()) {
+                return null;
+            }
+
+            decodeFix(position, parser);
+
+            return position;
+
+        }
+
+        return null;
+    }
 
 }

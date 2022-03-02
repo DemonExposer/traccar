@@ -24,16 +24,16 @@ import org.traccar.TrackerServer;
 
 public class R12wProtocol extends BaseProtocol {
 
-	public R12wProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new LineBasedFrameDecoder(1024));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new R12wProtocolDecoder(R12wProtocol.this));
-			}
-		});
-	}
+    public R12wProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new LineBasedFrameDecoder(1024));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new R12wProtocolDecoder(R12wProtocol.this));
+            }
+        });
+    }
 
 }

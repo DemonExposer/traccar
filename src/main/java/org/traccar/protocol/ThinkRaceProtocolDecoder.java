@@ -33,84 +33,84 @@ import java.util.Date;
 
 public class ThinkRaceProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_LOGIN = 0x80;
-	public static final int MSG_GPS = 0x90;
-	public ThinkRaceProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public ThinkRaceProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private static double convertCoordinate(long raw, boolean negative) {
-		long degrees = raw / 1000000;
-		double minutes = (raw % 1000000) * 0.0001;
-		double result = degrees + minutes / 60;
-		if (negative) {
-			result = -result;
-		}
-		return result;
-	}
+    public static final int MSG_LOGIN = 0x80;
+    public static final int MSG_GPS = 0x90;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private static double convertCoordinate(long raw, boolean negative) {
+        long degrees = raw / 1000000;
+        double minutes = (raw % 1000000) * 0.0001;
+        double result = degrees + minutes / 60;
+        if (negative) {
+            result = -result;
+        }
+        return result;
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		ByteBuf id = buf.readSlice(12);
-		buf.readUnsignedByte(); // separator
-		int type = buf.readUnsignedByte();
-		buf.readUnsignedShort(); // length
+        ByteBuf buf = (ByteBuf) msg;
 
-		if (type == MSG_LOGIN) {
+        buf.skipBytes(2); // header
+        ByteBuf id = buf.readSlice(12);
+        buf.readUnsignedByte(); // separator
+        int type = buf.readUnsignedByte();
+        buf.readUnsignedShort(); // length
 
-			int command = buf.readUnsignedByte(); // 0x00 - heartbeat
+        if (type == MSG_LOGIN) {
 
-			if (command == 0x01) {
-				String imei = buf.toString(buf.readerIndex(), 15, StandardCharsets.US_ASCII);
-				DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-				if (deviceSession != null && channel != null) {
-					ByteBuf response = Unpooled.buffer();
-					response.writeByte(0x48);
-					response.writeByte(0x52); // header
-					response.writeBytes(id);
-					response.writeByte(0x2c); // separator
-					response.writeByte(type);
-					response.writeShort(0x0002); // length
-					response.writeShort(0x8000);
-					response.writeShort(0x0000); // checksum
-					channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-				}
-			}
+            int command = buf.readUnsignedByte(); // 0x00 - heartbeat
 
-		} else if (type == MSG_GPS) {
+            if (command == 0x01) {
+                String imei = buf.toString(buf.readerIndex(), 15, StandardCharsets.US_ASCII);
+                DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+                if (deviceSession != null && channel != null) {
+                    ByteBuf response = Unpooled.buffer();
+                    response.writeByte(0x48); response.writeByte(0x52); // header
+                    response.writeBytes(id);
+                    response.writeByte(0x2c); // separator
+                    response.writeByte(type);
+                    response.writeShort(0x0002); // length
+                    response.writeShort(0x8000);
+                    response.writeShort(0x0000); // checksum
+                    channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+                }
+            }
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+        } else if (type == MSG_GPS) {
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			position.setTime(new Date(buf.readUnsignedInt() * 1000));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			int flags = buf.readUnsignedByte();
+            position.setTime(new Date(buf.readUnsignedInt() * 1000));
 
-			position.setValid(true);
-			position.setLatitude(convertCoordinate(buf.readUnsignedInt(), !BitUtil.check(flags, 0)));
-			position.setLongitude(convertCoordinate(buf.readUnsignedInt(), !BitUtil.check(flags, 1)));
+            int flags = buf.readUnsignedByte();
 
-			position.setSpeed(buf.readUnsignedByte());
-			position.setCourse(buf.readUnsignedByte());
+            position.setValid(true);
+            position.setLatitude(convertCoordinate(buf.readUnsignedInt(), !BitUtil.check(flags, 0)));
+            position.setLongitude(convertCoordinate(buf.readUnsignedInt(), !BitUtil.check(flags, 1)));
 
-			position.setNetwork(new Network(
-					CellTower.fromLacCid(buf.readUnsignedShort(), buf.readUnsignedShort())));
+            position.setSpeed(buf.readUnsignedByte());
+            position.setCourse(buf.readUnsignedByte());
 
-			return position;
+            position.setNetwork(new Network(
+                    CellTower.fromLacCid(buf.readUnsignedShort(), buf.readUnsignedShort())));
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }

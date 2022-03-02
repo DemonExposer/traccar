@@ -36,159 +36,160 @@ import java.util.Set;
 
 public class BlackKiteProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final int TAG_IMEI = 0x03;
-	private static final int TAG_DATE = 0x20;
-	private static final int TAG_COORDINATES = 0x30;
-	private static final int TAG_SPEED_COURSE = 0x33;
-	private static final int TAG_ALTITUDE = 0x34;
-	private static final int TAG_STATUS = 0x40;
-	private static final int TAG_DIGITAL_OUTPUTS = 0x45;
-	private static final int TAG_DIGITAL_INPUTS = 0x46;
-	private static final int TAG_INPUT_VOLTAGE1 = 0x50;
-	private static final int TAG_INPUT_VOLTAGE2 = 0x51;
-	private static final int TAG_INPUT_VOLTAGE3 = 0x52;
-	private static final int TAG_INPUT_VOLTAGE4 = 0x53;
-	private static final int TAG_XT1 = 0x60;
-	private static final int TAG_XT2 = 0x61;
-	private static final int TAG_XT3 = 0x62;
-	public BlackKiteProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public BlackKiteProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void sendResponse(Channel channel, int checksum) {
-		if (channel != null) {
-			ByteBuf reply = Unpooled.buffer(3);
-			reply.writeByte(0x02);
-			reply.writeShortLE((short) checksum);
-			channel.writeAndFlush(new NetworkMessage(reply, channel.remoteAddress()));
-		}
-	}
+    private static final int TAG_IMEI = 0x03;
+    private static final int TAG_DATE = 0x20;
+    private static final int TAG_COORDINATES = 0x30;
+    private static final int TAG_SPEED_COURSE = 0x33;
+    private static final int TAG_ALTITUDE = 0x34;
+    private static final int TAG_STATUS = 0x40;
+    private static final int TAG_DIGITAL_OUTPUTS = 0x45;
+    private static final int TAG_DIGITAL_INPUTS = 0x46;
+    private static final int TAG_INPUT_VOLTAGE1 = 0x50;
+    private static final int TAG_INPUT_VOLTAGE2 = 0x51;
+    private static final int TAG_INPUT_VOLTAGE3 = 0x52;
+    private static final int TAG_INPUT_VOLTAGE4 = 0x53;
+    private static final int TAG_XT1 = 0x60;
+    private static final int TAG_XT2 = 0x61;
+    private static final int TAG_XT3 = 0x62;
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private void sendResponse(Channel channel, int checksum) {
+        if (channel != null) {
+            ByteBuf reply = Unpooled.buffer(3);
+            reply.writeByte(0x02);
+            reply.writeShortLE((short) checksum);
+            channel.writeAndFlush(new NetworkMessage(reply, channel.remoteAddress()));
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.readUnsignedByte(); // header
-		int length = (buf.readUnsignedShortLE() & 0x7fff) + 3;
+        ByteBuf buf = (ByteBuf) msg;
 
-		List<Position> positions = new LinkedList<>();
-		Set<Integer> tags = new HashSet<>();
-		boolean hasLocation = false;
-		Position position = new Position(getProtocolName());
+        buf.readUnsignedByte(); // header
+        int length = (buf.readUnsignedShortLE() & 0x7fff) + 3;
 
-		while (buf.readerIndex() < length) {
+        List<Position> positions = new LinkedList<>();
+        Set<Integer> tags = new HashSet<>();
+        boolean hasLocation = false;
+        Position position = new Position(getProtocolName());
 
-			// Check if new message started
-			int tag = buf.readUnsignedByte();
-			if (tags.contains(tag)) {
-				if (hasLocation && position.getFixTime() != null) {
-					positions.add(position);
-				}
-				tags.clear();
-				hasLocation = false;
-				position = new Position(getProtocolName());
-			}
-			tags.add(tag);
+        while (buf.readerIndex() < length) {
 
-			switch (tag) {
+            // Check if new message started
+            int tag = buf.readUnsignedByte();
+            if (tags.contains(tag)) {
+                if (hasLocation && position.getFixTime() != null) {
+                    positions.add(position);
+                }
+                tags.clear();
+                hasLocation = false;
+                position = new Position(getProtocolName());
+            }
+            tags.add(tag);
 
-				case TAG_IMEI:
-					getDeviceSession(channel, remoteAddress, buf.readSlice(15).toString(StandardCharsets.US_ASCII));
-					break;
+            switch (tag) {
 
-				case TAG_DATE:
-					position.setTime(new Date(buf.readUnsignedIntLE() * 1000));
-					break;
+                case TAG_IMEI:
+                    getDeviceSession(channel, remoteAddress, buf.readSlice(15).toString(StandardCharsets.US_ASCII));
+                    break;
 
-				case TAG_COORDINATES:
-					hasLocation = true;
-					position.setValid((buf.readUnsignedByte() & 0xf0) == 0x00);
-					position.setLatitude(buf.readIntLE() / 1000000.0);
-					position.setLongitude(buf.readIntLE() / 1000000.0);
-					break;
+                case TAG_DATE:
+                    position.setTime(new Date(buf.readUnsignedIntLE() * 1000));
+                    break;
 
-				case TAG_SPEED_COURSE:
-					position.setSpeed(buf.readUnsignedShortLE() * 0.0539957);
-					position.setCourse(buf.readUnsignedShortLE() * 0.1);
-					break;
+                case TAG_COORDINATES:
+                    hasLocation = true;
+                    position.setValid((buf.readUnsignedByte() & 0xf0) == 0x00);
+                    position.setLatitude(buf.readIntLE() / 1000000.0);
+                    position.setLongitude(buf.readIntLE() / 1000000.0);
+                    break;
 
-				case TAG_ALTITUDE:
-					position.setAltitude(buf.readShortLE());
-					break;
+                case TAG_SPEED_COURSE:
+                    position.setSpeed(buf.readUnsignedShortLE() * 0.0539957);
+                    position.setCourse(buf.readUnsignedShortLE() * 0.1);
+                    break;
 
-				case TAG_STATUS:
-					int status = buf.readUnsignedShortLE();
-					position.set(Position.KEY_IGNITION, BitUtil.check(status, 9));
-					if (BitUtil.check(status, 15)) {
-						position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
-					}
-					position.set(Position.KEY_CHARGE, BitUtil.check(status, 2));
-					break;
+                case TAG_ALTITUDE:
+                    position.setAltitude(buf.readShortLE());
+                    break;
 
-				case TAG_DIGITAL_INPUTS:
-					int input = buf.readUnsignedShortLE();
-					for (int i = 0; i < 16; i++) {
-						position.set(Position.PREFIX_IO + (i + 1), BitUtil.check(input, i));
-					}
-					break;
+                case TAG_STATUS:
+                    int status = buf.readUnsignedShortLE();
+                    position.set(Position.KEY_IGNITION, BitUtil.check(status, 9));
+                    if (BitUtil.check(status, 15)) {
+                        position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
+                    }
+                    position.set(Position.KEY_CHARGE, BitUtil.check(status, 2));
+                    break;
 
-				case TAG_DIGITAL_OUTPUTS:
-					int output = buf.readUnsignedShortLE();
-					for (int i = 0; i < 16; i++) {
-						position.set(Position.PREFIX_IO + (i + 17), BitUtil.check(output, i));
-					}
-					break;
+                case TAG_DIGITAL_INPUTS:
+                    int input = buf.readUnsignedShortLE();
+                    for (int i = 0; i < 16; i++) {
+                        position.set(Position.PREFIX_IO + (i + 1), BitUtil.check(input, i));
+                    }
+                    break;
 
-				case TAG_INPUT_VOLTAGE1:
-					position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShortLE() / 1000.0);
-					break;
+                case TAG_DIGITAL_OUTPUTS:
+                    int output = buf.readUnsignedShortLE();
+                    for (int i = 0; i < 16; i++) {
+                        position.set(Position.PREFIX_IO + (i + 17), BitUtil.check(output, i));
+                    }
+                    break;
 
-				case TAG_INPUT_VOLTAGE2:
-					position.set(Position.PREFIX_ADC + 2, buf.readUnsignedShortLE() / 1000.0);
-					break;
+                case TAG_INPUT_VOLTAGE1:
+                    position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShortLE() / 1000.0);
+                    break;
 
-				case TAG_INPUT_VOLTAGE3:
-					position.set(Position.PREFIX_ADC + 3, buf.readUnsignedShortLE() / 1000.0);
-					break;
+                case TAG_INPUT_VOLTAGE2:
+                    position.set(Position.PREFIX_ADC + 2, buf.readUnsignedShortLE() / 1000.0);
+                    break;
 
-				case TAG_INPUT_VOLTAGE4:
-					position.set(Position.PREFIX_ADC + 4, buf.readUnsignedShortLE() / 1000.0);
-					break;
+                case TAG_INPUT_VOLTAGE3:
+                    position.set(Position.PREFIX_ADC + 3, buf.readUnsignedShortLE() / 1000.0);
+                    break;
 
-				case TAG_XT1:
-				case TAG_XT2:
-				case TAG_XT3:
-					buf.skipBytes(16);
-					break;
+                case TAG_INPUT_VOLTAGE4:
+                    position.set(Position.PREFIX_ADC + 4, buf.readUnsignedShortLE() / 1000.0);
+                    break;
 
-				default:
-					break;
+                case TAG_XT1:
+                case TAG_XT2:
+                case TAG_XT3:
+                    buf.skipBytes(16);
+                    break;
 
-			}
-		}
+                default:
+                    break;
 
-		if (hasLocation && position.getFixTime() != null) {
-			positions.add(position);
-		}
+            }
+        }
 
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-		if (deviceSession == null) {
-			return null;
-		}
+        if (hasLocation && position.getFixTime() != null) {
+            positions.add(position);
+        }
 
-		sendResponse(channel, buf.readUnsignedShortLE());
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+        if (deviceSession == null) {
+            return null;
+        }
 
-		for (Position p : positions) {
-			p.setDeviceId(deviceSession.getDeviceId());
-		}
+        sendResponse(channel, buf.readUnsignedShortLE());
 
-		if (positions.isEmpty()) {
-			return null;
-		}
+        for (Position p : positions) {
+            p.setDeviceId(deviceSession.getDeviceId());
+        }
 
-		return positions;
-	}
+        if (positions.isEmpty()) {
+            return null;
+        }
+
+        return positions;
+    }
 
 }

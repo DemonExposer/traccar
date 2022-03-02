@@ -17,23 +17,24 @@ package org.traccar.model;
 
 public class Message extends ExtendedModel {
 
-	private long deviceId;
-	private String type;
+    private long deviceId;
 
-	public long getDeviceId() {
-		return deviceId;
-	}
+    public long getDeviceId() {
+        return deviceId;
+    }
 
-	public void setDeviceId(long deviceId) {
-		this.deviceId = deviceId;
-	}
+    public void setDeviceId(long deviceId) {
+        this.deviceId = deviceId;
+    }
 
-	public String getType() {
-		return type;
-	}
+    private String type;
 
-	public void setType(String type) {
-		this.type = type;
-	}
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 
 }

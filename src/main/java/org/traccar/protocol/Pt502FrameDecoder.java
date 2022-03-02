@@ -24,50 +24,50 @@ import java.nio.charset.StandardCharsets;
 
 public class Pt502FrameDecoder extends BaseFrameDecoder {
 
-	private static final int BINARY_HEADER = 5;
+    private static final int BINARY_HEADER = 5;
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(
+            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-		if (buf.readableBytes() < 10) {
-			return null;
-		}
+        if (buf.readableBytes() < 10) {
+            return null;
+        }
 
-		if (buf.getUnsignedByte(buf.readerIndex()) == 0xbf
-				&& buf.toString(buf.readerIndex() + BINARY_HEADER, 4, StandardCharsets.US_ASCII).equals("$PHD")) {
+        if (buf.getUnsignedByte(buf.readerIndex()) == 0xbf
+                && buf.toString(buf.readerIndex() + BINARY_HEADER, 4, StandardCharsets.US_ASCII).equals("$PHD")) {
 
-			int length = buf.getUnsignedShortLE(buf.readerIndex() + 3);
-			if (buf.readableBytes() >= length) {
-				buf.skipBytes(BINARY_HEADER);
-				ByteBuf result = buf.readRetainedSlice(length - BINARY_HEADER - 2);
-				buf.skipBytes(2); // line break
-				return result;
-			}
+            int length = buf.getUnsignedShortLE(buf.readerIndex() + 3);
+            if (buf.readableBytes() >= length) {
+                buf.skipBytes(BINARY_HEADER);
+                ByteBuf result = buf.readRetainedSlice(length - BINARY_HEADER - 2);
+                buf.skipBytes(2); // line break
+                return result;
+            }
 
-		} else {
+        } else {
 
-			if (buf.getUnsignedByte(buf.readerIndex()) == 0xbf) {
-				buf.skipBytes(BINARY_HEADER);
-			}
+            if (buf.getUnsignedByte(buf.readerIndex()) == 0xbf) {
+                buf.skipBytes(BINARY_HEADER);
+            }
 
-			int index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '\r');
-			if (index < 0) {
-				index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '\n');
-			}
+            int index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '\r');
+            if (index < 0) {
+                index = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '\n');
+            }
 
-			if (index > 0) {
-				ByteBuf result = buf.readRetainedSlice(index - buf.readerIndex());
-				while (buf.isReadable()
-						&& (buf.getByte(buf.readerIndex()) == '\r' || buf.getByte(buf.readerIndex()) == '\n')) {
-					buf.skipBytes(1);
-				}
-				return result;
-			}
+            if (index > 0) {
+                ByteBuf result = buf.readRetainedSlice(index - buf.readerIndex());
+                while (buf.isReadable()
+                        && (buf.getByte(buf.readerIndex()) == '\r' || buf.getByte(buf.readerIndex()) == '\n')) {
+                    buf.skipBytes(1);
+                }
+                return result;
+            }
 
-		}
+        }
 
-		return null;
-	}
+        return null;
+    }
 
 }

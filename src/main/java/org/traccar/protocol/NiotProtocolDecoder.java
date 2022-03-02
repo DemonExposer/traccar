@@ -35,129 +35,130 @@ import java.nio.charset.StandardCharsets;
 
 public class NiotProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final int MSG_RESPONSE = 0x21;
-	public static final int MSG_POSITION_DATA = 0x80;
-	public NiotProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public NiotProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void sendResponse(Channel channel, SocketAddress remoteAddress, int type, int checksum) {
-		if (channel != null) {
-			ByteBuf response = Unpooled.buffer();
-			response.writeShort(0x5858); // header
-			response.writeByte(MSG_RESPONSE);
-			response.writeShort(5); // length
-			response.writeByte(checksum);
-			response.writeByte(type);
-			response.writeByte(0); // subtype
-			response.writeByte(Checksum.xor(response.nioBuffer(2, response.writerIndex())));
-			response.writeByte(0x0D);
-			channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
-		}
-	}
+    public static final int MSG_RESPONSE = 0x21;
+    public static final int MSG_POSITION_DATA = 0x80;
 
-	private double readCoordinate(ByteBuf buf) {
-		long value = buf.readUnsignedInt();
-		double result = BitUtil.to(value, 31) / 1800000.0;
-		return BitUtil.check(value, 31) ? -result : result;
-	}
+    private void sendResponse(Channel channel, SocketAddress remoteAddress, int type, int checksum) {
+        if (channel != null) {
+            ByteBuf response = Unpooled.buffer();
+            response.writeShort(0x5858); // header
+            response.writeByte(MSG_RESPONSE);
+            response.writeShort(5); // length
+            response.writeByte(checksum);
+            response.writeByte(type);
+            response.writeByte(0); // subtype
+            response.writeByte(Checksum.xor(response.nioBuffer(2, response.writerIndex())));
+            response.writeByte(0x0D);
+            channel.writeAndFlush(new NetworkMessage(response, remoteAddress));
+        }
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private double readCoordinate(ByteBuf buf) {
+        long value = buf.readUnsignedInt();
+        double result = BitUtil.to(value, 31) / 1800000.0;
+        return BitUtil.check(value, 31) ? -result : result;
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		int type = buf.readUnsignedByte();
-		buf.readUnsignedShort(); // length
+        ByteBuf buf = (ByteBuf) msg;
 
-		String imei = ByteBufUtil.hexDump(buf.readSlice(8)).substring(1);
+        buf.skipBytes(2); // header
+        int type = buf.readUnsignedByte();
+        buf.readUnsignedShort(); // length
 
-		sendResponse(channel, remoteAddress, type, buf.getByte(buf.writerIndex() - 2));
+        String imei = ByteBufUtil.hexDump(buf.readSlice(8)).substring(1);
 
-		if (type == MSG_POSITION_DATA) {
+        sendResponse(channel, remoteAddress, type, buf.getByte(buf.writerIndex() - 2));
 
-			Position position = new Position(getProtocolName());
+        if (type == MSG_POSITION_DATA) {
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-			if (deviceSession == null) {
-				return null;
-			}
-			position.setDeviceId(deviceSession.getDeviceId());
+            Position position = new Position(getProtocolName());
 
-			DateBuilder dateBuilder = new DateBuilder()
-					.setYear(BcdUtil.readInteger(buf, 2))
-					.setMonth(BcdUtil.readInteger(buf, 2))
-					.setDay(BcdUtil.readInteger(buf, 2))
-					.setHour(BcdUtil.readInteger(buf, 2))
-					.setMinute(BcdUtil.readInteger(buf, 2))
-					.setSecond(BcdUtil.readInteger(buf, 2));
-			position.setTime(dateBuilder.getDate());
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+            if (deviceSession == null) {
+                return null;
+            }
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			position.setLatitude(readCoordinate(buf));
-			position.setLongitude(readCoordinate(buf));
-			BcdUtil.readInteger(buf, 4); // reserved
-			position.setCourse(BcdUtil.readInteger(buf, 4));
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setYear(BcdUtil.readInteger(buf, 2))
+                    .setMonth(BcdUtil.readInteger(buf, 2))
+                    .setDay(BcdUtil.readInteger(buf, 2))
+                    .setHour(BcdUtil.readInteger(buf, 2))
+                    .setMinute(BcdUtil.readInteger(buf, 2))
+                    .setSecond(BcdUtil.readInteger(buf, 2));
+            position.setTime(dateBuilder.getDate());
 
-			int statusX = buf.readUnsignedByte();
-			position.setValid(BitUtil.check(statusX, 7));
-			switch (BitUtil.between(statusX, 3, 5)) {
-				case 0b10:
-					position.set(Position.KEY_ALARM, Position.ALARM_POWER_CUT);
-					break;
-				case 0b01:
-					position.set(Position.KEY_ALARM, Position.ALARM_LOW_POWER);
-					break;
-				default:
-					break;
-			}
+            position.setLatitude(readCoordinate(buf));
+            position.setLongitude(readCoordinate(buf));
+            BcdUtil.readInteger(buf, 4); // reserved
+            position.setCourse(BcdUtil.readInteger(buf, 4));
 
-			position.set(Position.KEY_ODOMETER, buf.readUnsignedInt());
+            int statusX = buf.readUnsignedByte();
+            position.setValid(BitUtil.check(statusX, 7));
+            switch (BitUtil.between(statusX, 3, 5)) {
+                case 0b10:
+                    position.set(Position.KEY_ALARM, Position.ALARM_POWER_CUT);
+                    break;
+                case 0b01:
+                    position.set(Position.KEY_ALARM, Position.ALARM_LOW_POWER);
+                    break;
+                default:
+                    break;
+            }
 
-			int statusA = buf.readUnsignedByte();
-			position.set(Position.KEY_IGNITION, !BitUtil.check(statusA, 7));
-			if (!BitUtil.check(statusA, 6)) {
-				position.set(Position.KEY_ALARM, Position.ALARM_OVERSPEED);
-			}
+            position.set(Position.KEY_ODOMETER, buf.readUnsignedInt());
 
-			buf.readUnsignedByte(); // statusB
-			buf.readUnsignedByte(); // statusC
-			position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
-			position.set(Position.KEY_BATTERY, buf.readUnsignedByte() * 0.1);
-			position.set(Position.KEY_POWER, buf.readUnsignedShort() * 0.1);
-			buf.readUnsignedByte(); // speed limit
-			position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
-			buf.readUnsignedByte(); // sensor speed
-			buf.readUnsignedByte(); // reserved
-			buf.readUnsignedByte(); // reserved
+            int statusA = buf.readUnsignedByte();
+            position.set(Position.KEY_IGNITION, !BitUtil.check(statusA, 7));
+            if (!BitUtil.check(statusA, 6)) {
+                position.set(Position.KEY_ALARM, Position.ALARM_OVERSPEED);
+            }
 
-			while (buf.readableBytes() > 4) {
-				int extendedLength = buf.readUnsignedShort();
-				int extendedType = buf.readUnsignedShort();
-				switch (extendedType) {
-					case 0x0001:
-						position.set(Position.KEY_ICCID,
-								buf.readCharSequence(20, StandardCharsets.US_ASCII).toString());
-						break;
-					case 0x0002:
-						int statusD = buf.readUnsignedByte();
-						position.set(Position.KEY_ALARM, BitUtil.check(statusD, 5) ? Position.ALARM_REMOVING : null);
-						position.set(Position.KEY_ALARM, BitUtil.check(statusD, 4) ? Position.ALARM_TAMPERING : null);
-						buf.readUnsignedByte(); // run mode
-						buf.readUnsignedByte(); // reserved
-						break;
-					default:
-						buf.skipBytes(extendedLength - 2);
-						break;
-				}
+            buf.readUnsignedByte(); // statusB
+            buf.readUnsignedByte(); // statusC
+            position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
+            position.set(Position.KEY_BATTERY, buf.readUnsignedByte() * 0.1);
+            position.set(Position.KEY_POWER, buf.readUnsignedShort() * 0.1);
+            buf.readUnsignedByte(); // speed limit
+            position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
+            buf.readUnsignedByte(); // sensor speed
+            buf.readUnsignedByte(); // reserved
+            buf.readUnsignedByte(); // reserved
 
-			}
+            while (buf.readableBytes() > 4) {
+                int extendedLength = buf.readUnsignedShort();
+                int extendedType = buf.readUnsignedShort();
+                switch (extendedType) {
+                    case 0x0001:
+                        position.set(Position.KEY_ICCID,
+                                buf.readCharSequence(20, StandardCharsets.US_ASCII).toString());
+                        break;
+                    case 0x0002:
+                        int statusD = buf.readUnsignedByte();
+                        position.set(Position.KEY_ALARM, BitUtil.check(statusD, 5) ? Position.ALARM_REMOVING : null);
+                        position.set(Position.KEY_ALARM, BitUtil.check(statusD, 4) ? Position.ALARM_TAMPERING : null);
+                        buf.readUnsignedByte(); // run mode
+                        buf.readUnsignedByte(); // reserved
+                        break;
+                    default:
+                        buf.skipBytes(extendedLength - 2);
+                        break;
+                }
 
-			return position;
-		}
+            }
 
-		return null;
-	}
+            return position;
+        }
+
+        return null;
+    }
 
 }

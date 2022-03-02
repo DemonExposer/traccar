@@ -23,47 +23,47 @@ import org.traccar.BaseFrameDecoder;
 
 public class HuabaoFrameDecoder extends BaseFrameDecoder {
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
+    @Override
+    protected Object decode(
+            ChannelHandlerContext ctx, Channel channel, ByteBuf buf) throws Exception {
 
-		if (buf.readableBytes() < 2) {
-			return null;
-		}
+        if (buf.readableBytes() < 2) {
+            return null;
+        }
 
-		if (buf.getByte(buf.readerIndex()) == '(') {
+        if (buf.getByte(buf.readerIndex()) == '(') {
 
-			int index = buf.indexOf(buf.readerIndex() + 1, buf.writerIndex(), (byte) ')');
-			if (index >= 0) {
-				return buf.readRetainedSlice(index + 1);
-			}
+            int index = buf.indexOf(buf.readerIndex() + 1, buf.writerIndex(), (byte) ')');
+            if (index >= 0) {
+                return buf.readRetainedSlice(index + 1);
+            }
 
-		} else {
+        } else {
 
-			int index = buf.indexOf(buf.readerIndex() + 1, buf.writerIndex(), (byte) 0x7e);
-			if (index >= 0) {
-				ByteBuf result = Unpooled.buffer(index + 1 - buf.readerIndex());
+            int index = buf.indexOf(buf.readerIndex() + 1, buf.writerIndex(), (byte) 0x7e);
+            if (index >= 0) {
+                ByteBuf result = Unpooled.buffer(index + 1 - buf.readerIndex());
 
-				while (buf.readerIndex() <= index) {
-					int b = buf.readUnsignedByte();
-					if (b == 0x7d) {
-						int ext = buf.readUnsignedByte();
-						if (ext == 0x01) {
-							result.writeByte(0x7d);
-						} else if (ext == 0x02) {
-							result.writeByte(0x7e);
-						}
-					} else {
-						result.writeByte(b);
-					}
-				}
+                while (buf.readerIndex() <= index) {
+                    int b = buf.readUnsignedByte();
+                    if (b == 0x7d) {
+                        int ext = buf.readUnsignedByte();
+                        if (ext == 0x01) {
+                            result.writeByte(0x7d);
+                        } else if (ext == 0x02) {
+                            result.writeByte(0x7e);
+                        }
+                    } else {
+                        result.writeByte(b);
+                    }
+                }
 
-				return result;
-			}
+                return result;
+            }
 
-		}
+        }
 
-		return null;
-	}
+        return null;
+    }
 
 }

@@ -29,8 +29,8 @@ import org.traccar.model.Driver;
 @Consumes(MediaType.APPLICATION_JSON)
 public class DriverResource extends ExtendedObjectResource<Driver> {
 
-	public DriverResource() {
-		super(Driver.class);
-	}
+    public DriverResource() {
+        super(Driver.class);
+    }
 
 }

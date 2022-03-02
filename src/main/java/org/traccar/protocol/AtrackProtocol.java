@@ -22,24 +22,24 @@ import org.traccar.model.Command;
 
 public class AtrackProtocol extends BaseProtocol {
 
-	public AtrackProtocol() {
-		setSupportedDataCommands(
-				Command.TYPE_CUSTOM);
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new AtrackFrameDecoder());
-				pipeline.addLast(new AtrackProtocolEncoder(AtrackProtocol.this));
-				pipeline.addLast(new AtrackProtocolDecoder(AtrackProtocol.this));
-			}
-		});
-		addServer(new TrackerServer(true, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new AtrackProtocolEncoder(AtrackProtocol.this));
-				pipeline.addLast(new AtrackProtocolDecoder(AtrackProtocol.this));
-			}
-		});
-	}
+    public AtrackProtocol() {
+        setSupportedDataCommands(
+                Command.TYPE_CUSTOM);
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new AtrackFrameDecoder());
+                pipeline.addLast(new AtrackProtocolEncoder(AtrackProtocol.this));
+                pipeline.addLast(new AtrackProtocolDecoder(AtrackProtocol.this));
+            }
+        });
+        addServer(new TrackerServer(true, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new AtrackProtocolEncoder(AtrackProtocol.this));
+                pipeline.addLast(new AtrackProtocolDecoder(AtrackProtocol.this));
+            }
+        });
+    }
 
 }

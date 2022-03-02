@@ -23,16 +23,16 @@ import org.traccar.TrackerServer;
 
 public class IntellitracProtocol extends BaseProtocol {
 
-	public IntellitracProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new IntellitracFrameDecoder(1024));
-				pipeline.addLast(new StringEncoder());
-				pipeline.addLast(new StringDecoder());
-				pipeline.addLast(new IntellitracProtocolDecoder(IntellitracProtocol.this));
-			}
-		});
-	}
+    public IntellitracProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new IntellitracFrameDecoder(1024));
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new IntellitracProtocolDecoder(IntellitracProtocol.this));
+            }
+        });
+    }
 
 }

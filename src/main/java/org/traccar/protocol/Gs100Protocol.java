@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class Gs100Protocol extends BaseProtocol {
 
-	public Gs100Protocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new Gs100ProtocolDecoder(Gs100Protocol.this));
-			}
-		});
-	}
+    public Gs100Protocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new Gs100ProtocolDecoder(Gs100Protocol.this));
+            }
+        });
+    }
 
 }

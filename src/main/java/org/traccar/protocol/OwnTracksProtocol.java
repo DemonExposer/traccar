@@ -25,16 +25,16 @@ import org.traccar.TrackerServer;
 
 public class OwnTracksProtocol extends BaseProtocol {
 
-	public OwnTracksProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new HttpResponseEncoder());
-				pipeline.addLast(new HttpRequestDecoder());
-				pipeline.addLast(new HttpObjectAggregator(16384));
-				pipeline.addLast(new OwnTracksProtocolDecoder(OwnTracksProtocol.this));
-			}
-		});
-	}
+    public OwnTracksProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new HttpResponseEncoder());
+                pipeline.addLast(new HttpRequestDecoder());
+                pipeline.addLast(new HttpObjectAggregator(16384));
+                pipeline.addLast(new OwnTracksProtocolDecoder(OwnTracksProtocol.this));
+            }
+        });
+    }
 
 }

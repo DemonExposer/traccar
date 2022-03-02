@@ -16,8 +16,8 @@
 package org.traccar.config;
 
 public enum KeyType {
-	GLOBAL,
-	SERVER,
-	USER,
-	DEVICE,
+    GLOBAL,
+    SERVER,
+    USER,
+    DEVICE,
 }

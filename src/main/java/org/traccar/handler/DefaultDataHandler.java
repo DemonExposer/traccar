@@ -25,24 +25,24 @@ import org.traccar.model.Position;
 @ChannelHandler.Sharable
 public class DefaultDataHandler extends BaseDataHandler {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDataHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDataHandler.class);
 
-	private final DataManager dataManager;
+    private final DataManager dataManager;
 
-	public DefaultDataHandler(DataManager dataManager) {
-		this.dataManager = dataManager;
-	}
+    public DefaultDataHandler(DataManager dataManager) {
+        this.dataManager = dataManager;
+    }
 
-	@Override
-	protected Position handlePosition(Position position) {
+    @Override
+    protected Position handlePosition(Position position) {
 
-		try {
-			dataManager.addObject(position);
-		} catch (Exception error) {
-			LOGGER.warn("Failed to store position", error);
-		}
+        try {
+            dataManager.addObject(position);
+        } catch (Exception error) {
+            LOGGER.warn("Failed to store position", error);
+        }
 
-		return position;
-	}
+        return position;
+    }
 
 }

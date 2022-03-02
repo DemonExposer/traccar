@@ -31,139 +31,140 @@ import java.nio.charset.StandardCharsets;
 
 public class NyitechProtocolDecoder extends BaseProtocolDecoder {
 
-	public static final short MSG_LOGIN = 0x1001;
-	public static final short MSG_COMPREHENSIVE_LIVE = 0x2001;
-	public static final short MSG_COMPREHENSIVE_HISTORY = 0x2002;
-	public static final short MSG_ALARM = 0x2003;
-	public static final short MSG_FIXED = 0x2004;
-	public NyitechProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    public NyitechProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	private void decodeLocation(Position position, ByteBuf buf) {
+    public static final short MSG_LOGIN = 0x1001;
+    public static final short MSG_COMPREHENSIVE_LIVE = 0x2001;
+    public static final short MSG_COMPREHENSIVE_HISTORY = 0x2002;
+    public static final short MSG_ALARM = 0x2003;
+    public static final short MSG_FIXED = 0x2004;
 
-		DateBuilder dateBuilder = new DateBuilder()
-				.setDateReverse(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
-				.setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
-		position.setTime(dateBuilder.getDate());
+    private void decodeLocation(Position position, ByteBuf buf) {
 
-		int flags = buf.readUnsignedByte();
-		position.setValid(BitUtil.to(flags, 2) > 0);
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDateReverse(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
+                .setTime(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte());
+        position.setTime(dateBuilder.getDate());
 
-		double lat = buf.readUnsignedIntLE() / 3600000.0;
-		double lon = buf.readUnsignedIntLE() / 3600000.0;
+        int flags = buf.readUnsignedByte();
+        position.setValid(BitUtil.to(flags, 2) > 0);
 
-		position.setLatitude(BitUtil.check(flags, 2) ? lat : -lat);
-		position.setLongitude(BitUtil.check(flags, 3) ? lon : -lon);
+        double lat = buf.readUnsignedIntLE() / 3600000.0;
+        double lon = buf.readUnsignedIntLE() / 3600000.0;
 
-		position.setSpeed(UnitsConverter.knotsFromCps(buf.readUnsignedShortLE()));
-		position.setCourse(buf.readUnsignedShortLE() * 0.1);
-		position.setAltitude(buf.readShortLE() * 0.1);
-	}
+        position.setLatitude(BitUtil.check(flags, 2) ? lat : -lat);
+        position.setLongitude(BitUtil.check(flags, 3) ? lon : -lon);
 
-	private String decodeAlarm(int type) {
-		switch (type) {
-			case 0x09:
-				return Position.ALARM_ACCELERATION;
-			case 0x0a:
-				return Position.ALARM_BRAKING;
-			case 0x0b:
-				return Position.ALARM_CORNERING;
-			case 0x0e:
-				return Position.ALARM_SOS;
-			default:
-				return null;
-		}
-	}
+        position.setSpeed(UnitsConverter.knotsFromCps(buf.readUnsignedShortLE()));
+        position.setCourse(buf.readUnsignedShortLE() * 0.1);
+        position.setAltitude(buf.readShortLE() * 0.1);
+    }
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private String decodeAlarm(int type) {
+        switch (type) {
+            case 0x09:
+                return Position.ALARM_ACCELERATION;
+            case 0x0a:
+                return Position.ALARM_BRAKING;
+            case 0x0b:
+                return Position.ALARM_CORNERING;
+            case 0x0e:
+                return Position.ALARM_SOS;
+            default:
+                return null;
+        }
+    }
 
-		ByteBuf buf = (ByteBuf) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		buf.skipBytes(2); // header
-		buf.readUnsignedShortLE(); // length
+        ByteBuf buf = (ByteBuf) msg;
 
-		String id = buf.readCharSequence(12, StandardCharsets.US_ASCII).toString();
-		DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
-		if (deviceSession == null) {
-			return null;
-		}
+        buf.skipBytes(2); // header
+        buf.readUnsignedShortLE(); // length
 
-		int type = buf.readUnsignedShortLE();
+        String id = buf.readCharSequence(12, StandardCharsets.US_ASCII).toString();
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id);
+        if (deviceSession == null) {
+            return null;
+        }
 
-		if (type != MSG_LOGIN && type != MSG_COMPREHENSIVE_LIVE
-				&& type != MSG_COMPREHENSIVE_HISTORY && type != MSG_ALARM && type != MSG_FIXED) {
-			return null;
-		}
+        int type = buf.readUnsignedShortLE();
 
-		Position position = new Position(getProtocolName());
-		position.setDeviceId(deviceSession.getDeviceId());
+        if (type != MSG_LOGIN && type != MSG_COMPREHENSIVE_LIVE
+                && type != MSG_COMPREHENSIVE_HISTORY && type != MSG_ALARM && type != MSG_FIXED) {
+            return null;
+        }
 
-		if (type == MSG_COMPREHENSIVE_LIVE || type == MSG_COMPREHENSIVE_HISTORY) {
+        Position position = new Position(getProtocolName());
+        position.setDeviceId(deviceSession.getDeviceId());
 
-			buf.skipBytes(6); // time
-			boolean includeLocation = buf.readUnsignedByte() > 0;
-			boolean includeObd = buf.readUnsignedByte() > 0;
-			buf.readUnsignedByte(); // include sensor
+        if (type == MSG_COMPREHENSIVE_LIVE || type == MSG_COMPREHENSIVE_HISTORY) {
 
-			if (includeLocation) {
-				decodeLocation(position, buf);
-			} else {
-				getLastLocation(position, null);
-			}
+            buf.skipBytes(6); // time
+            boolean includeLocation = buf.readUnsignedByte() > 0;
+            boolean includeObd = buf.readUnsignedByte() > 0;
+            buf.readUnsignedByte(); // include sensor
 
-			if (includeObd) {
-				int count = buf.readUnsignedByte();
-				for (int i = 0; i < count; i++) {
-					int pid = buf.readUnsignedShortLE();
-					int length = buf.readUnsignedByte();
-					switch (length) {
-						case 1:
-							position.add(ObdDecoder.decodeData(pid, buf.readByte(), true));
-							break;
-						case 2:
-							position.add(ObdDecoder.decodeData(pid, buf.readShortLE(), true));
-							break;
-						case 4:
-							position.add(ObdDecoder.decodeData(pid, buf.readIntLE(), true));
-							break;
-						default:
-							buf.skipBytes(length);
-							break;
-					}
-				}
-			}
+            if (includeLocation) {
+                decodeLocation(position, buf);
+            } else {
+                getLastLocation(position, null);
+            }
 
-			position.set(Position.KEY_FUEL_USED, buf.readUnsignedInt() * 0.01);
-			position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedInt());
+            if (includeObd) {
+                int count = buf.readUnsignedByte();
+                for (int i = 0; i < count; i++) {
+                    int pid = buf.readUnsignedShortLE();
+                    int length = buf.readUnsignedByte();
+                    switch (length) {
+                        case 1:
+                            position.add(ObdDecoder.decodeData(pid, buf.readByte(), true));
+                            break;
+                        case 2:
+                            position.add(ObdDecoder.decodeData(pid, buf.readShortLE(), true));
+                            break;
+                        case 4:
+                            position.add(ObdDecoder.decodeData(pid, buf.readIntLE(), true));
+                            break;
+                        default:
+                            buf.skipBytes(length);
+                            break;
+                    }
+                }
+            }
+
+            position.set(Position.KEY_FUEL_USED, buf.readUnsignedInt() * 0.01);
+            position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedInt());
 
 
-		} else if (type == MSG_ALARM) {
+        } else if (type == MSG_ALARM) {
 
-			buf.readUnsignedShortLE(); // random number
-			buf.readUnsignedByte(); // tag
-			position.set(Position.KEY_ALARM, decodeAlarm(buf.readUnsignedByte()));
-			buf.readUnsignedShortLE(); // threshold
-			buf.readUnsignedShortLE(); // value
-			buf.skipBytes(6); // time
+            buf.readUnsignedShortLE(); // random number
+            buf.readUnsignedByte(); // tag
+            position.set(Position.KEY_ALARM, decodeAlarm(buf.readUnsignedByte()));
+            buf.readUnsignedShortLE(); // threshold
+            buf.readUnsignedShortLE(); // value
+            buf.skipBytes(6); // time
 
-			decodeLocation(position, buf);
+            decodeLocation(position, buf);
 
-		} else if (type == MSG_FIXED) {
+        } else if (type == MSG_FIXED) {
 
-			buf.skipBytes(6); // time
+            buf.skipBytes(6); // time
 
-			decodeLocation(position, buf);
+            decodeLocation(position, buf);
 
-		} else {
+        } else {
 
-			decodeLocation(position, buf);
+            decodeLocation(position, buf);
 
-		}
+        }
 
-		return position;
-	}
+        return position;
+    }
 
 }

@@ -22,14 +22,14 @@ import org.traccar.TrackerServer;
 
 public class BlackKiteProtocol extends BaseProtocol {
 
-	public BlackKiteProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new GalileoFrameDecoder());
-				pipeline.addLast(new BlackKiteProtocolDecoder(BlackKiteProtocol.this));
-			}
-		});
-	}
+    public BlackKiteProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new GalileoFrameDecoder());
+                pipeline.addLast(new BlackKiteProtocolDecoder(BlackKiteProtocol.this));
+            }
+        });
+    }
 
 }

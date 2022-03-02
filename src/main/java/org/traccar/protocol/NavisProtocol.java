@@ -21,13 +21,13 @@ import org.traccar.TrackerServer;
 
 public class NavisProtocol extends BaseProtocol {
 
-	public NavisProtocol() {
-		addServer(new TrackerServer(false, getName()) {
-			@Override
-			protected void addProtocolHandlers(PipelineBuilder pipeline) {
-				pipeline.addLast(new NavisFrameDecoder());
-				pipeline.addLast(new NavisProtocolDecoder(NavisProtocol.this));
-			}
-		});
-	}
+    public NavisProtocol() {
+        addServer(new TrackerServer(false, getName()) {
+            @Override
+            protected void addProtocolHandlers(PipelineBuilder pipeline) {
+                pipeline.addLast(new NavisFrameDecoder());
+                pipeline.addLast(new NavisProtocolDecoder(NavisProtocol.this));
+            }
+        });
+    }
 }

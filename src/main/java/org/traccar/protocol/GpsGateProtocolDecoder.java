@@ -31,140 +31,141 @@ import java.util.regex.Pattern;
 
 public class GpsGateProtocolDecoder extends BaseProtocolDecoder {
 
-	private static final Pattern PATTERN_GPRMC = new PatternBuilder()
-			.text("$GPRMC,")
-			.number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
-			.expression("([AV]),")               // validity
-			.number("(dd)(dd.d+),")              // latitude
-			.expression("([NS]),")
-			.number("(ddd)(dd.d+),")             // longitude
-			.expression("([EW]),")
-			.number("(d+.d+)?,")                 // speed
-			.number("(d+.d+)?,")                 // course
-			.number("(dd)(dd)(dd)")              // date (ddmmyy)
-			.any()
-			.compile();
-	private static final Pattern PATTERN_FRCMD = new PatternBuilder()
-			.text("$FRCMD,")
-			.number("(d+),")                     // imei
-			.expression("[^,]*,")                // command
-			.expression("[^,]*,")
-			.number("(d+)(dd.d+),")              // latitude
-			.expression("([NS]),")
-			.number("(d+)(dd.d+),")              // longitude
-			.expression("([EW]),")
-			.number("(d+.?d*),")                 // altitude
-			.number("(d+.?d*),")                 // speed
-			.number("(d+.?d*)?,")                // course
-			.number("(dd)(dd)(dd),")             // date (ddmmyy)
-			.number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
-			.expression("([01])")                // validity
-			.any()
-			.compile();
+    public GpsGateProtocolDecoder(Protocol protocol) {
+        super(protocol);
+    }
 
-	public GpsGateProtocolDecoder(Protocol protocol) {
-		super(protocol);
-	}
+    private static final Pattern PATTERN_GPRMC = new PatternBuilder()
+            .text("$GPRMC,")
+            .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
+            .expression("([AV]),")               // validity
+            .number("(dd)(dd.d+),")              // latitude
+            .expression("([NS]),")
+            .number("(ddd)(dd.d+),")             // longitude
+            .expression("([EW]),")
+            .number("(d+.d+)?,")                 // speed
+            .number("(d+.d+)?,")                 // course
+            .number("(dd)(dd)(dd)")              // date (ddmmyy)
+            .any()
+            .compile();
 
-	private void send(Channel channel, SocketAddress remoteAddress, String message) {
-		if (channel != null) {
-			channel.writeAndFlush(new NetworkMessage(
-					message + Checksum.nmea(message.substring(1)) + "\r\n", remoteAddress));
-		}
-	}
+    private static final Pattern PATTERN_FRCMD = new PatternBuilder()
+            .text("$FRCMD,")
+            .number("(d+),")                     // imei
+            .expression("[^,]*,")                // command
+            .expression("[^,]*,")
+            .number("(d+)(dd.d+),")              // latitude
+            .expression("([NS]),")
+            .number("(d+)(dd.d+),")              // longitude
+            .expression("([EW]),")
+            .number("(d+.?d*),")                 // altitude
+            .number("(d+.?d*),")                 // speed
+            .number("(d+.?d*)?,")                // course
+            .number("(dd)(dd)(dd),")             // date (ddmmyy)
+            .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
+            .expression("([01])")                // validity
+            .any()
+            .compile();
 
-	@Override
-	protected Object decode(
-			Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    private void send(Channel channel, SocketAddress remoteAddress, String message) {
+        if (channel != null) {
+            channel.writeAndFlush(new NetworkMessage(
+                    message + Checksum.nmea(message.substring(1)) + "\r\n", remoteAddress));
+        }
+    }
 
-		String sentence = (String) msg;
+    @Override
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-		if (sentence.startsWith("$FRLIN,")) {
+        String sentence = (String) msg;
 
-			int beginIndex = sentence.indexOf(',', 7);
-			if (beginIndex != -1) {
-				beginIndex += 1;
-				int endIndex = sentence.indexOf(',', beginIndex);
-				if (endIndex != -1) {
-					String imei = sentence.substring(beginIndex, endIndex);
-					DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-					if (deviceSession != null) {
-						if (channel != null) {
-							send(channel, remoteAddress, "$FRSES," + channel.id().asShortText());
-						}
-					} else {
-						send(channel, remoteAddress, "$FRERR,AuthError,Unknown device");
-					}
-				} else {
-					send(channel, remoteAddress, "$FRERR,AuthError,Parse error");
-				}
-			} else {
-				send(channel, remoteAddress, "$FRERR,AuthError,Parse error");
-			}
+        if (sentence.startsWith("$FRLIN,")) {
 
-		} else if (sentence.startsWith("$FRVER,")) {
+            int beginIndex = sentence.indexOf(',', 7);
+            if (beginIndex != -1) {
+                beginIndex += 1;
+                int endIndex = sentence.indexOf(',', beginIndex);
+                if (endIndex != -1) {
+                    String imei = sentence.substring(beginIndex, endIndex);
+                    DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
+                    if (deviceSession != null) {
+                        if (channel != null) {
+                            send(channel, remoteAddress, "$FRSES," + channel.id().asShortText());
+                        }
+                    } else {
+                        send(channel, remoteAddress, "$FRERR,AuthError,Unknown device");
+                    }
+                } else {
+                    send(channel, remoteAddress, "$FRERR,AuthError,Parse error");
+                }
+            } else {
+                send(channel, remoteAddress, "$FRERR,AuthError,Parse error");
+            }
 
-			send(channel, remoteAddress, "$FRVER,1,0,GpsGate Server 1.0");
+        } else if (sentence.startsWith("$FRVER,")) {
 
-		} else if (sentence.startsWith("$GPRMC,")) {
+            send(channel, remoteAddress, "$FRVER,1,0,GpsGate Server 1.0");
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
-			if (deviceSession == null) {
-				return null;
-			}
+        } else if (sentence.startsWith("$GPRMC,")) {
 
-			Parser parser = new Parser(PATTERN_GPRMC, sentence);
-			if (!parser.matches()) {
-				return null;
-			}
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
+            if (deviceSession == null) {
+                return null;
+            }
 
-			Position position = new Position(getProtocolName());
-			position.setDeviceId(deviceSession.getDeviceId());
+            Parser parser = new Parser(PATTERN_GPRMC, sentence);
+            if (!parser.matches()) {
+                return null;
+            }
 
-			DateBuilder dateBuilder = new DateBuilder()
-					.setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+            Position position = new Position(getProtocolName());
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			position.setValid(parser.next().equals("A"));
-			position.setLatitude(parser.nextCoordinate());
-			position.setLongitude(parser.nextCoordinate());
-			position.setSpeed(parser.nextDouble(0));
-			position.setCourse(parser.nextDouble(0));
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
 
-			dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
-			position.setTime(dateBuilder.getDate());
+            position.setValid(parser.next().equals("A"));
+            position.setLatitude(parser.nextCoordinate());
+            position.setLongitude(parser.nextCoordinate());
+            position.setSpeed(parser.nextDouble(0));
+            position.setCourse(parser.nextDouble(0));
 
-			return position;
+            dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+            position.setTime(dateBuilder.getDate());
 
-		} else if (sentence.startsWith("$FRCMD,")) {
+            return position;
 
-			Parser parser = new Parser(PATTERN_FRCMD, sentence);
-			if (!parser.matches()) {
-				return null;
-			}
+        } else if (sentence.startsWith("$FRCMD,")) {
 
-			Position position = new Position(getProtocolName());
+            Parser parser = new Parser(PATTERN_FRCMD, sentence);
+            if (!parser.matches()) {
+                return null;
+            }
 
-			DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
-			if (deviceSession == null) {
-				return null;
-			}
-			position.setDeviceId(deviceSession.getDeviceId());
+            Position position = new Position(getProtocolName());
 
-			position.setLatitude(parser.nextCoordinate());
-			position.setLongitude(parser.nextCoordinate());
-			position.setAltitude(parser.nextDouble(0));
-			position.setSpeed(parser.nextDouble(0));
-			position.setCourse(parser.nextDouble(0));
+            DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+            if (deviceSession == null) {
+                return null;
+            }
+            position.setDeviceId(deviceSession.getDeviceId());
 
-			position.setTime(parser.nextDateTime(Parser.DateTimeFormat.DMY_HMS));
+            position.setLatitude(parser.nextCoordinate());
+            position.setLongitude(parser.nextCoordinate());
+            position.setAltitude(parser.nextDouble(0));
+            position.setSpeed(parser.nextDouble(0));
+            position.setCourse(parser.nextDouble(0));
 
-			position.setValid(parser.next().equals("1"));
+            position.setTime(parser.nextDateTime(Parser.DateTimeFormat.DMY_HMS));
 
-			return position;
+            position.setValid(parser.next().equals("1"));
 
-		}
+            return position;
 
-		return null;
-	}
+        }
+
+        return null;
+    }
 
 }
