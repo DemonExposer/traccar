@@ -114,11 +114,6 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
 
         Position position = new Position(getProtocolName());
 
-		while (buf.isReadable())
-			System.out.println(buf.readByte());
-
-		System.out.println();
-
         boolean longId = buf.readableBytes() == 42;
 
         buf.readByte(); // marker
@@ -181,8 +176,7 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
 			externalVoltage <<= 8;
 			externalVoltage |= buf.readByte();
 		}
-		System.out.println(externalVoltage);
-		position.set(Position.KEY_EXTERNAL_VOLTAGE, externalVoltage);
+		position.set(Position.KEY_EXTERNAL_VOLTAGE, externalVoltage / 10.0);
 
         return position;
     }
