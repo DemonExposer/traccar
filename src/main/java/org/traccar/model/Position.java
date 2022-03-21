@@ -59,6 +59,8 @@ public class Position extends Message {
     public static final String KEY_VERSION_HW = "versionHw";
     public static final String KEY_TYPE = "type";
     public static final String KEY_IMMOBILIZER = "immobilizer";
+    public static final String KEY_GSM_SIGNAL = "GSMSignal";
+    public static final String KEY_GPS_GLONASS_SIGNAL = "GPS&GlonassSignal";
     public static final String KEY_EXTERNAL_VOLTAGE = "externalVoltage"; // decivolts
     public static final String KEY_IGNITION = "ignition";
     public static final String KEY_FLAGS = "flags";
@@ -107,6 +109,7 @@ public class Position extends Message {
 
     public static final String ALARM_GENERAL = "general";
     public static final String ALARM_SOS = "sos";
+    public static final String ALARM_SHOCK = "shock";
     public static final String ALARM_VIBRATION = "vibration";
     public static final String ALARM_MOVEMENT = "movement";
     public static final String ALARM_LOW_SPEED = "lowspeed";
